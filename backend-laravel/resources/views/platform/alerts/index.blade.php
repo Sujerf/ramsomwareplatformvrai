@@ -358,7 +358,7 @@
             @else
                 @include('platform.partials.empty-state', [
                     'title' => 'Aucune alerte pour ce filtre.',
-                    'message' => 'Change le filtre ou lance un test contrôlé depuis l'agent.'
+                    'message' => "Change le filtre ou lance un test contrôlé depuis l'agent."
                 ])
             @endif
         </section>

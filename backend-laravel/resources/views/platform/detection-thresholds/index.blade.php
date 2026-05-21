@@ -1,7 +1,7 @@
 @extends('layouts.soc')
 
-@section('title', 'RansomShield — Seuils d'analyse')
-@section('page_title', 'Seuils d'analyse')
+@section('title', "RansomShield — Seuils d'analyse")
+@section('page_title', "Seuils d'analyse")
 @section('page_subtitle', 'Transformation du score en niveau de risque')
 
 @section('content')

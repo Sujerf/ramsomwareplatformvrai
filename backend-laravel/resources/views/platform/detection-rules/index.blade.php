@@ -36,10 +36,10 @@
 
         $ruleImpact = function ($rule) {
             return match ($rule->code) {
-                'rule_sensitive_extension' => 'Cette règle vérifie si l'extension du fichier est présente dans la table des extensions sensibles.',
-                'rule_mass_rename' => 'Cette règle détecte les renommages ou déplacements suspects, typiques d'un chiffrement massif.',
+                'rule_sensitive_extension' => "Cette règle vérifie si l'extension du fichier est présente dans la table des extensions sensibles.",
+                'rule_mass_rename' => "Cette règle détecte les renommages ou déplacements suspects, typiques d'un chiffrement massif.",
                 'rule_ransom_note' => 'Cette règle détecte les fichiers de type README, RECOVER, DECRYPT ou instructions de rançon.',
-                'rule_fast_write_activity' => 'Cette règle augmente le score lors d'une activité rapide de création ou modification de fichiers.',
+                'rule_fast_write_activity' => "Cette règle augmente le score lors d'une activité rapide de création ou modification de fichiers.",
                 'rule_simulation_marker' => 'Cette règle permet de tester le moteur sans déclencher une vraie attaque.',
                 default => 'Cette règle participe au calcul dynamique du score de risque.',
             };

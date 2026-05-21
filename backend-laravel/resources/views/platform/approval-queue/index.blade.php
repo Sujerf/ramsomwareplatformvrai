@@ -1,7 +1,7 @@
 @extends('layouts.soc')
 
-@section('title', 'RansomShield — File d'approbation')
-@section('page_title', 'File d'approbation')
+@section('title', "RansomShield — File d'approbation")
+@section('page_title', "File d'approbation")
 @section('page_subtitle', 'Actions sensibles en attente de validation humaine')
 
 @section('content')

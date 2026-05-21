@@ -236,7 +236,7 @@
             @else
                 @include('platform.partials.empty-state', [
                     'title' => 'Aucun agent.',
-                    'message' => 'Va dans Hôtes détectés puis clique sur 'Enrôler' pour créer un agent.'
+                    'message' => "Va dans Hôtes détectés puis clique sur 'Enrôler' pour créer un agent."
                 ])
             @endif
         </section>

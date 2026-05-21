@@ -38,8 +38,8 @@
                 'require_human_approval_for_sensitive_actions' => 'Force la validation humaine pour les actions sensibles comme isolation ou kill process.',
                 'min_risk_level_for_incident' => 'Détermine à partir de quel niveau de risque un incident est créé.',
                 'min_risk_level_for_action' => 'Détermine à partir de quel niveau une action de protection est proposée.',
-                'notification_ui_enabled' => 'Active ou désactive les notifications visibles dans l'interface.',
-                'notification_sound_enabled' => 'Active ou désactive l'alarme sonore navigateur.',
+                'notification_ui_enabled' => "Active ou désactive les notifications visibles dans l'interface.",
+                'notification_sound_enabled' => "Active ou désactive l'alarme sonore navigateur.",
                 'ui_theme' => 'Définit le thème par défaut de la console.',
                 default => 'Paramètre global utilisé par la plateforme RansomShield.',
             };
@@ -410,7 +410,7 @@
             @else
                 @include('platform.partials.empty-state', [
                     'title' => 'Aucun paramètre.',
-                    'message' => 'Clique sur 'Réinitialiser défauts' pour restaurer les paramètres de base.'
+                    'message' => "Clique sur 'Réinitialiser défauts' pour restaurer les paramètres de base."
                 ])
             @endif
         </section>

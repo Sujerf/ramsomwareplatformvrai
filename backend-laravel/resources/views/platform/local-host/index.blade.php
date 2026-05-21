@@ -44,7 +44,7 @@
         @include('platform.partials.stat-card', [
             'label' => 'IP principale',
             'value' => $serverIp ?? '—',
-            'hint' => 'Adresse utilisée par l'interface active.'
+            'hint' => "Adresse utilisée par l'interface active."
         ])
 
         @include('platform.partials.stat-card', [
@@ -185,7 +185,7 @@
         @else
             @include('platform.partials.empty-state', [
                 'title' => 'Aucune interface réseau détectée.',
-                'message' => 'La commande système ip -j addr n'a pas retourné d'interface exploitable.'
+                'message' => "La commande système ip -j addr n'a pas retourné d'interface exploitable."
             ])
         @endif
     </section>
@@ -226,7 +226,7 @@
         @else
             @include('platform.partials.empty-state', [
                 'title' => 'Aucune route détectée.',
-                'message' => 'La commande ip -j route n'a pas retourné de route exploitable.'
+                'message' => "La commande ip -j route n'a pas retourné de route exploitable."
             ])
         @endif
     </section>
