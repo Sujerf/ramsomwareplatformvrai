@@ -23,7 +23,7 @@
         }
 
         .aq-hero h2 {
-            margin: 0;
+            margin: 10px 0 0;
             font-size: clamp(36px, 5vw, 66px);
             line-height: .93;
             letter-spacing: -.08em;
@@ -46,6 +46,7 @@
             border-radius: 20px;
             border: 1px solid color-mix(in srgb, #f59e0b 30%, transparent);
             background: color-mix(in srgb, #f59e0b 6%, transparent);
+            margin-top: 18px;
             margin-bottom: 16px;
             flex-wrap: wrap;
         }
@@ -86,7 +87,7 @@
         /* ── APPROVAL CARD ────────────────────────────────────────────────── */
         .approval-list {
             display: grid;
-            gap: 16px;
+            gap: 0;
         }
 
         .approval-card {
@@ -95,7 +96,10 @@
             border: 1px solid var(--border-soft);
             box-shadow: var(--shadow-soft);
             overflow: hidden;
-            transition: transform .18s ease, box-shadow .18s ease, opacity .3s ease, max-height .4s ease;
+            max-height: 400px;
+            margin-bottom: 16px;
+            transition: transform .18s ease, box-shadow .18s ease,
+                        opacity .32s ease, max-height .42s ease, margin-bottom .42s ease;
         }
 
         .approval-card:hover {
@@ -105,10 +109,9 @@
 
         .approval-card.removing {
             opacity: 0;
-            transform: translateX(60px) scale(.97);
-            max-height: 0;
-            margin: 0;
-            padding: 0;
+            transform: translateX(56px) scale(.97);
+            max-height: 0 !important;
+            margin-bottom: 0 !important;
             pointer-events: none;
         }
 
@@ -120,7 +123,7 @@
 
         .approval-card-inner {
             display: grid;
-            grid-template-columns: 64px minmax(0, 1fr);
+            grid-template-columns: 80px minmax(0, 1fr);
             gap: 0;
         }
 
@@ -129,7 +132,7 @@
             display: flex;
             align-items: flex-start;
             justify-content: center;
-            padding: 20px 0 20px 16px;
+            padding: 20px 0 20px 14px;
         }
 
         .ac-icon {
@@ -249,6 +252,12 @@
         }
 
         .ac-decision-strip .spacer { flex: 1; }
+
+        .action-group {
+            display: flex;
+            gap: 8px;
+            flex-shrink: 0;
+        }
 
         .decision-btn {
             display: inline-flex;
@@ -401,8 +410,10 @@
 
         @media (max-width: 540px) {
             .ac-context { grid-template-columns: 1fr; }
-            .decision-btn { width: 100%; justify-content: center; }
             .ac-decision-strip .spacer { display: none; }
+            .action-group { flex-direction: column; width: 100%; }
+            .action-group .decision-btn { width: 100%; justify-content: center; }
+            .decision-btn.detail { width: 100%; justify-content: center; }
         }
     </style>
 
@@ -488,8 +499,8 @@
 
         {{-- ── URGENCY BAR ──────────────────────────────────────────────── --}}
         @if($stats['total'] > 0)
-            <div class="urgency-bar {{ $stats['urgent'] === 0 ? 'all-clear' : '' }}">
-                <div class="urgency-icon {{ $stats['urgent'] === 0 ? 'green' : '' }}">
+            <div class="{{ $stats['urgent'] === 0 ? 'urgency-bar all-clear' : 'urgency-bar' }}">
+                <div class="{{ $stats['urgent'] === 0 ? 'urgency-icon green' : 'urgency-icon' }}">
                     @if($stats['urgent'] > 0)
                         <i class="fa-solid fa-triangle-exclamation"></i>
                     @else
@@ -524,7 +535,7 @@
 
         {{-- ── APPROVAL LIST ────────────────────────────────────────────── --}}
         @if($actions->count())
-            <div class="approval-list" id="aqList">
+            <div class="approval-list section-gap" id="aqList">
                 @foreach($actions as $action)
                     @php
                         $riskLevel  = data_get($action->payload, 'risk_level',  $action->incident?->risk_level  ?? 'normal');
@@ -645,21 +656,23 @@
                                 Voir détails
                             </a>
 
-                            <button class="decision-btn reject"
-                                    data-action-id="{{ $action->id }}"
-                                    data-url="{{ route('platform.protection-actions.reject', $action) }}"
-                                    data-decision="reject">
-                                <i class="fa-solid fa-xmark"></i>
-                                Rejeter
-                            </button>
+                            <div class="action-group">
+                                <button type="button" class="decision-btn reject"
+                                        data-action-id="{{ $action->id }}"
+                                        data-url="{{ route('platform.protection-actions.reject', $action) }}"
+                                        data-decision="reject">
+                                    <i class="fa-solid fa-xmark"></i>
+                                    Rejeter
+                                </button>
 
-                            <button class="decision-btn approve"
-                                    data-action-id="{{ $action->id }}"
-                                    data-url="{{ route('platform.protection-actions.approve', $action) }}"
-                                    data-decision="approve">
-                                <i class="fa-solid fa-check"></i>
-                                Approuver
-                            </button>
+                                <button type="button" class="decision-btn approve"
+                                        data-action-id="{{ $action->id }}"
+                                        data-url="{{ route('platform.protection-actions.approve', $action) }}"
+                                        data-decision="approve">
+                                    <i class="fa-solid fa-check"></i>
+                                    Approuver
+                                </button>
+                            </div>
                         </div>
                     </article>
                 @endforeach
@@ -728,9 +741,9 @@
             setTimeout(() => {
                 card.remove();
                 const list = document.getElementById('aqList');
-                if (list && list.children.length === 0) {
+                if (list && list.querySelectorAll('.approval-card:not(.removing)').length === 0) {
                     list.insertAdjacentHTML('afterend',
-                        '<div class="all-clear-state" style="margin-top:16px;">' +
+                        '<div class="all-clear-state section-gap">' +
                         '<div class="all-clear-icon"><i class="fa-solid fa-shield-halved"></i></div>' +
                         '<h3>File vide — tout est traité.</h3>' +
                         '<p>Toutes les actions ont été traitées dans cette session.</p>' +
@@ -738,7 +751,7 @@
                     );
                     list.remove();
                 }
-            }, 350);
+            }, 450);
         }
 
         document.querySelectorAll('.decision-btn[data-decision]').forEach(function (btn) {
