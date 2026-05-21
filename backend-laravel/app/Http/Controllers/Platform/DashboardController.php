@@ -9,6 +9,7 @@ use App\Models\DiscoveredHost;
 use App\Models\Incident;
 use App\Models\ManagedNetwork;
 use App\Models\ProtectionAction;
+use App\Models\SystemSetting;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -63,6 +64,15 @@ class DashboardController extends Controller
 
         $chartData = $this->buildCharts();
 
+        $surveillanceSettings = SystemSetting::whereIn('key', [
+            'protection_execution_enabled',
+            'require_human_approval_for_sensitive_actions',
+            'enable_real_isolation',
+            'enable_real_process_kill',
+            'min_risk_level_for_incident',
+            'min_risk_level_for_action',
+        ])->get()->keyBy('key');
+
         return view('platform.dashboard.index', [
             'stats' => [
                 'active_alerts' => $activeAlerts,
@@ -84,6 +94,7 @@ class DashboardController extends Controller
             'recentActions' => $recentActions,
             'networks' => $networks,
             'chartData' => $chartData,
+            'surveillanceSettings' => $surveillanceSettings,
         ]);
     }
 

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Platform;
 use App\Http\Controllers\Controller;
 use App\Models\SystemSetting;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
@@ -80,6 +81,34 @@ class SystemSettingController extends Controller
         ]);
 
         return back()->with('success', 'Paramètre restauré : '.$systemSetting->key);
+    }
+
+    public function toggle(SystemSetting $systemSetting): JsonResponse
+    {
+        if ($systemSetting->value_type !== 'boolean') {
+            return response()->json(['error' => 'Not a boolean setting'], 422);
+        }
+
+        $newValue = $systemSetting->value === '1' ? '0' : '1';
+        $systemSetting->update(['value' => $newValue]);
+
+        return response()->json([
+            'key' => $systemSetting->key,
+            'value' => $newValue,
+            'active' => $newValue === '1',
+        ]);
+    }
+
+    public function setValue(Request $request, SystemSetting $systemSetting): JsonResponse
+    {
+        $validated = $request->validate(['value' => ['required', 'string']]);
+        $normalized = $this->normalizeValue($systemSetting, $validated['value']);
+        $systemSetting->update(['value' => $normalized]);
+
+        return response()->json([
+            'key' => $systemSetting->key,
+            'value' => $normalized,
+        ]);
     }
 
     private function normalizeValue(SystemSetting $setting, mixed $value): string

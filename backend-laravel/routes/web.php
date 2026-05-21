@@ -80,6 +80,8 @@ Route::prefix('console')->name('platform.')->group(function () {
     Route::get('/configuration', \App\Http\Controllers\Platform\ConfigurationCenterController::class)->name('configuration.index');
     Route::post('/configuration/reset-defaults', \App\Http\Controllers\Platform\ConfigurationResetController::class)->name('configuration.reset-defaults');
     Route::patch('/system-settings/{systemSetting}/reset', [SystemSettingController::class, 'resetOne'])->name('system-settings.reset-one');
+    Route::patch('/system-settings/{systemSetting}/toggle', [SystemSettingController::class, 'toggle'])->name('system-settings.toggle');
+    Route::patch('/system-settings/{systemSetting}/set-value', [SystemSettingController::class, 'setValue'])->name('system-settings.set-value');
     Route::patch('/networks/{managedNetwork}/retire', [ManagedNetworkController::class, 'retire'])->name('networks.retire');
     Route::patch('/networks/{managedNetwork}/restore', [ManagedNetworkController::class, 'restore'])->name('networks.restore');
     Route::patch('/discovered-hosts/{discoveredHost}/retire', [DiscoveredHostController::class, 'retire'])->name('discovered-hosts.retire');
