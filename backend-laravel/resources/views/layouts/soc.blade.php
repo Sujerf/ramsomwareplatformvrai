@@ -826,11 +826,11 @@
         <div class="soc-nav-section">
             <div class="soc-nav-label">Détection & réponse</div>
             <nav class="soc-nav">
-                <a href="{{ route(‘platform.alerts.index’) }}" class="{{ request()->routeIs(‘platform.alerts.*’) ? ‘active’ : ‘’ }}">Alertes <span>→</span></a>
-                <a href="{{ route(‘platform.incidents.index’) }}" class="{{ request()->routeIs(‘platform.incidents.*’) ? ‘active’ : ‘’ }}">Incidents <span>→</span></a>
-                <a href="{{ route(‘platform.events.index’) }}" class="{{ request()->routeIs(‘platform.events.*’) ? ‘active’ : ‘’ }}">Événements <span>→</span></a>
-                <a href="{{ route(‘platform.protection-actions.index’) }}" class="{{ request()->routeIs(‘platform.protection-actions.*’) ? ‘active’ : ‘’ }}">Actions de protection <span>→</span></a>
-                <a href="{{ route(‘platform.approval-queue.index’) }}" class="{{ request()->routeIs(‘platform.approval-queue.*’) ? ‘active’ : ‘’ }}">File d’approbation <span>→</span></a>
+                <a href="{{ route('platform.alerts.index') }}" class="{{ request()->routeIs('platform.alerts.*') ? 'active' : '' }}">Alertes <span>→</span></a>
+                <a href="{{ route('platform.incidents.index') }}" class="{{ request()->routeIs('platform.incidents.*') ? 'active' : '' }}">Incidents <span>→</span></a>
+                <a href="{{ route('platform.events.index') }}" class="{{ request()->routeIs('platform.events.*') ? 'active' : '' }}">Événements <span>→</span></a>
+                <a href="{{ route('platform.protection-actions.index') }}" class="{{ request()->routeIs('platform.protection-actions.*') ? 'active' : '' }}">Actions de protection <span>→</span></a>
+                <a href="{{ route('platform.approval-queue.index') }}" class="{{ request()->routeIs('platform.approval-queue.*') ? 'active' : '' }}">File d'approbation <span>→</span></a>
             </nav>
         </div>
 
@@ -841,7 +841,7 @@
             </nav>
             <nav class="soc-nav">
                 <a href="{{ route('platform.detection-rules.index') }}" class="{{ request()->routeIs('platform.detection-rules.*') ? 'active' : '' }}">Règles de détection <span>→</span></a>
-                <a href="{{ route('platform.detection-thresholds.index') }}" class="{{ request()->routeIs('platform.detection-thresholds.*') ? 'active' : '' }}">Seuils d’analyse <span>→</span></a>
+                <a href="{{ route('platform.detection-thresholds.index') }}" class="{{ request()->routeIs('platform.detection-thresholds.*') ? 'active' : '' }}">Seuils d'analyse <span>→</span></a>
                 <a href="{{ route('platform.protection-policies.index') }}" class="{{ request()->routeIs('platform.protection-policies.*') ? 'active' : '' }}">Politiques <span>→</span></a>
                 <a href="{{ route('platform.system-settings.index') }}" class="{{ request()->routeIs('platform.system-settings.*') ? 'active' : '' }}">Paramètres <span>→</span></a>
                 <a href="{{ route('platform.sensitive-extensions.index') }}" class="{{ request()->routeIs('platform.sensitive-extensions.*') ? 'active' : '' }}">Extensions <span>→</span></a>
