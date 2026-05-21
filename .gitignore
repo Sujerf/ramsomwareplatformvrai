@@ -1,0 +1,29 @@
+# Laravel
+backend-laravel/vendor/
+backend-laravel/node_modules/
+backend-laravel/public/build/
+backend-laravel/public/hot/
+backend-laravel/public/storage/
+backend-laravel/storage/*.key
+backend-laravel/storage/pail/
+backend-laravel/.env
+backend-laravel/.env.backup
+backend-laravel/.env.production
+backend-laravel/.phpunit.cache
+backend-laravel/.phpunit.result.cache
+backend-laravel/auth.json
+
+# Python agents
+agent-python/__pycache__/
+agent-python/*.pyc
+agent-python/.venv/
+collector-agent/__pycache__/
+collector-agent/*.pyc
+collector-agent/.venv/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
