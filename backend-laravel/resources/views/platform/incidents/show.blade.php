@@ -285,7 +285,7 @@
                     @empty
                         @include('platform.partials.empty-state', [
                             'title' => 'Aucune action.',
-                            'message' => 'Aucune politique n'a proposé d'action pour cet incident.'
+                            'message' => "Aucune politique n'a proposé d'action pour cet incident."
                         ])
                     @endforelse
                 </div>
@@ -317,7 +317,7 @@
                     @empty
                         @include('platform.partials.empty-state', [
                             'title' => 'Aucune alerte liée.',
-                            'message' => 'Cet incident ne contient pas encore d'alerte associée.'
+                            'message' => "Cet incident ne contient pas encore d'alerte associée."
                         ])
                     @endforelse
                 </div>

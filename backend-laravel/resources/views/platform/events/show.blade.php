@@ -204,7 +204,7 @@
                     @empty
                         @include('platform.partials.empty-state', [
                             'title' => 'Aucune politique.',
-                            'message' => 'Aucune politique n'a été associée à cet événement.'
+                            'message' => "Aucune politique n'a été associée à cet événement."
                         ])
                     @endforelse
                 </div>

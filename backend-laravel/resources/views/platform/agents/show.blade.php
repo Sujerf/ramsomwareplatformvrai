@@ -234,7 +234,7 @@
                     @empty
                         @include('platform.partials.empty-state', [
                             'title' => 'Aucun événement.',
-                            'message' => 'Les événements apparaîtront quand l'agent Python commencera à envoyer les données.'
+                            'message' => "Les événements apparaîtront quand l'agent Python commencera à envoyer les données."
                         ])
                     @endforelse
                 </div>

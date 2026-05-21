@@ -250,7 +250,7 @@
                 @else
                     @include('platform.partials.empty-state', [
                         'title' => 'Aucun signal.',
-                        'message' => 'Aucun signal détaillé n'a été enregistré dans le payload.'
+                        'message' => "Aucun signal détaillé n'a été enregistré dans le payload."
                     ])
                 @endif
             </div>
