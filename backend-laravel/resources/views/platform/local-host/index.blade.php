@@ -44,7 +44,7 @@
         @include('platform.partials.stat-card', [
             'label' => 'IP principale',
             'value' => $serverIp ?? '—',
-            'hint' => 'Adresse utilisée par l’interface active.'
+            'hint' => 'Adresse utilisée par l'interface active.'
         ])
 
         @include('platform.partials.stat-card', [
@@ -107,7 +107,7 @@
             <div class="soc-card-header">
                 <div>
                     <h3 class="soc-card-title">Recommandation RansomShield</h3>
-                    <p class="soc-card-subtitle">Lecture automatique de l’état local</p>
+                    <p class="soc-card-subtitle">Lecture automatique de l'état local</p>
                 </div>
             </div>
 
@@ -115,7 +115,7 @@
                 <div class="empty-state">
                     <strong>Machine SOC prête pour la découverte réseau.</strong>
                     <br>
-                    L’interface <span class="mono">{{ $localHost['primary_interface'] ?? '—' }}</span>
+                    L'interface <span class="mono">{{ $localHost['primary_interface'] ?? '—' }}</span>
                     est active sur le réseau
                     <span class="mono">{{ $networks->first() }}</span>.
                     Tu peux maintenant détecter automatiquement les réseaux puis scanner les hôtes.
@@ -124,7 +124,7 @@
                 <div class="empty-state">
                     <strong>Réseau non exploitable automatiquement.</strong>
                     <br>
-                    Aucune interface active avec adresse IPv4 n’a été détectée. Vérifie le Wi-Fi, Ethernet ou VPN.
+                    Aucune interface active avec adresse IPv4 n'a été détectée. Vérifie le Wi-Fi, Ethernet ou VPN.
                 </div>
             @endif
         </div>
@@ -185,7 +185,7 @@
         @else
             @include('platform.partials.empty-state', [
                 'title' => 'Aucune interface réseau détectée.',
-                'message' => 'La commande système ip -j addr n’a pas retourné d’interface exploitable.'
+                'message' => 'La commande système ip -j addr n'a pas retourné d'interface exploitable.'
             ])
         @endif
     </section>
@@ -226,7 +226,7 @@
         @else
             @include('platform.partials.empty-state', [
                 'title' => 'Aucune route détectée.',
-                'message' => 'La commande ip -j route n’a pas retourné de route exploitable.'
+                'message' => 'La commande ip -j route n'a pas retourné de route exploitable.'
             ])
         @endif
     </section>

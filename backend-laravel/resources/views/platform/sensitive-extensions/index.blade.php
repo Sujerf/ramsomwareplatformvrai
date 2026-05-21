@@ -34,8 +34,8 @@
             <h2>Définir les extensions à risque.</h2>
 
             <p>
-                Ces extensions alimentent directement la règle “Extension sensible détectée”.
-                Plus le poids est élevé, plus l’événement contribue au score final.
+                Ces extensions alimentent directement la règle 'Extension sensible détectée'.
+                Plus le poids est élevé, plus l'événement contribue au score final.
             </p>
 
             <div class="btn-row">
@@ -110,7 +110,7 @@
 
                     <div class="config-impact">
                         <strong>Impact :</strong>
-                        si un fichier reçoit l’extension <strong>.{{ $extension->extension }}</strong>,
+                        si un fichier reçoit l'extension <strong>.{{ $extension->extension }}</strong>,
                         le moteur ajoute <strong>{{ $extension->score_weight }}</strong> points au score.
                     </div>
 

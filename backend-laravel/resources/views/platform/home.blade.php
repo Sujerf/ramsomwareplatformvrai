@@ -568,7 +568,7 @@
             <h2>Du fichier suspect à la décision administrateur.</h2>
             <p>
                 Le système suit une chaîne claire : observer, analyser, qualifier, alerter,
-                créer l’incident et proposer une réponse sans action dangereuse automatique.
+                créer l'incident et proposer une réponse sans action dangereuse automatique.
             </p>
         </div>
 
@@ -576,7 +576,7 @@
             <article class="timeline-step">
                 <div class="step-number">1</div>
                 <h3>Collecte agent</h3>
-                <p>L’agent Python observe les créations, modifications, suppressions, renommages et extensions suspectes.</p>
+                <p>L'agent Python observe les créations, modifications, suppressions, renommages et extensions suspectes.</p>
             </article>
 
             <article class="timeline-step">
@@ -588,13 +588,13 @@
             <article class="timeline-step">
                 <div class="step-number">3</div>
                 <h3>Alerte</h3>
-                <p>Une alerte est créée ou réutilisée si elle est récente, afin d’éviter les doublons inutiles.</p>
+                <p>Une alerte est créée ou réutilisée si elle est récente, afin d'éviter les doublons inutiles.</p>
             </article>
 
             <article class="timeline-step">
                 <div class="step-number">4</div>
                 <h3>Incident</h3>
-                <p>Le système regroupe les événements suspects dans un incident exploitable par l’administrateur.</p>
+                <p>Le système regroupe les événements suspects dans un incident exploitable par l'administrateur.</p>
             </article>
 
             <article class="timeline-step">
@@ -622,7 +622,7 @@
 
                 <div class="check-list">
                     <div class="check-item"><span>✓</span> Règles modifiables depuis Laravel.</div>
-                    <div class="check-item"><span>✓</span> Seuils d’analyse configurables.</div>
+                    <div class="check-item"><span>✓</span> Seuils d'analyse configurables.</div>
                     <div class="check-item"><span>✓</span> Extensions importantes et suspectes séparées.</div>
                 </div>
             </article>
@@ -631,8 +631,8 @@
                 <h3>Réponse contrôlée et défendable</h3>
                 <p>
                     Les actions sensibles ne sont pas exécutées dangereusement par défaut.
-                    Le système propose, l’administrateur décide, et l’historique reste exploitable
-                    pour la timeline d’incident.
+                    Le système propose, l'administrateur décide, et l'historique reste exploitable
+                    pour la timeline d'incident.
                 </p>
 
                 <div class="check-list">
@@ -648,7 +648,7 @@
         <h2>Prêt à superviser les événements réels ?</h2>
         <p>
             La console SOC permet de suivre les machines, alertes, incidents, actions de protection,
-            règles, seuils et paramètres. La prochaine étape sera d’habiller toutes les pages internes.
+            règles, seuils et paramètres. La prochaine étape sera d'habiller toutes les pages internes.
         </p>
 
         <div class="hero-actions" style="justify-content:center;">

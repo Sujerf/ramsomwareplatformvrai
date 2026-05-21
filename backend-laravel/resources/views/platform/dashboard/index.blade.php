@@ -376,7 +376,7 @@
                     <p>
                         RansomShield centralise les signaux des agents, les alertes, les incidents et les actions
                         de protection. Le dashboard présente seulement les éléments actifs, tout en conservant
-                        l’historique dans les pages dédiées.
+                        l'historique dans les pages dédiées.
                     </p>
 
                     <div class="section-gap" style="display:flex; gap:8px; flex-wrap:wrap;">
@@ -504,7 +504,7 @@
             <a class="quick-action" href="{{ route('platform.protection-actions.index') }}">
                 <span>🛡️</span>
                 <strong>Réponse</strong>
-                <small>Actions et file d’approbation.</small>
+                <small>Actions et file d'approbation.</small>
             </a>
 
             <a class="quick-action" href="{{ route('platform.system-settings.index') }}">

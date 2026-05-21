@@ -172,7 +172,7 @@
 
             <p>
                 Les réseaux détectés peuvent être approuvés, scannés, retirés de la surveillance ou réactivés.
-                Un réseau retiré reste dans l’historique mais n’est plus scanné.
+                Un réseau retiré reste dans l'historique mais n'est plus scanné.
             </p>
 
             <div class="btn-row">

@@ -1,7 +1,7 @@
 @extends('layouts.soc')
 
-@section('title', 'RansomShield — File d’approbation')
-@section('page_title', 'File d’approbation')
+@section('title', 'RansomShield — File d'approbation')
+@section('page_title', 'File d'approbation')
 @section('page_subtitle', 'Actions sensibles en attente de validation humaine')
 
 @section('content')
@@ -113,8 +113,8 @@
             <h2>Contrôler les actions sensibles.</h2>
 
             <p>
-                Les actions en attente d’approbation sont volontairement bloquées avant exécution.
-                Cela évite qu’une isolation, restriction ou action sensible soit appliquée sans validation.
+                Les actions en attente d'approbation sont volontairement bloquées avant exécution.
+                Cela évite qu'une isolation, restriction ou action sensible soit appliquée sans validation.
             </p>
 
             <div class="btn-row">

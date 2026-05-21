@@ -314,7 +314,7 @@
             @else
                 @include('platform.partials.empty-state', [
                     'title' => 'Aucun événement.',
-                    'message' => 'Démarre l’agent Python hôte complet pour alimenter ce journal.'
+                    'message' => 'Démarre l'agent Python hôte complet pour alimenter ce journal.'
                 ])
             @endif
         </section>

@@ -154,14 +154,14 @@
         <section class="alert-hero">
             <div class="analysis-kicker">
                 <span class="analysis-dot"></span>
-                Centre d’alertes SOC
+                Centre d'alertes SOC
             </div>
 
             <h2>Prioriser les signaux importants.</h2>
 
             <p>
                 Les alertes représentent les signaux générés par le moteur de détection.
-                Les alertes traitées ne sont plus comptées comme actives, mais restent visibles dans l’historique.
+                Les alertes traitées ne sont plus comptées comme actives, mais restent visibles dans l'historique.
             </p>
 
             <div class="filter-row">
@@ -358,7 +358,7 @@
             @else
                 @include('platform.partials.empty-state', [
                     'title' => 'Aucune alerte pour ce filtre.',
-                    'message' => 'Change le filtre ou lance un test contrôlé depuis l’agent.'
+                    'message' => 'Change le filtre ou lance un test contrôlé depuis l'agent.'
                 ])
             @endif
         </section>

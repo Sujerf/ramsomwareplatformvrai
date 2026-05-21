@@ -140,7 +140,7 @@
             <h2>Suivre les machines réellement surveillées.</h2>
 
             <p>
-                Un hôte détecté peut être pré-enrôlé. Lorsqu’un agent Python s’installe et appelle l’API,
+                Un hôte détecté peut être pré-enrôlé. Lorsqu'un agent Python s'installe et appelle l'API,
                 la machine passe en enrôlée et commence à envoyer ses événements.
             </p>
 
@@ -236,7 +236,7 @@
             @else
                 @include('platform.partials.empty-state', [
                     'title' => 'Aucun agent.',
-                    'message' => 'Va dans Hôtes détectés puis clique sur “Enrôler” pour créer un agent.'
+                    'message' => 'Va dans Hôtes détectés puis clique sur 'Enrôler' pour créer un agent.'
                 ])
             @endif
         </section>

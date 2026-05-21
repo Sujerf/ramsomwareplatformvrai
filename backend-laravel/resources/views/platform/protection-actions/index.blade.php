@@ -170,11 +170,11 @@
                 Réponse SOC
             </div>
 
-            <h2>Décider sans perdre l’historique.</h2>
+            <h2>Décider sans perdre l'historique.</h2>
 
             <p>
                 Les actions de protection sont proposées par les politiques. Une action traitée ne reste plus active,
-                mais demeure consultable dans l’historique pour l’audit et la traçabilité.
+                mais demeure consultable dans l'historique pour l'audit et la traçabilité.
             </p>
 
             <div class="filter-row">
@@ -197,7 +197,7 @@
                 </div>
 
                 <a href="{{ route('platform.approval-queue.index') }}" class="action-btn primary">
-                    File d’approbation
+                    File d'approbation
                 </a>
             </div>
 

@@ -285,7 +285,7 @@
                     @empty
                         @include('platform.partials.empty-state', [
                             'title' => 'Aucune action.',
-                            'message' => 'Aucune politique n’a proposé d’action pour cet incident.'
+                            'message' => 'Aucune politique n'a proposé d'action pour cet incident.'
                         ])
                     @endforelse
                 </div>
@@ -317,7 +317,7 @@
                     @empty
                         @include('platform.partials.empty-state', [
                             'title' => 'Aucune alerte liée.',
-                            'message' => 'Cet incident ne contient pas encore d’alerte associée.'
+                            'message' => 'Cet incident ne contient pas encore d'alerte associée.'
                         ])
                     @endforelse
                 </div>
@@ -327,7 +327,7 @@
                 <div class="soc-card-header">
                     <div>
                         <h3 class="soc-card-title">Événements techniques</h3>
-                        <p class="soc-card-subtitle">Événements rattachés à l’incident.</p>
+                        <p class="soc-card-subtitle">Événements rattachés à l'incident.</p>
                     </div>
                 </div>
 

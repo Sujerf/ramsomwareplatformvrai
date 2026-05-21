@@ -57,7 +57,7 @@
 
         <section class="page-toolbar">
             <div>
-                <h2>Décision sur l’alerte</h2>
+                <h2>Décision sur l'alerte</h2>
                 <p>Les décisions restent réversibles : tu peux résoudre, marquer faux positif ou réouvrir.</p>
             </div>
 
@@ -124,25 +124,25 @@
                     @else
                         <strong>Aucun signal détaillé disponible.</strong>
                         <br>
-                        L’alerte existe mais ses signaux ne sont pas encore enrichis.
+                        L'alerte existe mais ses signaux ne sont pas encore enrichis.
                     @endif
                 </div>
             </div>
 
             <div class="smart-card">
                 <h3 class="smart-card-title">Recommandation RansomShield</h3>
-                <p class="smart-card-subtitle">Ce que l’analyste doit vérifier.</p>
+                <p class="smart-card-subtitle">Ce que l'analyste doit vérifier.</p>
 
                 <div class="recommendation-box section-gap">
                     @if($alert->risk_level === 'critical')
                         <strong>Alerte critique.</strong>
                         <br>
-                        Ouvre l’incident lié, vérifie le fichier concerné, confirme si l’événement est une simulation,
+                        Ouvre l'incident lié, vérifie le fichier concerné, confirme si l'événement est une simulation,
                         puis traite les actions de protection proposées.
                     @elseif($alert->risk_level === 'high')
                         <strong>Alerte de risque élevé.</strong>
                         <br>
-                        Vérifie l’agent, le chemin concerné et les répétitions d’événements.
+                        Vérifie l'agent, le chemin concerné et les répétitions d'événements.
                     @else
                         <strong>Alerte à surveiller.</strong>
                         <br>

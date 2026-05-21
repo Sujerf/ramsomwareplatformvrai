@@ -270,7 +270,7 @@
             <div class="soc-card-header">
                 <div>
                     <h3 class="soc-card-title">Simulation de chaîne de détection</h3>
-                    <p class="soc-card-subtitle">Exemple calculé avec l’extension active la plus risquée.</p>
+                    <p class="soc-card-subtitle">Exemple calculé avec l'extension active la plus risquée.</p>
                 </div>
             </div>
 
@@ -362,7 +362,7 @@
             <div class="soc-card-header">
                 <div>
                     <h3 class="soc-card-title">Extensions sensibles par niveau</h3>
-                    <p class="soc-card-subtitle">Les extensions alimentent la règle “Extension sensible détectée”.</p>
+                    <p class="soc-card-subtitle">Les extensions alimentent la règle 'Extension sensible détectée'.</p>
                 </div>
             </div>
 

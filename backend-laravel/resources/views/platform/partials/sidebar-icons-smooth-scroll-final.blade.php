@@ -333,7 +333,7 @@
     }
 
     /*
-     * On réduit les animations trop lourdes quand l’utilisateur scrolle.
+     * On réduit les animations trop lourdes quand l'utilisateur scrolle.
      */
     body.rs-is-scrolling .soc-card:hover,
     body.rs-is-scrolling .smart-card:hover,

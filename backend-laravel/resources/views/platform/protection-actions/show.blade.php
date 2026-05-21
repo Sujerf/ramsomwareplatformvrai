@@ -227,7 +227,7 @@
             <div class="soc-card">
                 <div class="soc-card-header">
                     <div>
-                        <h3 class="soc-card-title">Signaux ayant déclenché l’action</h3>
+                        <h3 class="soc-card-title">Signaux ayant déclenché l'action</h3>
                         <p class="soc-card-subtitle">Données calculées par le moteur dynamique.</p>
                     </div>
                 </div>
@@ -250,7 +250,7 @@
                 @else
                     @include('platform.partials.empty-state', [
                         'title' => 'Aucun signal.',
-                        'message' => 'Aucun signal détaillé n’a été enregistré dans le payload.'
+                        'message' => 'Aucun signal détaillé n'a été enregistré dans le payload.'
                     ])
                 @endif
             </div>

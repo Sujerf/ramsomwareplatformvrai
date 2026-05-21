@@ -46,7 +46,7 @@
 
             <div class="btn-row">
                 <a href="{{ route('platform.configuration.index') }}" class="btn btn-primary">Centre configuration</a>
-                <a href="{{ route('platform.approval-queue.index') }}" class="btn btn-soft">File d’approbation</a>
+                <a href="{{ route('platform.approval-queue.index') }}" class="btn btn-soft">File d'approbation</a>
             </div>
         </section>
 

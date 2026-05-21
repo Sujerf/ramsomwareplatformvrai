@@ -158,11 +158,11 @@
                 Centre incidents SOC
             </div>
 
-            <h2>Suivre les menaces jusqu’à leur clôture.</h2>
+            <h2>Suivre les menaces jusqu'à leur clôture.</h2>
 
             <p>
                 Les incidents regroupent les alertes, signaux, actions et décisions SOC. Un incident résolu
-                disparaît des actifs, mais reste consultable dans l’historique.
+                disparaît des actifs, mais reste consultable dans l'historique.
             </p>
 
             <div class="filter-row">
@@ -350,7 +350,7 @@
             @else
                 @include('platform.partials.empty-state', [
                     'title' => 'Aucun incident pour ce filtre.',
-                    'message' => 'Change le filtre ou lance un test contrôlé depuis l’agent.'
+                    'message' => 'Change le filtre ou lance un test contrôlé depuis l'agent.'
                 ])
             @endif
         </section>

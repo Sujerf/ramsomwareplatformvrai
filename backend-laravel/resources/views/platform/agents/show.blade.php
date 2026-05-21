@@ -110,7 +110,7 @@
             <h2>{{ $agent->agent_name }}</h2>
 
             <p>
-                Cette fiche montre l’état d’enrôlement, l’hôte réseau lié, la commande d’installation
+                Cette fiche montre l'état d'enrôlement, l'hôte réseau lié, la commande d'installation
                 et les dernières données de sécurité de la machine.
             </p>
 
@@ -160,9 +160,9 @@
             <section class="soc-card section-gap">
                 <div class="soc-card-header">
                     <div>
-                        <h3 class="soc-card-title">Commande d’installation / enrôlement</h3>
+                        <h3 class="soc-card-title">Commande d'installation / enrôlement</h3>
                         <p class="soc-card-subtitle">
-                            À exécuter sur la machine détectée pour finaliser l’enrôlement.
+                            À exécuter sur la machine détectée pour finaliser l'enrôlement.
                         </p>
                     </div>
                 </div>
@@ -170,8 +170,8 @@
                 <pre class="command-box">{{ $installCommand }}</pre>
 
                 <div class="config-impact section-gap">
-                    Après installation, l’agent doit appeler <span class="mono">/api/agent/enroll</span>.
-                    La plateforme liera automatiquement l’agent à l’hôte détecté par IP ou hostname.
+                    Après installation, l'agent doit appeler <span class="mono">/api/agent/enroll</span>.
+                    La plateforme liera automatiquement l'agent à l'hôte détecté par IP ou hostname.
                 </div>
             </section>
         @endif
@@ -214,7 +214,7 @@
                 <div class="soc-card-header">
                     <div>
                         <h3 class="soc-card-title">Derniers événements</h3>
-                        <p class="soc-card-subtitle">Événements reçus depuis l’agent.</p>
+                        <p class="soc-card-subtitle">Événements reçus depuis l'agent.</p>
                     </div>
                 </div>
 
@@ -234,7 +234,7 @@
                     @empty
                         @include('platform.partials.empty-state', [
                             'title' => 'Aucun événement.',
-                            'message' => 'Les événements apparaîtront quand l’agent Python commencera à envoyer les données.'
+                            'message' => 'Les événements apparaîtront quand l'agent Python commencera à envoyer les données.'
                         ])
                     @endforelse
                 </div>

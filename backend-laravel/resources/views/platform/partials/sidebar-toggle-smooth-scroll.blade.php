@@ -5,7 +5,7 @@
      |--------------------------------------------------------------------------
      | Objectifs :
      | - sidebar rétractable sur desktop
-     | - page qui s’agrandit quand le menu est fermé
+     | - page qui s'agrandit quand le menu est fermé
      | - menu mobile propre
      | - scroll fluide et naturel
      */
