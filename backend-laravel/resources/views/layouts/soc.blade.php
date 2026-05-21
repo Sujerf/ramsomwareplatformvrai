@@ -1,5 +1,8 @@
 @php
     use App\Models\SystemSetting;
+    use App\Models\Alert;
+    use App\Models\Incident;
+    use App\Models\ProtectionAction;
 
     $currentTheme = SystemSetting::where('key', 'ui_theme')->value('value') ?: 'soc_dark';
 
@@ -16,6 +19,11 @@
         'oled_black' => 'OLED Black',
         default => 'Dark SOC',
     };
+
+    $navActiveAlerts    = Alert::where('status', 'active')->count();
+    $navActiveIncidents = Incident::where('status', 'active')->count();
+    $navPendingActions  = ProtectionAction::where('approval_status', 'pending')->count();
+    $engineActive       = SystemSetting::where('key', 'protection_execution_enabled')->value('value') === '1';
 @endphp
 
 <!DOCTYPE html>
@@ -24,6 +32,7 @@
     <meta charset="UTF-8">
     <title>@yield('title', 'RansomShield SOC')</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
     <style>
         :root {
@@ -166,96 +175,209 @@
 
         .soc-shell {
             display: grid;
-            grid-template-columns: 286px 1fr;
+            grid-template-columns: 272px 1fr;
             min-height: 100vh;
         }
 
         .soc-sidebar {
             background: var(--bg-sidebar);
             border-right: 1px solid var(--border-soft);
-            padding: 22px 16px;
+            padding: 18px 12px 12px;
             position: sticky;
             top: 0;
             height: 100vh;
             overflow-y: auto;
             z-index: 40;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .soc-sidebar-nav {
+            flex: 1;
         }
 
         .soc-brand {
             display: flex;
             align-items: center;
-            gap: 12px;
-            margin-bottom: 26px;
-            padding: 12px;
+            gap: 11px;
+            margin-bottom: 20px;
+            padding: 11px 12px;
             border: 1px solid var(--border-soft);
-            border-radius: 22px;
+            border-radius: 18px;
             background: color-mix(in srgb, var(--bg-panel) 84%, transparent);
             box-shadow: var(--shadow-soft);
+            text-decoration: none;
         }
 
         .soc-logo {
-            width: 46px;
-            height: 46px;
+            width: 42px;
+            height: 42px;
             display: grid;
             place-items: center;
-            border-radius: 17px;
-            background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 35%, #1d4ed8));
-            box-shadow: 0 12px 34px color-mix(in srgb, var(--accent) 28%, transparent);
-            font-weight: 950;
+            border-radius: 14px;
+            background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 40%, #1d4ed8));
+            box-shadow: 0 8px 24px color-mix(in srgb, var(--accent) 30%, transparent);
+            font-size: 18px;
             color: var(--accent-contrast);
+            flex-shrink: 0;
         }
 
         .soc-brand-title {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 900;
-            letter-spacing: -0.035em;
+            letter-spacing: -0.03em;
+            color: var(--text-main);
         }
 
         .soc-brand-subtitle {
-            font-size: 12px;
+            font-size: 11px;
             color: var(--text-muted);
             margin-top: 2px;
         }
 
         .soc-nav-section {
-            margin-top: 23px;
+            margin-top: 4px;
+        }
+
+        .soc-nav-section + .soc-nav-section {
+            margin-top: 6px;
+            padding-top: 14px;
+            border-top: 1px solid color-mix(in srgb, var(--border-soft) 60%, transparent);
         }
 
         .soc-nav-label {
             color: var(--text-muted);
-            opacity: 0.78;
-            font-size: 11px;
+            opacity: 0.55;
+            font-size: 10px;
             text-transform: uppercase;
-            letter-spacing: 0.14em;
-            font-weight: 850;
-            margin: 0 10px 10px;
+            letter-spacing: 0.15em;
+            font-weight: 800;
+            padding: 0 10px;
+            margin-bottom: 5px;
+            margin-top: 14px;
         }
 
         .soc-nav {
-            display: grid;
-            gap: 7px;
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
         }
 
-        .soc-nav a {
+        .soc-nav-link {
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            gap: 10px;
-            padding: 12px 13px;
+            gap: 9px;
+            padding: 9px 10px;
             color: var(--text-muted);
-            border-radius: 16px;
-            transition: var(--transition);
+            border-radius: 11px;
+            transition: all 0.18s ease;
             border: 1px solid transparent;
-            font-size: 14px;
-            font-weight: 650;
+            font-size: 13px;
+            font-weight: 600;
+            text-decoration: none;
+            position: relative;
         }
 
-        .soc-nav a:hover,
-        .soc-nav a.active {
+        .soc-nav-link:hover {
             color: var(--text-main);
-            background: color-mix(in srgb, var(--accent) 12%, transparent);
-            border-color: color-mix(in srgb, var(--accent) 23%, transparent);
-            transform: translateX(2px);
+            background: color-mix(in srgb, var(--accent) 9%, transparent);
+            border-color: color-mix(in srgb, var(--accent) 16%, transparent);
+        }
+
+        .soc-nav-link.active {
+            color: var(--text-main);
+            background: color-mix(in srgb, var(--accent) 13%, transparent);
+            border-color: color-mix(in srgb, var(--accent) 22%, transparent);
+            box-shadow: inset 3px 0 0 var(--accent);
+        }
+
+        .nav-icon {
+            width: 18px;
+            text-align: center;
+            font-size: 12px;
+            flex-shrink: 0;
+            color: var(--text-muted);
+            opacity: 0.65;
+            transition: all 0.18s ease;
+        }
+
+        .soc-nav-link:hover .nav-icon,
+        .soc-nav-link.active .nav-icon {
+            color: var(--accent);
+            opacity: 1;
+        }
+
+        .nav-label {
+            flex: 1;
+            min-width: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .nav-badge {
+            min-width: 18px;
+            height: 18px;
+            padding: 0 5px;
+            border-radius: 999px;
+            font-size: 10px;
+            font-weight: 800;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            line-height: 1;
+        }
+
+        .nav-badge-danger {
+            background: rgba(239, 68, 68, 0.15);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.22);
+        }
+
+        .nav-badge-warning {
+            background: rgba(245, 158, 11, 0.15);
+            color: #f59e0b;
+            border: 1px solid rgba(245, 158, 11, 0.22);
+        }
+
+        .nav-badge-accent {
+            background: color-mix(in srgb, var(--accent) 16%, transparent);
+            color: var(--accent);
+            border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
+        }
+
+        .sidebar-footer {
+            margin-top: 16px;
+            padding-top: 14px;
+            border-top: 1px solid color-mix(in srgb, var(--border-soft) 60%, transparent);
+        }
+
+        .engine-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 9px 12px;
+            border-radius: 11px;
+            font-size: 12px;
+            font-weight: 700;
+            border: 1px solid transparent;
+        }
+
+        .engine-status.engine-on {
+            color: #22c55e;
+            background: rgba(34, 197, 94, 0.08);
+            border-color: rgba(34, 197, 94, 0.18);
+        }
+
+        .engine-status.engine-off {
+            color: var(--text-muted);
+            background: color-mix(in srgb, var(--bg-panel-soft) 50%, transparent);
+            border-color: var(--border-soft);
+        }
+
+        .engine-status i {
+            font-size: 11px;
         }
 
         .soc-main {
@@ -337,6 +459,64 @@
             border-radius: 999px;
             background: var(--accent-2);
             box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent-2) 14%, transparent);
+            animation: pulse-ring 2s ease infinite;
+        }
+
+        @keyframes pulse-ring {
+            0%, 100% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent-2) 18%, transparent); }
+            50%       { box-shadow: 0 0 0 7px color-mix(in srgb, var(--accent-2) 8%, transparent); }
+        }
+
+        .topbar-alert-btn {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 38px;
+            height: 38px;
+            border-radius: 12px;
+            border: 1px solid var(--border-soft);
+            background: color-mix(in srgb, var(--bg-panel-soft) 70%, transparent);
+            color: var(--text-muted);
+            font-size: 14px;
+            transition: all 0.18s ease;
+            text-decoration: none;
+        }
+
+        .topbar-alert-btn:hover {
+            color: var(--text-main);
+            background: color-mix(in srgb, var(--accent) 12%, transparent);
+            border-color: color-mix(in srgb, var(--accent) 25%, transparent);
+        }
+
+        .topbar-alert-btn.topbar-alert-danger {
+            color: #ef4444;
+            background: rgba(239, 68, 68, 0.08);
+            border-color: rgba(239, 68, 68, 0.2);
+            animation: alert-pulse 2.5s ease infinite;
+        }
+
+        @keyframes alert-pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+            50%       { box-shadow: 0 0 0 5px rgba(239, 68, 68, 0.08); }
+        }
+
+        .topbar-alert-count {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            min-width: 16px;
+            height: 16px;
+            padding: 0 4px;
+            border-radius: 999px;
+            background: #ef4444;
+            color: #fff;
+            font-size: 9px;
+            font-weight: 900;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1.5px solid var(--bg-sidebar);
         }
 
         .theme-form {
@@ -789,70 +969,130 @@
 <div class="soc-shell">
     <aside class="soc-sidebar" id="socSidebar">
         <a href="{{ route('platform.home') }}" class="soc-brand">
-            <div class="soc-logo">RS</div>
+            <div class="soc-logo"><i class="fa-solid fa-shield-halved"></i></div>
             <div>
                 <div class="soc-brand-title">RansomShield</div>
-                <div class="soc-brand-subtitle">Console SOC Laravel</div>
+                <div class="soc-brand-subtitle">Console SOC</div>
             </div>
         </a>
 
-        <div class="soc-nav-section">
-            <div class="soc-nav-label">Supervision</div>
-            <nav class="soc-nav">
-                <a href="{{ route('platform.home') }}" class="{{ request()->routeIs('platform.home') ? 'active' : '' }}">
-                    Accueil plateforme
-                    <span>↗</span>
-                </a>
-                <a href="{{ route('platform.dashboard') }}" class="{{ request()->routeIs('platform.dashboard') ? 'active' : '' }}">
-                    Dashboard / Console
-                    <span>▣</span>
-                </a>
-                <a href="{{ route('platform.local-host.index') }}" class="{{ request()->routeIs('platform.local-host.*') ? 'active' : '' }}">
-                    Machine hôte locale
-                    <span>⌁</span>
-                </a>
-            </nav>
+        <div class="soc-sidebar-nav">
+            <div class="soc-nav-section">
+                <div class="soc-nav-label">Supervision</div>
+                <nav class="soc-nav">
+                    <a href="{{ route('platform.home') }}" class="soc-nav-link {{ request()->routeIs('platform.home') ? 'active' : '' }}">
+                        <span class="nav-icon"><i class="fa-solid fa-house"></i></span>
+                        <span class="nav-label">Accueil</span>
+                    </a>
+                    <a href="{{ route('platform.dashboard') }}" class="soc-nav-link {{ request()->routeIs('platform.dashboard') ? 'active' : '' }}">
+                        <span class="nav-icon"><i class="fa-solid fa-gauge-high"></i></span>
+                        <span class="nav-label">Dashboard</span>
+                    </a>
+                    <a href="{{ route('platform.local-host.index') }}" class="soc-nav-link {{ request()->routeIs('platform.local-host.*') ? 'active' : '' }}">
+                        <span class="nav-icon"><i class="fa-solid fa-server"></i></span>
+                        <span class="nav-label">Machine hôte locale</span>
+                    </a>
+                </nav>
+            </div>
+
+            <div class="soc-nav-section">
+                <div class="soc-nav-label">Infrastructure</div>
+                <nav class="soc-nav">
+                    <a href="{{ route('platform.networks.index') }}" class="soc-nav-link {{ request()->routeIs('platform.networks.*') ? 'active' : '' }}">
+                        <span class="nav-icon"><i class="fa-solid fa-network-wired"></i></span>
+                        <span class="nav-label">Réseaux surveillés</span>
+                    </a>
+                    <a href="{{ route('platform.discovered-hosts.index') }}" class="soc-nav-link {{ request()->routeIs('platform.discovered-hosts.*') ? 'active' : '' }}">
+                        <span class="nav-icon"><i class="fa-solid fa-magnifying-glass-location"></i></span>
+                        <span class="nav-label">Hôtes découverts</span>
+                    </a>
+                    <a href="{{ route('platform.agents.index') }}" class="soc-nav-link {{ request()->routeIs('platform.agents.*') ? 'active' : '' }}">
+                        <span class="nav-icon"><i class="fa-solid fa-robot"></i></span>
+                        <span class="nav-label">Agents / Machines</span>
+                    </a>
+                </nav>
+            </div>
+
+            <div class="soc-nav-section">
+                <div class="soc-nav-label">Détection & réponse</div>
+                <nav class="soc-nav">
+                    <a href="{{ route('platform.alerts.index') }}" class="soc-nav-link {{ request()->routeIs('platform.alerts.*') ? 'active' : '' }}">
+                        <span class="nav-icon"><i class="fa-solid fa-bell"></i></span>
+                        <span class="nav-label">Alertes</span>
+                        @if($navActiveAlerts > 0)
+                            <span class="nav-badge nav-badge-danger">{{ $navActiveAlerts }}</span>
+                        @endif
+                    </a>
+                    <a href="{{ route('platform.incidents.index') }}" class="soc-nav-link {{ request()->routeIs('platform.incidents.*') ? 'active' : '' }}">
+                        <span class="nav-icon"><i class="fa-solid fa-fire-flame-curved"></i></span>
+                        <span class="nav-label">Incidents</span>
+                        @if($navActiveIncidents > 0)
+                            <span class="nav-badge nav-badge-danger">{{ $navActiveIncidents }}</span>
+                        @endif
+                    </a>
+                    <a href="{{ route('platform.events.index') }}" class="soc-nav-link {{ request()->routeIs('platform.events.*') ? 'active' : '' }}">
+                        <span class="nav-icon"><i class="fa-solid fa-bolt"></i></span>
+                        <span class="nav-label">Événements</span>
+                    </a>
+                    <a href="{{ route('platform.protection-actions.index') }}" class="soc-nav-link {{ request()->routeIs('platform.protection-actions.*') ? 'active' : '' }}">
+                        <span class="nav-icon"><i class="fa-solid fa-shield-virus"></i></span>
+                        <span class="nav-label">Actions de protection</span>
+                    </a>
+                    <a href="{{ route('platform.approval-queue.index') }}" class="soc-nav-link {{ request()->routeIs('platform.approval-queue.*') ? 'active' : '' }}">
+                        <span class="nav-icon"><i class="fa-solid fa-list-check"></i></span>
+                        <span class="nav-label">File d'approbation</span>
+                        @if($navPendingActions > 0)
+                            <span class="nav-badge nav-badge-warning">{{ $navPendingActions }}</span>
+                        @endif
+                    </a>
+                </nav>
+            </div>
+
+            <div class="soc-nav-section">
+                <div class="soc-nav-label">Configuration</div>
+                <nav class="soc-nav">
+                    <a href="{{ route('platform.configuration.index') }}" class="soc-nav-link {{ request()->routeIs('platform.configuration.*') ? 'active' : '' }}">
+                        <span class="nav-icon"><i class="fa-solid fa-sliders"></i></span>
+                        <span class="nav-label">Centre de configuration</span>
+                    </a>
+                    <a href="{{ route('platform.detection-rules.index') }}" class="soc-nav-link {{ request()->routeIs('platform.detection-rules.*') ? 'active' : '' }}">
+                        <span class="nav-icon"><i class="fa-solid fa-code-branch"></i></span>
+                        <span class="nav-label">Règles de détection</span>
+                    </a>
+                    <a href="{{ route('platform.detection-thresholds.index') }}" class="soc-nav-link {{ request()->routeIs('platform.detection-thresholds.*') ? 'active' : '' }}">
+                        <span class="nav-icon"><i class="fa-solid fa-chart-line"></i></span>
+                        <span class="nav-label">Seuils d'analyse</span>
+                    </a>
+                    <a href="{{ route('platform.protection-policies.index') }}" class="soc-nav-link {{ request()->routeIs('platform.protection-policies.*') ? 'active' : '' }}">
+                        <span class="nav-icon"><i class="fa-solid fa-scroll"></i></span>
+                        <span class="nav-label">Politiques</span>
+                    </a>
+                    <a href="{{ route('platform.system-settings.index') }}" class="soc-nav-link {{ request()->routeIs('platform.system-settings.*') ? 'active' : '' }}">
+                        <span class="nav-icon"><i class="fa-solid fa-gear"></i></span>
+                        <span class="nav-label">Paramètres</span>
+                    </a>
+                    <a href="{{ route('platform.sensitive-extensions.index') }}" class="soc-nav-link {{ request()->routeIs('platform.sensitive-extensions.*') ? 'active' : '' }}">
+                        <span class="nav-icon"><i class="fa-solid fa-file-code"></i></span>
+                        <span class="nav-label">Extensions sensibles</span>
+                    </a>
+                </nav>
+            </div>
         </div>
 
-        <div class="soc-nav-section">
-            <div class="soc-nav-label">Infrastructure</div>
-            <nav class="soc-nav">
-                <a href="{{ route('platform.networks.index') }}" class="{{ request()->routeIs('platform.networks.*') ? 'active' : '' }}">Réseaux surveillés <span>→</span></a>
-                <a href="{{ route('platform.discovered-hosts.index') }}" class="{{ request()->routeIs('platform.discovered-hosts.*') ? 'active' : '' }}">Hôtes découverts <span>→</span></a>
-                <a href="{{ route('platform.agents.index') }}" class="{{ request()->routeIs('platform.agents.*') ? 'active' : '' }}">Machines surveillées <span>→</span></a>
-            </nav>
-        </div>
-
-        <div class="soc-nav-section">
-            <div class="soc-nav-label">Détection & réponse</div>
-            <nav class="soc-nav">
-                <a href="{{ route('platform.alerts.index') }}" class="{{ request()->routeIs('platform.alerts.*') ? 'active' : '' }}">Alertes <span>→</span></a>
-                <a href="{{ route('platform.incidents.index') }}" class="{{ request()->routeIs('platform.incidents.*') ? 'active' : '' }}">Incidents <span>→</span></a>
-                <a href="{{ route('platform.events.index') }}" class="{{ request()->routeIs('platform.events.*') ? 'active' : '' }}">Événements <span>→</span></a>
-                <a href="{{ route('platform.protection-actions.index') }}" class="{{ request()->routeIs('platform.protection-actions.*') ? 'active' : '' }}">Actions de protection <span>→</span></a>
-                <a href="{{ route('platform.approval-queue.index') }}" class="{{ request()->routeIs('platform.approval-queue.*') ? 'active' : '' }}">File d'approbation <span>→</span></a>
-            </nav>
-        </div>
-
-        <div class="soc-nav-section">
-            <div class="soc-nav-label">Configuration</div>
-            <nav class="soc-nav" style="margin-bottom:10px;">
-                <a href="{{ route('platform.configuration.index') }}" class="{{ request()->routeIs('platform.configuration.*') ? 'active' : '' }}">Centre configuration <span>→</span></a>
-            </nav>
-            <nav class="soc-nav">
-                <a href="{{ route('platform.detection-rules.index') }}" class="{{ request()->routeIs('platform.detection-rules.*') ? 'active' : '' }}">Règles de détection <span>→</span></a>
-                <a href="{{ route('platform.detection-thresholds.index') }}" class="{{ request()->routeIs('platform.detection-thresholds.*') ? 'active' : '' }}">Seuils d'analyse <span>→</span></a>
-                <a href="{{ route('platform.protection-policies.index') }}" class="{{ request()->routeIs('platform.protection-policies.*') ? 'active' : '' }}">Politiques <span>→</span></a>
-                <a href="{{ route('platform.system-settings.index') }}" class="{{ request()->routeIs('platform.system-settings.*') ? 'active' : '' }}">Paramètres <span>→</span></a>
-                <a href="{{ route('platform.sensitive-extensions.index') }}" class="{{ request()->routeIs('platform.sensitive-extensions.*') ? 'active' : '' }}">Extensions <span>→</span></a>
-            </nav>
+        <div class="sidebar-footer">
+            <div class="engine-status {{ $engineActive ? 'engine-on' : 'engine-off' }}">
+                <i class="fa-solid {{ $engineActive ? 'fa-circle-play' : 'fa-circle-pause' }}"></i>
+                <span>Moteur {{ $engineActive ? 'actif' : 'en pause' }}</span>
+            </div>
         </div>
     </aside>
 
     <main class="soc-main">
         <div class="soc-topbar">
             <div class="topbar-left">
-                <button class="mobile-menu-button" type="button" data-open-sidebar aria-label="Ouvrir le menu">☰</button>
+                <button class="mobile-menu-button" type="button" data-open-sidebar aria-label="Ouvrir le menu">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
                 <div>
                     <h1>@yield('page_title', 'RansomShield SOC')</h1>
                     <p>@yield('page_subtitle', 'Plateforme de cybersurveillance orientée ransomware')</p>
@@ -860,9 +1100,23 @@
             </div>
 
             <div class="topbar-actions">
+                @if($navPendingActions > 0)
+                <a href="{{ route('platform.approval-queue.index') }}" class="topbar-alert-btn" title="{{ $navPendingActions }} action(s) en attente">
+                    <i class="fa-solid fa-list-check"></i>
+                    <span class="topbar-alert-count">{{ $navPendingActions }}</span>
+                </a>
+                @endif
+
+                @if($navActiveAlerts > 0)
+                <a href="{{ route('platform.alerts.index') }}" class="topbar-alert-btn topbar-alert-danger" title="{{ $navActiveAlerts }} alerte(s) active(s)">
+                    <i class="fa-solid fa-bell"></i>
+                    <span class="topbar-alert-count">{{ $navActiveAlerts }}</span>
+                </a>
+                @endif
+
                 <form method="POST" action="{{ route('platform.appearance.theme') }}" class="theme-form">
                     @csrf
-                    <label for="theme">Mode</label>
+                    <i class="fa-solid fa-palette" style="color: var(--text-muted); font-size: 12px; padding-left: 6px;"></i>
                     <select name="theme" id="theme" onchange="this.form.submit()">
                         <option value="soc_dark" @selected($currentTheme === 'soc_dark')>Dark SOC</option>
                         <option value="soc_light" @selected($currentTheme === 'soc_light')>Light SOC</option>
