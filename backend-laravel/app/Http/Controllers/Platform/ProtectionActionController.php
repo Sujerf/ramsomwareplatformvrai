@@ -7,6 +7,7 @@ use App\Models\ProtectionAction;
 use App\Models\ProtectionActionDecision;
 use App\Services\SocStatusSynchronizerService;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -53,38 +54,46 @@ class ProtectionActionController extends Controller
         ]);
     }
 
-    public function approve(Request $request, ProtectionAction $protectionAction, SocStatusSynchronizerService $sync): RedirectResponse
+    public function approve(Request $request, ProtectionAction $protectionAction, SocStatusSynchronizerService $sync): RedirectResponse|JsonResponse
     {
         DB::transaction(function () use ($protectionAction) {
             $protectionAction->update([
-                'approval_status' => 'approved',
+                'approval_status'  => 'approved',
                 'execution_status' => $protectionAction->execution_status === 'waiting_approval'
                     ? 'pending'
                     : $protectionAction->execution_status,
             ]);
 
-            $this->recordDecision($protectionAction, 'approved', 'Action approuvée depuis la console SOC.');
+            $this->recordDecision($protectionAction, 'approved', "Action approuvée depuis la console SOC.");
         });
 
         $sync->syncAfterAction($protectionAction);
 
-        return back()->with('success', 'Action approuvée.');
+        if ($request->expectsJson()) {
+            return response()->json(['decision' => 'approved', 'id' => $protectionAction->id]);
+        }
+
+        return back()->with('success', "Action approuvée.");
     }
 
-    public function reject(Request $request, ProtectionAction $protectionAction, SocStatusSynchronizerService $sync): RedirectResponse
+    public function reject(Request $request, ProtectionAction $protectionAction, SocStatusSynchronizerService $sync): RedirectResponse|JsonResponse
     {
         DB::transaction(function () use ($protectionAction) {
             $protectionAction->update([
-                'approval_status' => 'rejected',
+                'approval_status'  => 'rejected',
                 'execution_status' => 'cancelled',
             ]);
 
-            $this->recordDecision($protectionAction, 'rejected', 'Action rejetée depuis la console SOC.');
+            $this->recordDecision($protectionAction, 'rejected', "Action rejetée depuis la console SOC.");
         });
 
         $sync->syncAfterAction($protectionAction);
 
-        return back()->with('success', 'Action rejetée et retirée des actions actives.');
+        if ($request->expectsJson()) {
+            return response()->json(['decision' => 'rejected', 'id' => $protectionAction->id]);
+        }
+
+        return back()->with('success', "Action rejetée et retirée des actions actives.");
     }
 
     public function execute(Request $request, ProtectionAction $protectionAction, SocStatusSynchronizerService $sync): RedirectResponse
