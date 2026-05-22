@@ -468,6 +468,46 @@
             50%       { box-shadow: 0 0 0 7px color-mix(in srgb, var(--accent-2) 8%, transparent); }
         }
 
+        .topbar-user {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 6px 6px 12px;
+            background: color-mix(in srgb, var(--bg-panel-soft) 80%, transparent);
+            border: 1px solid var(--border-soft);
+            border-radius: 999px;
+        }
+
+        .topbar-user-name {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .topbar-logout-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 30px;
+            height: 30px;
+            border-radius: 999px;
+            background: color-mix(in srgb, var(--danger, #f87171) 12%, transparent);
+            border: 1px solid color-mix(in srgb, var(--danger, #f87171) 25%, transparent);
+            color: var(--danger, #f87171);
+            font-size: 13px;
+            cursor: pointer;
+            transition: background var(--transition), box-shadow var(--transition);
+        }
+
+        .topbar-logout-btn:hover {
+            background: color-mix(in srgb, var(--danger, #f87171) 22%, transparent);
+            box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger, #f87171) 15%, transparent);
+        }
+
         .topbar-alert-btn {
             position: relative;
             display: inline-flex;
@@ -1130,6 +1170,19 @@
                 <div class="soc-status-pill" title="Thème actuel : {{ $themeLabel }}">
                     <span class="pulse-dot"></span>
                     {{ $themeLabel }}
+                </div>
+
+                <div class="topbar-user">
+                    <span class="topbar-user-name" title="{{ auth()->user()->email }}">
+                        <i class="fa-solid fa-user-shield"></i>
+                        {{ auth()->user()->name }}
+                    </span>
+                    <form method="POST" action="{{ route('platform.logout') }}" style="display:inline;">
+                        @csrf
+                        <button type="submit" class="topbar-logout-btn" title="Se déconnecter">
+                            <i class="fa-solid fa-right-from-bracket"></i>
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>

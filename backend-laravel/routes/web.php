@@ -4,6 +4,7 @@ use App\Http\Controllers\Platform\AgentController;
 use App\Http\Controllers\Platform\AlertController;
 use App\Http\Controllers\Platform\AppearanceController;
 use App\Http\Controllers\Platform\ApprovalQueueController;
+use App\Http\Controllers\Platform\Auth\LoginController;
 use App\Http\Controllers\Platform\DashboardController;
 use App\Http\Controllers\Platform\DetectionRuleController;
 use App\Http\Controllers\Platform\DetectionThresholdController;
@@ -19,9 +20,13 @@ use App\Http\Controllers\Platform\SensitiveExtensionController;
 use App\Http\Controllers\Platform\SystemSettingController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', HomeController::class)->name('platform.home');
+Route::get('/login', [LoginController::class, 'showForm'])->name('platform.login')->middleware('guest');
+Route::post('/login', [LoginController::class, 'login'])->name('platform.login.post')->middleware('guest');
+Route::post('/logout', [LoginController::class, 'logout'])->name('platform.logout')->middleware('auth');
 
-Route::prefix('console')->name('platform.')->group(function () {
+Route::get('/', HomeController::class)->name('platform.home')->middleware('auth');
+
+Route::prefix('console')->name('platform.')->middleware('auth')->group(function () {
     Route::post('/appearance/theme', [AppearanceController::class, 'updateTheme'])->name('appearance.theme');
 
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
