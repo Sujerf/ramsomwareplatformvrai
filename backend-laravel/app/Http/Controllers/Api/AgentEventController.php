@@ -3,15 +3,18 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Mail\AlertMail;
 use App\Models\Agent;
 use App\Models\Alert;
 use App\Models\Event;
 use App\Models\Incident;
 use App\Models\ProtectionAction;
 use App\Models\ProtectionPolicy;
+use App\Models\SystemSetting;
 use App\Services\DynamicDetectionEngineService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
 class AgentEventController extends Controller
@@ -80,6 +83,8 @@ class AgentEventController extends Controller
                 ],
                 'detected_at' => now(),
             ]);
+
+            $this->maybeSendAlertMail($alert);
         }
 
         if ($analysis['should_create_incident']) {
@@ -169,5 +174,39 @@ class AgentEventController extends Controller
             'incident_id' => $incident?->id,
             'actions' => $actions,
         ]);
+    }
+
+    private function maybeSendAlertMail(Alert $alert): void
+    {
+        $settings = SystemSetting::whereIn('key', [
+            'notification_mail_enabled',
+            'notification_mail_recipient',
+            'notification_min_risk_level',
+        ])->pluck('value', 'key');
+
+        if (($settings['notification_mail_enabled'] ?? '0') !== '1') {
+            return;
+        }
+
+        $recipient = trim((string) ($settings['notification_mail_recipient'] ?? ''));
+
+        if ($recipient === '' || ! filter_var($recipient, FILTER_VALIDATE_EMAIL)) {
+            return;
+        }
+
+        $minLevel = $settings['notification_min_risk_level'] ?? 'high';
+        $order    = ['normal' => 0, 'suspect' => 1, 'high' => 2, 'critical' => 3];
+
+        if (($order[$alert->risk_level] ?? 0) < ($order[$minLevel] ?? 2)) {
+            return;
+        }
+
+        $alert->loadMissing('agent');
+
+        try {
+            Mail::to($recipient)->send(new AlertMail($alert));
+        } catch (\Throwable) {
+            // never break the API response on mail failure
+        }
     }
 }
