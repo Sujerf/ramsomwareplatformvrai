@@ -33,7 +33,7 @@
     <title>@yield('title', 'RansomShield SOC')</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
     <style>
         :root {
@@ -982,15 +982,15 @@
                 <div class="soc-nav-label">Supervision</div>
                 <nav class="soc-nav">
                     <a href="{{ route('platform.home') }}" class="soc-nav-link {{ request()->routeIs('platform.home') ? 'active' : '' }}">
-                        <span class="nav-icon"><i class="fa-solid fa-house"></i></span>
+                        <span class="nav-icon"><i class="fa-solid fa-house-chimney"></i></span>
                         <span class="nav-label">Accueil</span>
                     </a>
                     <a href="{{ route('platform.dashboard') }}" class="soc-nav-link {{ request()->routeIs('platform.dashboard') ? 'active' : '' }}">
-                        <span class="nav-icon"><i class="fa-solid fa-gauge-high"></i></span>
+                        <span class="nav-icon"><i class="fa-solid fa-chart-pie"></i></span>
                         <span class="nav-label">Dashboard</span>
                     </a>
                     <a href="{{ route('platform.local-host.index') }}" class="soc-nav-link {{ request()->routeIs('platform.local-host.*') ? 'active' : '' }}">
-                        <span class="nav-icon"><i class="fa-solid fa-server"></i></span>
+                        <span class="nav-icon"><i class="fa-solid fa-desktop"></i></span>
                         <span class="nav-label">Machine hôte locale</span>
                     </a>
                 </nav>
@@ -1000,15 +1000,15 @@
                 <div class="soc-nav-label">Infrastructure</div>
                 <nav class="soc-nav">
                     <a href="{{ route('platform.networks.index') }}" class="soc-nav-link {{ request()->routeIs('platform.networks.*') ? 'active' : '' }}">
-                        <span class="nav-icon"><i class="fa-solid fa-network-wired"></i></span>
+                        <span class="nav-icon"><i class="fa-solid fa-diagram-project"></i></span>
                         <span class="nav-label">Réseaux surveillés</span>
                     </a>
                     <a href="{{ route('platform.discovered-hosts.index') }}" class="soc-nav-link {{ request()->routeIs('platform.discovered-hosts.*') ? 'active' : '' }}">
-                        <span class="nav-icon"><i class="fa-solid fa-magnifying-glass-location"></i></span>
+                        <span class="nav-icon"><i class="fa-solid fa-satellite-dish"></i></span>
                         <span class="nav-label">Hôtes découverts</span>
                     </a>
                     <a href="{{ route('platform.agents.index') }}" class="soc-nav-link {{ request()->routeIs('platform.agents.*') ? 'active' : '' }}">
-                        <span class="nav-icon"><i class="fa-solid fa-robot"></i></span>
+                        <span class="nav-icon"><i class="fa-solid fa-microchip"></i></span>
                         <span class="nav-label">Agents / Machines</span>
                     </a>
                 </nav>
@@ -1018,29 +1018,29 @@
                 <div class="soc-nav-label">Détection & réponse</div>
                 <nav class="soc-nav">
                     <a href="{{ route('platform.alerts.index') }}" class="soc-nav-link {{ request()->routeIs('platform.alerts.*') ? 'active' : '' }}">
-                        <span class="nav-icon"><i class="fa-solid fa-bell"></i></span>
+                        <span class="nav-icon"><i class="fa-solid fa-triangle-exclamation"></i></span>
                         <span class="nav-label">Alertes</span>
                         @if($navActiveAlerts > 0)
                             <span class="nav-badge nav-badge-danger">{{ $navActiveAlerts }}</span>
                         @endif
                     </a>
                     <a href="{{ route('platform.incidents.index') }}" class="soc-nav-link {{ request()->routeIs('platform.incidents.*') ? 'active' : '' }}">
-                        <span class="nav-icon"><i class="fa-solid fa-fire-flame-curved"></i></span>
+                        <span class="nav-icon"><i class="fa-solid fa-fire"></i></span>
                         <span class="nav-label">Incidents</span>
                         @if($navActiveIncidents > 0)
                             <span class="nav-badge nav-badge-danger">{{ $navActiveIncidents }}</span>
                         @endif
                     </a>
                     <a href="{{ route('platform.events.index') }}" class="soc-nav-link {{ request()->routeIs('platform.events.*') ? 'active' : '' }}">
-                        <span class="nav-icon"><i class="fa-solid fa-bolt"></i></span>
+                        <span class="nav-icon"><i class="fa-solid fa-timeline"></i></span>
                         <span class="nav-label">Événements</span>
                     </a>
                     <a href="{{ route('platform.protection-actions.index') }}" class="soc-nav-link {{ request()->routeIs('platform.protection-actions.*') ? 'active' : '' }}">
-                        <span class="nav-icon"><i class="fa-solid fa-shield-virus"></i></span>
+                        <span class="nav-icon"><i class="fa-solid fa-lock"></i></span>
                         <span class="nav-label">Actions de protection</span>
                     </a>
                     <a href="{{ route('platform.approval-queue.index') }}" class="soc-nav-link {{ request()->routeIs('platform.approval-queue.*') ? 'active' : '' }}">
-                        <span class="nav-icon"><i class="fa-solid fa-list-check"></i></span>
+                        <span class="nav-icon"><i class="fa-solid fa-clipboard-check"></i></span>
                         <span class="nav-label">File d'approbation</span>
                         @if($navPendingActions > 0)
                             <span class="nav-badge nav-badge-warning">{{ $navPendingActions }}</span>
@@ -1053,27 +1053,27 @@
                 <div class="soc-nav-label">Configuration</div>
                 <nav class="soc-nav">
                     <a href="{{ route('platform.configuration.index') }}" class="soc-nav-link {{ request()->routeIs('platform.configuration.*') ? 'active' : '' }}">
-                        <span class="nav-icon"><i class="fa-solid fa-sliders"></i></span>
+                        <span class="nav-icon"><i class="fa-solid fa-table-cells-large"></i></span>
                         <span class="nav-label">Centre de configuration</span>
                     </a>
                     <a href="{{ route('platform.detection-rules.index') }}" class="soc-nav-link {{ request()->routeIs('platform.detection-rules.*') ? 'active' : '' }}">
-                        <span class="nav-icon"><i class="fa-solid fa-code-branch"></i></span>
+                        <span class="nav-icon"><i class="fa-solid fa-filter"></i></span>
                         <span class="nav-label">Règles de détection</span>
                     </a>
                     <a href="{{ route('platform.detection-thresholds.index') }}" class="soc-nav-link {{ request()->routeIs('platform.detection-thresholds.*') ? 'active' : '' }}">
-                        <span class="nav-icon"><i class="fa-solid fa-chart-line"></i></span>
+                        <span class="nav-icon"><i class="fa-solid fa-wave-square"></i></span>
                         <span class="nav-label">Seuils d'analyse</span>
                     </a>
                     <a href="{{ route('platform.protection-policies.index') }}" class="soc-nav-link {{ request()->routeIs('platform.protection-policies.*') ? 'active' : '' }}">
-                        <span class="nav-icon"><i class="fa-solid fa-scroll"></i></span>
+                        <span class="nav-icon"><i class="fa-solid fa-file-shield"></i></span>
                         <span class="nav-label">Politiques</span>
                     </a>
                     <a href="{{ route('platform.system-settings.index') }}" class="soc-nav-link {{ request()->routeIs('platform.system-settings.*') ? 'active' : '' }}">
-                        <span class="nav-icon"><i class="fa-solid fa-gear"></i></span>
+                        <span class="nav-icon"><i class="fa-solid fa-gears"></i></span>
                         <span class="nav-label">Paramètres</span>
                     </a>
                     <a href="{{ route('platform.sensitive-extensions.index') }}" class="soc-nav-link {{ request()->routeIs('platform.sensitive-extensions.*') ? 'active' : '' }}">
-                        <span class="nav-icon"><i class="fa-solid fa-file-code"></i></span>
+                        <span class="nav-icon"><i class="fa-solid fa-tags"></i></span>
                         <span class="nav-label">Extensions sensibles</span>
                     </a>
                 </nav>
