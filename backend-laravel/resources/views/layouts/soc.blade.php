@@ -1227,5 +1227,117 @@
 
 @stack('scripts')
     @include('platform.partials.final-sidebar-scroll-ux')
+
+{{-- ── Notifications temps réel ─────────────────────────────────────────── --}}
+<style>
+    #rs-toast-wrap {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        max-width: 340px;
+        pointer-events: none;
+    }
+    .rs-toast {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 14px 16px;
+        border-radius: 14px;
+        background: var(--bg-panel);
+        border: 1px solid var(--border-soft);
+        box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+        pointer-events: all;
+        animation: rs-toast-in 0.3s ease forwards;
+        font-size: 13px;
+        line-height: 1.4;
+    }
+    .rs-toast-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+    .rs-toast-title { font-weight: 700; color: var(--text-main); margin-bottom: 3px; }
+    .rs-toast-msg   { color: var(--text-muted); }
+    .rs-toast-close { margin-left: auto; background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 14px; padding: 0 0 0 8px; flex-shrink: 0; }
+    .rs-toast.risk-critical { border-color: rgba(239,68,68,0.4);  background: color-mix(in srgb, #ef4444 8%, var(--bg-panel)); }
+    .rs-toast.risk-high     { border-color: rgba(249,115,22,0.4); background: color-mix(in srgb, #f97316 8%, var(--bg-panel)); }
+    .rs-toast.risk-suspect  { border-color: rgba(234,179,8,0.4);  background: color-mix(in srgb, #eab308 8%, var(--bg-panel)); }
+    .rs-toast.risk-normal   { border-color: rgba(34,197,94,0.4);  background: color-mix(in srgb, #22c55e 8%, var(--bg-panel)); }
+    @keyframes rs-toast-in { from { opacity:0; transform: translateX(20px); } to { opacity:1; transform: translateX(0); } }
+    @keyframes rs-toast-out { to { opacity:0; transform: translateX(30px); max-height:0; padding:0; margin:0; overflow:hidden; } }
+</style>
+<div id="rs-toast-wrap"></div>
+
+<script>
+(function () {
+    let audioCtx = null;
+
+    function unlockAudio() {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+    document.addEventListener('click', unlockAudio, { once: true });
+
+    function playBeep(level) {
+        try {
+            unlockAudio();
+            if (!audioCtx) return;
+            const freq = level === 'critical' ? 880 : level === 'high' ? 660 : 440;
+            const reps = level === 'critical' ? 3 : 1;
+            for (let i = 0; i < reps; i++) {
+                const osc  = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.type = 'sine';
+                osc.frequency.value = freq;
+                const t = audioCtx.currentTime + i * 0.35;
+                gain.gain.setValueAtTime(0.25, t);
+                gain.gain.exponentialRampToValueAtTime(0.001, t + 0.28);
+                osc.start(t); osc.stop(t + 0.28);
+            }
+        } catch(e) {}
+    }
+
+    function riskIcon(level) {
+        return { critical: '🔴', high: '🟠', suspect: '🟡', normal: '🟢' }[level] || '🔵';
+    }
+
+    function showToast(n) {
+        const wrap = document.getElementById('rs-toast-wrap');
+        const el = document.createElement('div');
+        el.className = `rs-toast risk-${n.risk_level}`;
+        el.innerHTML = `
+            <span class="rs-toast-icon">${riskIcon(n.risk_level)}</span>
+            <div>
+                <div class="rs-toast-title">${n.subject}</div>
+                <div class="rs-toast-msg">${n.message}</div>
+            </div>
+            <button class="rs-toast-close" onclick="this.closest('.rs-toast').remove()">✕</button>
+        `;
+        wrap.appendChild(el);
+        setTimeout(() => {
+            el.style.animation = 'rs-toast-out 0.4s ease forwards';
+            setTimeout(() => el.remove(), 400);
+        }, 7000);
+    }
+
+    function pollNotifications() {
+        fetch('{{ route("platform.notifications.poll") }}', {
+            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+            if (!data) return;
+            (data.notifications || []).forEach(showToast);
+            if (data.play_sound) playBeep(data.sound_level || 'high');
+        })
+        .catch(() => {});
+    }
+
+    // Démarrage du polling toutes les 30 secondes
+    setTimeout(pollNotifications, 5000);
+    setInterval(pollNotifications, 30000);
+})();
+</script>
 </body>
 </html>

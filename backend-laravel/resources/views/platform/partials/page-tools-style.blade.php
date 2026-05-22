@@ -61,39 +61,86 @@
     }
 
     .action-btn {
-        min-height: 34px;
-        padding: 0 11px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        min-height: 36px;
+        padding: 0 14px;
         border-radius: 12px;
         border: 1px solid var(--border-soft);
         color: var(--text-main);
         background: color-mix(in srgb, var(--bg-panel-soft) 78%, transparent);
         cursor: pointer;
-        font-size: 12px;
+        font-size: 13px;
         font-weight: 850;
+        text-decoration: none;
+        white-space: nowrap;
+        transition: .15s ease;
     }
 
+    .action-btn:hover {
+        transform: translateY(-1px);
+        border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+        color: var(--accent);
+    }
+
+    /* ── Variantes couleurs ────────────────────────────────────────────── */
     .action-btn.primary {
         background: var(--accent);
-        color: var(--accent-contrast);
-        border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+        color: #fff;
+        border-color: color-mix(in srgb, var(--accent) 50%, transparent);
+    }
+
+    .action-btn.primary:hover {
+        background: color-mix(in srgb, var(--accent) 85%, #000);
+        color: #fff;
+        border-color: var(--accent);
     }
 
     .action-btn.success {
-        background: rgba(34, 197, 94, 0.14);
+        background: rgba(34, 197, 94, 0.12);
         color: #22c55e;
-        border-color: rgba(34, 197, 94, 0.28);
+        border-color: rgba(34, 197, 94, 0.26);
+    }
+
+    .action-btn.success:hover {
+        background: #22c55e;
+        color: #fff;
+        border-color: #22c55e;
     }
 
     .action-btn.warning {
-        background: rgba(245, 158, 11, 0.14);
+        background: rgba(245, 158, 11, 0.10);
         color: #f59e0b;
-        border-color: rgba(245, 158, 11, 0.28);
+        border-color: rgba(245, 158, 11, 0.24);
+    }
+
+    .action-btn.warning:hover {
+        background: #f59e0b;
+        color: #111;
+        border-color: #f59e0b;
     }
 
     .action-btn.danger {
-        background: rgba(239, 68, 68, 0.14);
+        background: rgba(239, 68, 68, 0.12);
         color: #ef4444;
-        border-color: rgba(239, 68, 68, 0.28);
+        border-color: rgba(239, 68, 68, 0.26);
+    }
+
+    .action-btn.danger:hover {
+        background: #ef4444;
+        color: #fff;
+        border-color: #ef4444;
+    }
+
+    /* ── Taille large (décisions importantes) ─────────────────────────── */
+    .action-btn.lg {
+        min-height: 44px;
+        padding: 0 22px;
+        font-size: 14px;
+        border-radius: 14px;
+        letter-spacing: -.02em;
     }
 
     .detail-grid {

@@ -6,6 +6,7 @@
 
 @section('content')
     @include('platform.partials.page-tools-style')
+    @include('platform.partials.network-visual-style')
     @include('platform.partials.config-premium-style')
 
     @php
@@ -45,8 +46,15 @@
             </p>
 
             <div class="btn-row">
-                <a href="{{ route('platform.configuration.index') }}" class="btn btn-primary">Centre configuration</a>
-                <a href="{{ route('platform.approval-queue.index') }}" class="btn btn-soft">File d'approbation</a>
+                <a href="{{ route('platform.configuration.index') }}" class="action-btn primary">
+                    <i class="fa-solid fa-diagram-project"></i> Centre configuration
+                </a>
+                <a href="{{ route('platform.approval-queue.index') }}" class="action-btn">
+                    <i class="fa-solid fa-inbox"></i> File d'approbation
+                </a>
+                <a href="{{ route('platform.detection-thresholds.index') }}" class="action-btn">
+                    <i class="fa-solid fa-gauge-high"></i> Seuils
+                </a>
             </div>
         </section>
 

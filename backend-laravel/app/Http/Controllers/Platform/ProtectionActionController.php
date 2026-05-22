@@ -34,8 +34,14 @@ class ProtectionActionController extends Controller
         }
 
         return view('platform.protection-actions.index', [
-            'actions' => $query->paginate(25)->withQueryString(),
+            'actions'      => $query->paginate(25)->withQueryString(),
             'activeStatus' => $status,
+            'stats'        => [
+                'total'    => ProtectionAction::count(),
+                'pending'  => ProtectionAction::where('approval_status', 'pending')->count(),
+                'executed' => ProtectionAction::where('execution_status', 'success')->count(),
+                'rejected' => ProtectionAction::whereIn('approval_status', ['rejected', 'cancelled'])->count(),
+            ],
         ]);
     }
 

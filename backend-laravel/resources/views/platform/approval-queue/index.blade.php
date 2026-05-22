@@ -6,6 +6,7 @@
 
 @section('content')
     @include('platform.partials.page-tools-style')
+    @include('platform.partials.network-visual-style')
 
     <style>
         /* ── HERO ─────────────────────────────────────────────────────────── */
@@ -259,58 +260,7 @@
             flex-shrink: 0;
         }
 
-        .decision-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 22px;
-            border-radius: 14px;
-            font-size: 14px;
-            font-weight: 950;
-            letter-spacing: -.02em;
-            border: none;
-            cursor: pointer;
-            transition: .18s ease;
-            text-decoration: none;
-        }
-
-        .decision-btn.approve {
-            background: color-mix(in srgb, #22c55e 18%, transparent);
-            color: #22c55e;
-            border: 1px solid color-mix(in srgb, #22c55e 28%, transparent);
-        }
-
-        .decision-btn.approve:hover {
-            background: #22c55e;
-            color: white;
-            transform: translateY(-1px);
-        }
-
-        .decision-btn.reject {
-            background: color-mix(in srgb, #ef4444 14%, transparent);
-            color: #ef4444;
-            border: 1px solid color-mix(in srgb, #ef4444 24%, transparent);
-        }
-
-        .decision-btn.reject:hover {
-            background: #ef4444;
-            color: white;
-            transform: translateY(-1px);
-        }
-
-        .decision-btn.detail {
-            background: transparent;
-            color: var(--text-muted);
-            border: 1px solid var(--border-soft);
-            font-size: 13px;
-        }
-
-        .decision-btn.detail:hover {
-            border-color: var(--accent);
-            color: var(--accent);
-        }
-
-        .decision-btn.loading {
+        .action-btn.loading {
             opacity: .55;
             pointer-events: none;
         }
@@ -412,8 +362,8 @@
             .ac-context { grid-template-columns: 1fr; }
             .ac-decision-strip .spacer { display: none; }
             .action-group { flex-direction: column; width: 100%; }
-            .action-group .decision-btn { width: 100%; justify-content: center; }
-            .decision-btn.detail { width: 100%; justify-content: center; }
+            .action-group .action-btn { width: 100%; justify-content: center; }
+            .action-btn.detail-link { width: 100%; justify-content: center; }
         }
     </style>
 
@@ -651,13 +601,13 @@
                             <div class="spacer"></div>
 
                             <a href="{{ route('platform.protection-actions.show', $action) }}"
-                               class="decision-btn detail">
+                               class="action-btn">
                                 <i class="fa-solid fa-magnifying-glass"></i>
                                 Voir détails
                             </a>
 
                             <div class="action-group">
-                                <button type="button" class="decision-btn reject"
+                                <button type="button" class="action-btn lg danger"
                                         data-action-id="{{ $action->id }}"
                                         data-url="{{ route('platform.protection-actions.reject', $action) }}"
                                         data-decision="reject">
@@ -665,7 +615,7 @@
                                     Rejeter
                                 </button>
 
-                                <button type="button" class="decision-btn approve"
+                                <button type="button" class="action-btn lg success"
                                         data-action-id="{{ $action->id }}"
                                         data-url="{{ route('platform.protection-actions.approve', $action) }}"
                                         data-decision="approve">
@@ -754,14 +704,14 @@
             }, 450);
         }
 
-        document.querySelectorAll('.decision-btn[data-decision]').forEach(function (btn) {
+        document.querySelectorAll('.action-btn[data-decision]').forEach(function (btn) {
             btn.addEventListener('click', async function () {
                 const id       = this.dataset.actionId;
                 const url      = this.dataset.url;
                 const decision = this.dataset.decision;
 
                 const card     = document.getElementById('ac-' + id);
-                const btns     = card?.querySelectorAll('.decision-btn[data-decision]');
+                const btns     = card?.querySelectorAll('.action-btn[data-decision]');
                 btns?.forEach(b => b.classList.add('loading'));
 
                 try {

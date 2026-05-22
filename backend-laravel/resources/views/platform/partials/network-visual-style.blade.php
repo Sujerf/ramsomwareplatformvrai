@@ -196,6 +196,19 @@
         background: color-mix(in srgb, var(--accent) 11%, transparent);
     }
 
+    .smart-stat-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        background: color-mix(in srgb, var(--accent) 12%, transparent);
+        color: var(--accent);
+        font-size: 15px;
+        margin-bottom: 10px;
+    }
+
     .smart-stat-label {
         color: var(--text-muted);
         font-size: 12px;

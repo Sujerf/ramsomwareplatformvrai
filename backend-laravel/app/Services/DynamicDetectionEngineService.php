@@ -223,7 +223,9 @@ class DynamicDetectionEngineService
     private function safetySettings(): array
     {
         return [
+            'protection_execution_enabled' => $this->settingValue('protection_execution_enabled', '1'),
             'enable_real_isolation' => $this->settingValue('enable_real_isolation', '0'),
+            'enable_real_process_kill' => $this->settingValue('enable_real_process_kill', '0'),
             'require_human_approval_for_sensitive_actions' => $this->settingValue('require_human_approval_for_sensitive_actions', '1'),
             'min_risk_level_for_incident' => $this->settingValue('min_risk_level_for_incident', 'high'),
             'min_risk_level_for_action' => $this->settingValue('min_risk_level_for_action', 'high'),

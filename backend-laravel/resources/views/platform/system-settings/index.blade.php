@@ -393,17 +393,19 @@
                                 @endif
 
                                 <div class="setting-actions">
-                                    <button class="action-btn primary" type="submit">Enregistrer</button>
+                                    <button class="action-btn primary" type="submit">
+                                        <i class="fa-solid fa-floppy-disk"></i> Enregistrer
+                                    </button>
+                                </div>
                             </form>
 
-                            <form method="POST" action="{{ route('platform.system-settings.reset-one', $setting) }}">
+                            <form method="POST" action="{{ route('platform.system-settings.reset-one', $setting) }}" style="margin-top:8px">
                                 @csrf
                                 @method('PATCH')
-                                <button class="action-btn warning" type="submit" @disabled($defaultValue === null)>
-                                    Défaut
+                                <button class="action-btn warning" type="submit" style="width:100%" @disabled($defaultValue === null)>
+                                    <i class="fa-solid fa-rotate-left"></i> Restaurer défaut
                                 </button>
                             </form>
-                                </div>
                         </article>
                     @endforeach
                 </div>

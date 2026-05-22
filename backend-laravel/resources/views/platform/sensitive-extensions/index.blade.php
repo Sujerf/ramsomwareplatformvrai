@@ -6,6 +6,7 @@
 
 @section('content')
     @include('platform.partials.page-tools-style')
+    @include('platform.partials.network-visual-style')
     @include('platform.partials.config-premium-style')
 
     @php
@@ -39,10 +40,14 @@
             </p>
 
             <div class="btn-row">
-                <a href="{{ route('platform.configuration.index') }}" class="btn btn-primary">Centre configuration</a>
-                <form method="POST" action="{{ route('platform.configuration.reset-defaults') }}">
+                <a href="{{ route('platform.configuration.index') }}" class="action-btn primary">
+                    <i class="fa-solid fa-diagram-project"></i> Centre configuration
+                </a>
+                <form method="POST" action="{{ route('platform.configuration.reset-defaults') }}" style="display:contents">
                     @csrf
-                    <button class="btn btn-soft" type="submit">Restaurer défauts</button>
+                    <button class="action-btn warning" type="submit">
+                        <i class="fa-solid fa-rotate-left"></i> Restaurer défauts
+                    </button>
                 </form>
             </div>
         </section>

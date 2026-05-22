@@ -6,167 +6,220 @@
 
 @section('content')
     @include('platform.partials.page-tools-style')
+    @include('platform.partials.network-visual-style')
 
     @php
-        $riskFilters = [
-            'all' => 'Tous',
-            'normal' => 'Normal',
-            'suspect' => 'Suspect',
-            'high' => 'High',
-            'critical' => 'Critical',
-        ];
-
-        $riskClass = fn ($risk) => match ($risk) {
-            'critical' => 'badge-critical',
-            'high' => 'badge-high',
-            'suspect' => 'badge-suspect',
-            default => 'badge-normal',
+        $eventIconClass = function ($type) {
+            return match (true) {
+                str_contains($type, 'encrypt')   => 'fa-lock',
+                str_contains($type, 'rename')    => 'fa-arrows-rotate',
+                str_contains($type, 'ransom')    => 'fa-file-circle-exclamation',
+                str_contains($type, 'process')   => 'fa-gears',
+                str_contains($type, 'created')   => 'fa-file-circle-plus',
+                str_contains($type, 'modified')  => 'fa-file-pen',
+                str_contains($type, 'moved')     => 'fa-file-export',
+                str_contains($type, 'deleted')   => 'fa-file-circle-minus',
+                default                          => 'fa-bolt',
+            };
         };
 
-        $eventIcon = fn ($type) => match ($type) {
-            'file_created' => '📄',
-            'file_modified' => '✏️',
-            'file_moved' => '🔁',
-            'file_encrypted_extension' => '🔐',
-            'mass_rename_detected' => '⚠️',
-            'ransom_note_created' => '📝',
-            'suspicious_process_detected' => '🧪',
-            default => '📌',
+        $riskColor = function ($risk) {
+            return match ($risk) {
+                'critical' => '#ef4444',
+                'high'     => '#f97316',
+                'suspect'  => '#eab308',
+                default    => '#6366f1',
+            };
         };
     @endphp
 
     <style>
-        .event-hero {
-            padding: 28px;
+        .ev-hero {
+            position: relative;
+            overflow: hidden;
+            padding: 32px;
             border-radius: 32px;
             border: 1px solid var(--border-soft);
             background:
-                radial-gradient(circle at 15% 18%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 28%),
-                radial-gradient(circle at 86% 10%, color-mix(in srgb, #ef4444 12%, transparent), transparent 32%),
+                radial-gradient(circle at 12% 18%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 28%),
+                radial-gradient(circle at 88% 8%, color-mix(in srgb, #f97316 10%, transparent), transparent 30%),
                 var(--bg-card);
             box-shadow: var(--shadow-soft);
         }
 
-        .event-hero h2 {
+        .ev-hero h2 {
             margin: 0;
-            font-size: clamp(38px, 5vw, 68px);
+            font-size: clamp(36px, 5vw, 64px);
             line-height: .95;
             letter-spacing: -.08em;
             font-weight: 950;
         }
 
-        .event-hero p {
-            margin-top: 14px;
+        .ev-hero p {
+            margin-top: 12px;
             color: var(--text-muted);
             line-height: 1.75;
             max-width: 900px;
         }
 
-        .event-filter-row {
+        /* Filter tabs */
+        .filter-tabs {
             display: flex;
             flex-wrap: wrap;
-            gap: 8px;
-            margin-top: 18px;
+            gap: 6px;
+            margin-top: 20px;
         }
 
-        .event-filter-form {
+        .filter-sep {
+            width: 1px;
+            background: var(--border-soft);
+            margin: 0 4px;
+            align-self: stretch;
+        }
+
+        .filter-tab {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: 20px;
+            border: 1px solid var(--border-soft);
+            background: color-mix(in srgb, var(--bg-panel-soft) 70%, transparent);
+            color: var(--text-muted);
+            font-size: 13px;
+            font-weight: 700;
+            text-decoration: none;
+            transition: .15s ease;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .filter-tab:hover {
+            border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+            color: var(--text-main);
+        }
+
+        .filter-tab.active {
+            background: var(--accent);
+            color: #fff;
+            border-color: color-mix(in srgb, var(--accent) 60%, transparent);
+        }
+
+        /* Advanced filter form */
+        .ev-filter-form {
             display: grid;
             grid-template-columns: 1fr 1fr auto;
             gap: 10px;
             align-items: end;
-            margin-top: 18px;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border-soft);
         }
 
-        .event-field label {
+        .ev-field label {
             display: block;
             margin-bottom: 6px;
             font-size: 11px;
-            font-weight: 950;
+            font-weight: 800;
             letter-spacing: .07em;
             text-transform: uppercase;
             color: var(--text-muted);
         }
 
-        .event-grid {
-            display: grid;
-            gap: 14px;
+        /* Event cards */
+        .event-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
         }
 
         .event-card {
-            display: grid;
-            grid-template-columns: 58px minmax(0, 1fr) auto;
-            gap: 14px;
-            align-items: center;
-            padding: 16px;
-            border-radius: 24px;
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            padding: 18px 20px;
+            border-radius: 20px;
             background: var(--bg-card);
             border: 1px solid var(--border-soft);
+            border-left-width: 4px;
             box-shadow: var(--shadow-soft);
+            transition: transform .15s ease, box-shadow .15s ease;
         }
 
-        .event-icon {
-            width: 58px;
-            height: 58px;
-            display: grid;
-            place-items: center;
-            border-radius: 20px;
-            background: color-mix(in srgb, var(--accent) 11%, transparent);
-            border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
-            font-size: 24px;
+        .event-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(0,0,0,.18);
         }
 
-        .event-title {
-            margin: 0;
-            font-size: 16px;
-            font-weight: 950;
-            letter-spacing: -.03em;
+        .event-card.risk-critical { border-left-color: #ef4444; }
+        .event-card.risk-high     { border-left-color: #f97316; }
+        .event-card.risk-suspect  { border-left-color: #eab308; }
+        .event-card.risk-normal   { border-left-color: #6366f1; }
+
+        .ev-icon-col {
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
         }
 
-        .event-meta {
-            margin-top: 6px;
-            color: var(--text-muted);
+        .ev-body {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .ev-title {
+            margin: 0 0 4px;
+            font-size: 15px;
+            font-weight: 850;
+            letter-spacing: -.02em;
+            font-family: monospace;
+        }
+
+        .ev-path {
             font-size: 12px;
-            line-height: 1.55;
-            word-break: break-word;
+            color: var(--text-muted);
+            font-family: monospace;
+            margin-bottom: 6px;
+            word-break: break-all;
         }
 
-        .event-badges {
+        .ev-meta {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .ev-tags {
             display: flex;
             flex-wrap: wrap;
-            gap: 7px;
-            margin-top: 10px;
+            gap: 6px;
         }
 
-        .event-actions {
+        .ev-strip {
             display: flex;
             flex-wrap: wrap;
-            gap: 8px;
-            justify-content: flex-end;
+            align-items: center;
+            gap: 6px;
+            flex-shrink: 0;
         }
 
-        @media (max-width: 1100px) {
-            .event-filter-form {
-                grid-template-columns: 1fr;
-            }
-
-            .event-card {
-                grid-template-columns: 52px 1fr;
-            }
-
-            .event-actions {
-                grid-column: 1 / -1;
-                display: grid;
-                grid-template-columns: 1fr;
-            }
-
-            .event-actions .action-btn {
-                width: 100%;
-            }
+        @media (max-width: 800px) {
+            .event-card { flex-direction: column; }
+            .ev-filter-form { grid-template-columns: 1fr; }
+            .ev-strip { width: 100%; }
+            .ev-strip .action-btn { flex: 1 1 auto; justify-content: center; }
         }
     </style>
 
     <div class="animated-page">
-        <section class="event-hero">
+
+        {{-- Hero --}}
+        <section class="ev-hero">
             <div class="analysis-kicker">
                 <span class="analysis-dot"></span>
                 Journal technique agents
@@ -174,24 +227,27 @@
 
             <h2>Observer le flux réel des agents.</h2>
 
-            <p>
-                Cette page affiche les événements reçus depuis les agents hôtes :
-                fichiers modifiés, extensions suspectes, renommages, processus suspects et signaux enrichis.
-            </p>
+            <p>Événements reçus depuis les agents hôtes : fichiers modifiés, extensions suspectes, renommages en masse,
+                processus suspects et signaux enrichis par le moteur de détection.</p>
 
-            <div class="event-filter-row">
+            {{-- Risk filter tabs --}}
+            @php
+                $riskFilters = ['all' => 'Tous', 'normal' => 'Normal', 'suspect' => 'Suspect', 'high' => 'High', 'critical' => 'Critical'];
+            @endphp
+            <div class="filter-tabs">
                 @foreach($riskFilters as $key => $label)
-                    <a href="{{ route('platform.events.index', array_filter(['risk' => $key, 'type' => $activeType, 'agent_id' => $activeAgentId])) }}"
-                       class="action-btn {{ $activeRisk === $key ? 'primary' : '' }}">
+                    <a class="filter-tab {{ $activeRisk === $key ? 'active' : '' }}"
+                       href="{{ route('platform.events.index', array_filter(['risk' => $key, 'type' => $activeType, 'agent_id' => $activeAgentId], fn($v) => $v !== '' && $v !== null)) }}">
                         {{ $label }}
                     </a>
                 @endforeach
             </div>
 
-            <form method="GET" action="{{ route('platform.events.index') }}" class="event-filter-form">
+            {{-- Advanced filters --}}
+            <form method="GET" action="{{ route('platform.events.index') }}" class="ev-filter-form">
                 <input type="hidden" name="risk" value="{{ $activeRisk }}">
 
-                <div class="event-field">
+                <div class="ev-field">
                     <label>Agent</label>
                     <select name="agent_id" class="form-control">
                         <option value="">Tous les agents</option>
@@ -203,120 +259,120 @@
                     </select>
                 </div>
 
-                <div class="event-field">
-                    <label>Type événement</label>
+                <div class="ev-field">
+                    <label>Type d'événement</label>
                     <select name="type" class="form-control">
                         <option value="">Tous les types</option>
-                        @foreach($eventTypes as $type)
-                            <option value="{{ $type }}" @selected($activeType === $type)>
-                                {{ $type }}
-                            </option>
+                        @foreach($eventTypes as $evType)
+                            <option value="{{ $evType }}" @selected($activeType === $evType)>{{ $evType }}</option>
                         @endforeach
                     </select>
                 </div>
 
-                <button class="action-btn primary" type="submit">Filtrer</button>
+                <button class="action-btn primary" type="submit">
+                    <i class="fa-solid fa-filter"></i> Filtrer
+                </button>
             </form>
         </section>
 
+        {{-- Stats --}}
         <section class="smart-stats section-gap">
             <div class="smart-stat">
+                <div class="smart-stat-icon"><i class="fa-solid fa-database"></i></div>
                 <div class="smart-stat-label">Total</div>
                 <div class="smart-stat-value">{{ $stats['total'] }}</div>
                 <div class="smart-stat-hint">Événements reçus.</div>
             </div>
-
             <div class="smart-stat">
+                <div class="smart-stat-icon"><i class="fa-solid fa-skull-crossbones"></i></div>
                 <div class="smart-stat-label">Critical</div>
-                <div class="smart-stat-value">{{ $stats['critical'] }}</div>
+                <div class="smart-stat-value" style="{{ $stats['critical'] > 0 ? 'color:#ef4444' : '' }}">{{ $stats['critical'] }}</div>
                 <div class="smart-stat-hint">Événements critiques.</div>
             </div>
-
             <div class="smart-stat">
+                <div class="smart-stat-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
                 <div class="smart-stat-label">High</div>
-                <div class="smart-stat-value">{{ $stats['high'] }}</div>
+                <div class="smart-stat-value" style="{{ $stats['high'] > 0 ? 'color:#f97316' : '' }}">{{ $stats['high'] }}</div>
                 <div class="smart-stat-hint">Événements élevés.</div>
             </div>
-
             <div class="smart-stat">
+                <div class="smart-stat-icon"><i class="fa-solid fa-flask"></i></div>
                 <div class="smart-stat-label">Simulation</div>
-                <div class="smart-stat-value">{{ $stats['simulation'] }}</div>
+                <div class="smart-stat-value" style="color:#6366f1">{{ $stats['simulation'] }}</div>
                 <div class="smart-stat-hint">Tests contrôlés.</div>
             </div>
         </section>
 
-        <section class="soc-card section-gap">
-            <div class="soc-card-header">
-                <div>
-                    <h3 class="soc-card-title">Flux des événements</h3>
-                    <p class="soc-card-subtitle">Derniers événements enregistrés par les agents.</p>
-                </div>
+        {{-- Event list --}}
+        @if($events->count())
+            <div class="event-list section-gap">
+                @foreach($events as $event)
+                    @php
+                        $ic  = $eventIconClass($event->event_type);
+                        $col = $riskColor($event->risk_level);
+                        $signals = collect(data_get($event->metadata, 'signals', []));
+                    @endphp
 
-                <a href="{{ route('platform.dashboard') }}" class="action-btn primary">Dashboard</a>
+                    <article class="event-card risk-{{ $event->risk_level }}">
+                        <div class="ev-icon-col" style="background:color-mix(in srgb, {{ $col }} 12%, transparent); color:{{ $col }}">
+                            <i class="fa-solid {{ $ic }}"></i>
+                        </div>
+
+                        <div class="ev-body">
+                            <h4 class="ev-title">{{ $event->event_type }}</h4>
+                            @if($event->path)
+                                <div class="ev-path"><i class="fa-solid fa-folder-open" style="margin-right:4px"></i>{{ Str::limit($event->path, 80) }}</div>
+                            @endif
+                            <div class="ev-meta">
+                                <i class="fa-solid fa-microchip" style="margin-right:4px"></i>{{ $event->agent?->agent_name ?? 'Agent inconnu' }}
+                                &nbsp;·&nbsp;
+                                <i class="fa-regular fa-clock" style="margin-right:4px"></i>{{ $event->observed_at?->diffForHumans() ?? $event->created_at?->diffForHumans() }}
+                            </div>
+                            <div class="ev-tags">
+                                <span class="badge badge-{{ $event->risk_level === 'critical' ? 'critical' : ($event->risk_level === 'high' ? 'high' : ($event->risk_level === 'suspect' ? 'suspect' : 'normal')) }}">
+                                    {{ $event->risk_level }}
+                                </span>
+                                <span class="badge">Score : {{ $event->score }}</span>
+                                @if($event->file_extension)
+                                    <span class="badge">{{ $event->file_extension }}</span>
+                                @endif
+                                @if($signals->count())
+                                    <span class="badge">{{ $signals->count() }} signal{{ $signals->count() > 1 ? 's' : '' }}</span>
+                                @endif
+                                @if($event->is_simulation)
+                                    <span class="badge" style="color:#6366f1; border-color:rgba(99,102,241,.3)">Simulation</span>
+                                @endif
+                            </div>
+                        </div>
+
+                        <div class="ev-strip">
+                            <a href="{{ route('platform.events.show', $event) }}" class="action-btn primary">
+                                <i class="fa-solid fa-arrow-up-right-from-square"></i> Voir
+                            </a>
+                            @if($event->alert)
+                                <a href="{{ route('platform.alerts.show', $event->alert) }}" class="action-btn warning">
+                                    <i class="fa-solid fa-bell"></i> Alerte
+                                </a>
+                            @endif
+                            @if($event->incident)
+                                <a href="{{ route('platform.incidents.show', $event->incident) }}" class="action-btn danger">
+                                    <i class="fa-solid fa-shield-halved"></i> Incident
+                                </a>
+                            @endif
+                        </div>
+                    </article>
+                @endforeach
             </div>
 
-            @if($events->count())
-                <div class="event-grid">
-                    @foreach($events as $event)
-                        @php
-                            $signals = collect(data_get($event->metadata, 'signals', []));
-                            $threshold = data_get($event->metadata, 'threshold');
-                        @endphp
+            <div class="pagination-wrap section-gap">
+                {{ $events->links() }}
+            </div>
+        @else
+            @include('platform.partials.empty-state', [
+                'title'   => 'Aucun événement.',
+                'message' => "Démarre l'agent Python hôte pour alimenter ce journal."
+            ])
+        @endif
 
-                        <article class="event-card">
-                            <div class="event-icon">{{ $eventIcon($event->event_type) }}</div>
-
-                            <div>
-                                <h3 class="event-title">{{ $event->event_type }}</h3>
-
-                                <div class="event-meta">
-                                    Agent : {{ $event->agent?->agent_name ?? '—' }}
-                                    —
-                                    Date : {{ $event->observed_at?->format('d/m/Y H:i:s') ?? $event->created_at?->format('d/m/Y H:i:s') }}
-                                    <br>
-                                    Chemin : <span class="mono">{{ $event->path ?? '—' }}</span>
-                                </div>
-
-                                <div class="event-badges">
-                                    <span class="badge {{ $riskClass($event->risk_level) }}">{{ $event->risk_level }}</span>
-                                    <span class="badge">Score : {{ $event->score }}</span>
-                                    <span class="badge">Extension : {{ $event->file_extension ?? '—' }}</span>
-                                    <span class="badge">Signaux : {{ $signals->count() }}</span>
-
-                                    @if($event->is_simulation)
-                                        <span class="badge badge-suspect">Simulation</span>
-                                    @endif
-
-                                    @if($threshold)
-                                        <span class="badge">Seuil : {{ data_get($threshold, 'code', '—') }}</span>
-                                    @endif
-                                </div>
-                            </div>
-
-                            <div class="event-actions">
-                                <a href="{{ route('platform.events.show', $event) }}" class="action-btn primary">Détail</a>
-
-                                @if($event->alert)
-                                    <a href="{{ route('platform.alerts.show', $event->alert) }}" class="action-btn">Alerte</a>
-                                @endif
-
-                                @if($event->incident)
-                                    <a href="{{ route('platform.incidents.show', $event->incident) }}" class="action-btn">Incident</a>
-                                @endif
-                            </div>
-                        </article>
-                    @endforeach
-                </div>
-
-                <div class="pagination-wrap">
-                    {{ $events->links() }}
-                </div>
-            @else
-                @include('platform.partials.empty-state', [
-                    'title' => 'Aucun événement.',
-                    'message' => "Démarre l'agent Python hôte complet pour alimenter ce journal."
-                ])
-            @endif
-        </section>
     </div>
 @endsection

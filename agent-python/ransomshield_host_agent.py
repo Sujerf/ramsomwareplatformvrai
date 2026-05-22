@@ -1,6 +1,9 @@
 import json
 import os
+import re
+import signal
 import socket
+import subprocess
 import time
 import uuid
 from collections import defaultdict, deque
@@ -29,6 +32,7 @@ API_HEADERS = {
 MONITOR_MODE = os.getenv("RANSHIELD_MONITOR_MODE", "host")
 HEARTBEAT_INTERVAL = int(os.getenv("RANSHIELD_HEARTBEAT_INTERVAL", "30"))
 SCAN_INTERVAL = int(os.getenv("RANSHIELD_SCAN_INTERVAL", "5"))
+COMMAND_POLL_INTERVAL = int(os.getenv("RANSHIELD_COMMAND_POLL_INTERVAL", "10"))
 
 ENABLE_FILE_MONITOR = os.getenv("RANSHIELD_ENABLE_FILE_MONITOR", "true").lower() == "true"
 ENABLE_PROCESS_MONITOR = os.getenv("RANSHIELD_ENABLE_PROCESS_MONITOR", "true").lower() == "true"
@@ -477,6 +481,95 @@ def start_file_observers(agent_uuid: str) -> list[Observer]:
     return observers
 
 
+def _soc_ip_from_url() -> str:
+    match = re.search(r"https?://([^:/]+)", API_URL)
+    return match.group(1) if match else "127.0.0.1"
+
+
+def execute_isolation(soc_ip: str) -> None:
+    rules = [
+        ["iptables", "-F"],
+        ["iptables", "-A", "INPUT", "-i", "lo", "-j", "ACCEPT"],
+        ["iptables", "-A", "OUTPUT", "-o", "lo", "-j", "ACCEPT"],
+        ["iptables", "-A", "INPUT", "-s", soc_ip, "-j", "ACCEPT"],
+        ["iptables", "-A", "OUTPUT", "-d", soc_ip, "-j", "ACCEPT"],
+        ["iptables", "-A", "INPUT", "-m", "state", "--state", "ESTABLISHED,RELATED", "-j", "ACCEPT"],
+        ["iptables", "-P", "INPUT", "DROP"],
+        ["iptables", "-P", "OUTPUT", "DROP"],
+        ["iptables", "-P", "FORWARD", "DROP"],
+    ]
+    for rule in rules:
+        subprocess.run(rule, check=True, capture_output=True)
+    print(f"[ISOLATION] Hôte isolé — SOC {soc_ip} autorisé uniquement.")
+
+
+def execute_process_kill(pid: int) -> None:
+    os.kill(pid, signal.SIGKILL)
+    print(f"[KILL] Processus {pid} terminé (SIGKILL).")
+
+
+def report_command_result(
+    agent_uuid: str, action_id: int, success: bool, message: str | None = None
+) -> None:
+    try:
+        response = requests.post(
+            f"{API_URL}/agent/actions/{action_id}/result",
+            json={"agent_uuid": agent_uuid, "success": success, "message": message},
+            headers=API_HEADERS,
+            timeout=10,
+        )
+        response.raise_for_status()
+        print(f"[CMD] Résultat rapporté : action_id={action_id} success={success}")
+    except Exception as exc:
+        print(f"[CMD] Erreur rapport résultat : {exc}")
+
+
+def poll_commands(agent_uuid: str) -> None:
+    try:
+        response = requests.get(
+            f"{API_URL}/agent/pending-commands",
+            params={"agent_uuid": agent_uuid},
+            headers=API_HEADERS,
+            timeout=10,
+        )
+        response.raise_for_status()
+        commands = response.json().get("commands", [])
+    except Exception as exc:
+        print(f"[CMD] Erreur poll : {exc}")
+        return
+
+    for cmd in commands:
+        action_id = cmd["action_id"]
+        action_type = cmd["action_type"]
+        payload = cmd.get("payload") or {}
+
+        print(f"[CMD] Commande reçue : {action_type} (id={action_id})")
+
+        success = False
+        message = None
+
+        try:
+            if action_type == "isolate_host":
+                soc_ip = payload.get("soc_ip") or _soc_ip_from_url()
+                execute_isolation(soc_ip)
+                success = True
+                message = f"Hôte isolé — seul {soc_ip} reste autorisé."
+            elif action_type == "kill_process":
+                pid = int(payload.get("pid", 0))
+                if pid > 0:
+                    execute_process_kill(pid)
+                    success = True
+                    message = f"Processus {pid} terminé."
+                else:
+                    message = "PID manquant ou invalide dans le payload."
+            else:
+                message = f"Type d'action non supporté localement : {action_type}"
+        except Exception as exc:
+            message = str(exc)
+
+        report_command_result(agent_uuid, action_id, success, message)
+
+
 def main() -> None:
     print("=== RansomShield Host Agent ===")
     print(f"API       : {API_URL}")
@@ -492,6 +585,7 @@ def main() -> None:
 
     last_heartbeat = 0
     last_process_scan = 0
+    last_command_poll = 0
 
     try:
         while True:
@@ -504,6 +598,10 @@ def main() -> None:
             if ENABLE_PROCESS_MONITOR and now - last_process_scan >= SCAN_INTERVAL:
                 monitor_processes(agent_uuid)
                 last_process_scan = now
+
+            if now - last_command_poll >= COMMAND_POLL_INTERVAL:
+                poll_commands(agent_uuid)
+                last_command_poll = now
 
             time.sleep(1)
 

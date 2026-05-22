@@ -9,284 +9,342 @@
     @include('platform.partials.network-visual-style')
 
     @php
-        $activeStatus = $activeStatus ?? request('status', 'monitored');
-
-        $filters = [
-            'monitored' => 'Surveillés',
-            'retired' => 'Retirés',
-            'all' => 'Tous',
-        ];
-
         $roleIcon = function ($role) {
             return match ($role) {
-                'soc_server' => '🛡️',
-                'gateway' => '🌐',
-                'server' => '🖥️',
-                default => '💻',
+                'soc_server'    => 'fa-server',
+                'gateway'       => 'fa-network-wired',
+                'file_server'   => 'fa-hard-drive',
+                'attacker_demo' => 'fa-skull-crossbones',
+                default         => 'fa-desktop',
             };
         };
 
-        $statusClass = function ($host) {
-            if (!$host->is_monitored) {
-                return 'badge-suspect';
-            }
+        $roleColor = function ($role) {
+            return match ($role) {
+                'soc_server'    => '#6366f1',
+                'gateway'       => '#22c55e',
+                'file_server'   => '#f97316',
+                'attacker_demo' => '#ef4444',
+                default         => '#64748b',
+            };
+        };
 
+        $statusColor = function ($host) {
+            if (!$host->is_monitored) return '#6b7280';
             return match ($host->discovery_status) {
-                'detected' => 'badge-normal',
-                'approved' => 'badge-normal',
-                'retired' => 'badge-suspect',
-                default => 'badge-high',
+                'approved' => '#22c55e',
+                'detected' => '#6366f1',
+                default    => '#f97316',
+            };
+        };
+
+        $enrollColor = function ($status) {
+            return match ($status) {
+                'enrolled'     => '#22c55e',
+                'pre_enrolled' => '#6366f1',
+                default        => '#64748b',
             };
         };
     @endphp
 
     <style>
-        .host-hero {
-            padding: 28px;
+        .hosts-hero {
+            position: relative;
+            overflow: hidden;
+            padding: 32px;
             border-radius: 32px;
             border: 1px solid var(--border-soft);
             background:
-                radial-gradient(circle at 15% 18%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 28%),
-                radial-gradient(circle at 86% 10%, color-mix(in srgb, #22c55e 12%, transparent), transparent 32%),
+                radial-gradient(circle at 10% 20%, color-mix(in srgb, #22c55e 10%, transparent), transparent 28%),
+                radial-gradient(circle at 88% 8%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 28%),
                 var(--bg-card);
             box-shadow: var(--shadow-soft);
         }
 
-        .host-hero h2 {
+        .hosts-hero h2 {
             margin: 0;
-            font-size: clamp(38px, 5vw, 68px);
+            font-size: clamp(36px, 5vw, 64px);
             line-height: .95;
             letter-spacing: -.08em;
             font-weight: 950;
         }
 
-        .host-hero p {
-            margin-top: 14px;
+        .hosts-hero p {
+            margin-top: 12px;
             color: var(--text-muted);
             line-height: 1.75;
             max-width: 860px;
         }
 
-        .filter-row {
+        /* Filter tabs */
+        .filter-tabs {
             display: flex;
             flex-wrap: wrap;
-            gap: 8px;
-            margin-top: 18px;
+            gap: 6px;
+            margin-top: 20px;
         }
 
-        .host-grid-premium {
+        .filter-tab {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: 20px;
+            border: 1px solid var(--border-soft);
+            background: color-mix(in srgb, var(--bg-panel-soft) 70%, transparent);
+            color: var(--text-muted);
+            font-size: 13px;
+            font-weight: 700;
+            text-decoration: none;
+            transition: .15s ease;
+            white-space: nowrap;
+        }
+
+        .filter-tab:hover {
+            border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+            color: var(--text-main);
+        }
+
+        .filter-tab.active {
+            background: var(--accent);
+            color: #fff;
+            border-color: color-mix(in srgb, var(--accent) 60%, transparent);
+        }
+
+        /* Host cards */
+        .host-list {
             display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 14px;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
         }
 
         .host-card {
-            display: grid;
-            grid-template-columns: 58px minmax(0, 1fr) auto;
+            display: flex;
+            align-items: flex-start;
             gap: 14px;
-            align-items: center;
-            padding: 16px;
-            border-radius: 24px;
+            padding: 18px 20px;
+            border-radius: 20px;
             background: var(--bg-card);
             border: 1px solid var(--border-soft);
+            border-left-width: 4px;
             box-shadow: var(--shadow-soft);
+            transition: transform .15s ease, box-shadow .15s ease;
         }
 
-        .host-icon {
-            width: 58px;
-            height: 58px;
-            display: grid;
-            place-items: center;
-            border-radius: 20px;
-            background: color-mix(in srgb, var(--accent) 11%, transparent);
-            border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
-            font-size: 25px;
+        .host-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 28px rgba(0,0,0,.16);
+        }
+
+        .host-icon-col {
+            width: 46px;
+            height: 46px;
+            border-radius: 13px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .host-body {
+            flex: 1;
+            min-width: 0;
         }
 
         .host-title {
-            margin: 0;
-            font-size: 16px;
-            font-weight: 950;
-            letter-spacing: -.03em;
+            margin: 0 0 3px;
+            font-size: 14px;
+            font-weight: 850;
+            letter-spacing: -.02em;
+            font-family: monospace;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .host-meta {
-            margin-top: 6px;
-            color: var(--text-muted);
             font-size: 12px;
-            line-height: 1.55;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            line-height: 1.5;
         }
 
-        .host-badges {
+        .host-tags {
             display: flex;
             flex-wrap: wrap;
-            gap: 7px;
-            margin-top: 10px;
+            gap: 5px;
+            margin-bottom: 10px;
         }
 
-        .host-actions {
+        .host-strip {
             display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            justify-content: flex-end;
+            flex-direction: column;
+            gap: 6px;
+            flex-shrink: 0;
         }
 
-        .host-actions form {
-            display: inline-flex;
+        .host-strip form { display: contents; }
+
+        @media (max-width: 1050px) {
+            .host-list { grid-template-columns: 1fr; }
         }
 
-        @media (max-width: 1100px) {
-            .host-grid-premium {
-                grid-template-columns: 1fr;
-            }
-
-            .host-card {
-                grid-template-columns: 52px 1fr;
-            }
-
-            .host-actions {
-                grid-column: 1 / -1;
-                display: grid;
-                grid-template-columns: 1fr;
-            }
-
-            .host-actions form,
-            .host-actions .action-btn,
-            .host-actions button {
-                width: 100%;
-            }
+        @media (max-width: 700px) {
+            .host-card { flex-direction: column; }
+            .host-strip { flex-direction: row; flex-wrap: wrap; width: 100%; }
+            .host-strip .action-btn { flex: 1 1 auto; justify-content: center; }
         }
     </style>
 
     <div class="animated-page">
-        <section class="host-hero">
+
+        {{-- Hero --}}
+        <section class="hosts-hero">
             <div class="analysis-kicker">
                 <span class="analysis-dot"></span>
-                Découverte machines
+                Découverte machines — LAN
             </div>
 
             <h2>Identifier les hôtes du réseau.</h2>
 
-            <p>
-                Les hôtes détectés sont conservés en base. Tu peux retirer une machine de la surveillance
-                sans supprimer son historique, puis la réactiver plus tard.
-            </p>
+            <p>Les hôtes détectés sont conservés en base. Tu peux retirer une machine de la surveillance
+                sans supprimer son historique, puis la réactiver ou l'enrôler pour installer l'agent.</p>
 
-            <div class="btn-row">
-                <a href="{{ route('platform.networks.index') }}" class="btn btn-primary">Voir réseaux</a>
-                <a href="{{ route('platform.agents.index') }}" class="btn btn-soft">Voir agents</a>
+            <div class="btn-row" style="margin-top:18px">
+                <a href="{{ route('platform.networks.index') }}" class="action-btn primary">
+                    <i class="fa-solid fa-network-wired"></i> Voir réseaux
+                </a>
+                <a href="{{ route('platform.agents.index') }}" class="action-btn">
+                    <i class="fa-solid fa-microchip"></i> Voir agents
+                </a>
+                <a href="{{ route('platform.local-host.index') }}" class="action-btn">
+                    <i class="fa-solid fa-server"></i> Machine SOC
+                </a>
             </div>
 
-            <div class="filter-row">
-                @foreach($filters as $key => $label)
-                    <a href="{{ route('platform.discovered-hosts.index', ['status' => $key]) }}"
-                       class="action-btn {{ $activeStatus === $key ? 'primary' : '' }}">
+            <div class="filter-tabs">
+                @foreach(['monitored' => 'Surveillés', 'retired' => 'Retirés', 'all' => 'Tous'] as $key => $label)
+                    <a class="filter-tab {{ $activeStatus === $key ? 'active' : '' }}"
+                       href="{{ route('platform.discovered-hosts.index', ['status' => $key]) }}">
                         {{ $label }}
                     </a>
                 @endforeach
             </div>
         </section>
 
+        {{-- Stats --}}
         <section class="smart-stats section-gap">
             <div class="smart-stat">
-                <div class="smart-stat-label">Hôtes affichés</div>
-                <div class="smart-stat-value">{{ $hosts->total() }}</div>
-                <div class="smart-stat-hint">Selon le filtre actuel.</div>
+                <div class="smart-stat-icon"><i class="fa-solid fa-desktop"></i></div>
+                <div class="smart-stat-label">Total hôtes</div>
+                <div class="smart-stat-value">{{ $stats['total'] }}</div>
+                <div class="smart-stat-hint">Machines enregistrées.</div>
             </div>
-
             <div class="smart-stat">
-                <div class="smart-stat-label">Filtre</div>
-                <div class="smart-stat-value" style="font-size:28px;">{{ $filters[$activeStatus] ?? 'Tous' }}</div>
-                <div class="smart-stat-hint">État de surveillance.</div>
+                <div class="smart-stat-icon"><i class="fa-solid fa-eye"></i></div>
+                <div class="smart-stat-label">Surveillés</div>
+                <div class="smart-stat-value" style="{{ $stats['monitored'] > 0 ? 'color:#22c55e' : '' }}">{{ $stats['monitored'] }}</div>
+                <div class="smart-stat-hint">Actifs en surveillance.</div>
             </div>
-
             <div class="smart-stat">
-                <div class="smart-stat-label">Historique</div>
-                <div class="smart-stat-value" style="font-size:28px;">ON</div>
-                <div class="smart-stat-hint">Les hôtes retirés restent visibles.</div>
+                <div class="smart-stat-icon"><i class="fa-solid fa-microchip"></i></div>
+                <div class="smart-stat-label">Enrôlés</div>
+                <div class="smart-stat-value" style="color:var(--accent)">{{ $stats['enrolled'] }}</div>
+                <div class="smart-stat-hint">Agent installé et actif.</div>
             </div>
-
             <div class="smart-stat">
-                <div class="smart-stat-label">Source</div>
-                <div class="smart-stat-value" style="font-size:28px;">LAN</div>
-                <div class="smart-stat-hint">Découverte réseau locale.</div>
+                <div class="smart-stat-icon"><i class="fa-solid fa-ban"></i></div>
+                <div class="smart-stat-label">Retirés</div>
+                <div class="smart-stat-value" style="color:var(--text-muted)">{{ $stats['retired'] }}</div>
+                <div class="smart-stat-hint">Hors surveillance.</div>
             </div>
         </section>
 
-        <section class="soc-card section-gap">
-            <div class="soc-card-header">
-                <div>
-                    <h3 class="soc-card-title">Machines détectées</h3>
-                    <p class="soc-card-subtitle">Hôtes surveillés, retirés ou historiques.</p>
-                </div>
-            </div>
+        {{-- Host list --}}
+        @if($hosts->count())
+            <div class="host-list section-gap">
+                @foreach($hosts as $host)
+                    @php
+                        $ri  = $roleIcon($host->host_role);
+                        $rc  = $roleColor($host->host_role);
+                        $sc  = $statusColor($host);
+                        $ec  = $enrollColor($host->enrollment_status ?? 'not_enrolled');
+                        $isEnrolled = ($host->enrollment_status ?? 'not_enrolled') === 'enrolled';
+                    @endphp
 
-            @if($hosts->count())
-                <div class="host-grid-premium">
-                    @foreach($hosts as $host)
-                        <article class="host-card">
-                            <div class="host-icon">{{ $roleIcon($host->host_role) }}</div>
+                    <article class="host-card" style="border-left-color:{{ $sc }}">
+                        <div class="host-icon-col" style="background:color-mix(in srgb, {{ $rc }} 12%, transparent); color:{{ $rc }}">
+                            <i class="fa-solid {{ $ri }}"></i>
+                        </div>
 
-                            <div>
-                                <h3 class="host-title">{{ $host->hostname ?: $host->ip_address }}</h3>
-
-                                <div class="host-meta">
-                                    Réseau : {{ $host->managedNetwork?->cidr ?? '—' }}
-                                    <br>
-                                    IP : <span class="mono">{{ $host->ip_address }}</span>
-                                    —
-                                    MAC : <span class="mono">{{ $host->mac_address ?? '—' }}</span>
-                                    <br>
-                                    {{ $host->retired_reason ?: 'Machine disponible pour surveillance.' }}
-                                </div>
-
-                                <div class="host-badges">
-                                    <span class="badge {{ $statusClass($host) }}">
-                                        {{ $host->is_monitored ? $host->discovery_status : 'retired' }}
-                                    </span>
-                                    <span class="badge">Rôle : {{ $host->host_role ?? 'client' }}</span>
-                                    <span class="badge">Enrôlement : {{ $host->enrollment_status ?? 'not_enrolled' }}</span>
-                                    <span class="badge">
-                                        Vu : {{ $host->last_seen_at?->format('d/m H:i') ?? '—' }}
-                                    </span>
-                                </div>
-                            </div>
-
-                            <div class="host-actions">
-                                @if($host->is_monitored)
-                                    @if(($host->enrollment_status ?? 'not_enrolled') !== 'enrolled')
-                                        <form method="POST" action="{{ route('platform.discovered-hosts.enroll', $host) }}">
-                                            @csrf
-                                            <button class="action-btn primary" type="submit">Enrôler</button>
-                                        </form>
-                                    @endif
-
-                                    <form method="POST" action="{{ route('platform.discovered-hosts.retire', $host) }}">
-                                        @csrf
-                                        @method('PATCH')
-                                        <button class="action-btn danger" type="submit">Retirer</button>
-                                    </form>
-                                @else
-                                    <form method="POST" action="{{ route('platform.discovered-hosts.restore', $host) }}">
-                                        @csrf
-                                        @method('PATCH')
-                                        <button class="action-btn success" type="submit">Réactiver</button>
-                                    </form>
+                        <div class="host-body">
+                            <h4 class="host-title">{{ $host->hostname ?: $host->ip_address }}</h4>
+                            <div class="host-meta">
+                                <i class="fa-solid fa-network-wired" style="margin-right:4px"></i>{{ $host->managedNetwork?->cidr ?? '—' }}
+                                &nbsp;·&nbsp;
+                                <i class="fa-solid fa-ethernet" style="margin-right:4px"></i><span style="font-family:monospace">{{ $host->ip_address }}</span>
+                                @if($host->mac_address)
+                                    &nbsp;·&nbsp;<span style="font-family:monospace">{{ $host->mac_address }}</span>
+                                @endif
+                                @if($host->last_seen_at)
+                                    <br><i class="fa-regular fa-clock" style="margin-right:4px"></i>Vu {{ $host->last_seen_at->diffForHumans() }}
                                 @endif
                             </div>
-                        </article>
-                    @endforeach
-                </div>
+                            <div class="host-tags">
+                                <span class="badge" style="color:{{ $sc }}; border-color:color-mix(in srgb, {{ $sc }} 30%, transparent)">
+                                    {{ $host->is_monitored ? ($host->discovery_status ?? 'detected') : 'retiré' }}
+                                </span>
+                                <span class="badge">{{ $host->host_role ?? 'client' }}</span>
+                                <span class="badge" style="color:{{ $ec }}; border-color:color-mix(in srgb, {{ $ec }} 30%, transparent)">
+                                    {{ $host->enrollment_status ?? 'not_enrolled' }}
+                                </span>
+                                @if($host->agent)
+                                    <span class="badge" style="color:var(--accent)">
+                                        <i class="fa-solid fa-microchip" style="margin-right:4px"></i>{{ $host->agent->agent_name }}
+                                    </span>
+                                @endif
+                            </div>
+                        </div>
 
-                <div class="pagination-wrap">
-                    {{ $hosts->links() }}
-                </div>
-            @else
-                @include('platform.partials.empty-state', [
-                    'title' => 'Aucun hôte pour ce filtre.',
-                    'message' => 'Lance un scan réseau ou change le filtre.'
-                ])
-            @endif
-        </section>
+                        <div class="host-strip">
+                            @if($host->is_monitored)
+                                @if(!$isEnrolled)
+                                    <form method="POST" action="{{ route('platform.discovered-hosts.enroll', $host) }}">
+                                        @csrf
+                                        <button class="action-btn primary" type="submit" style="width:100%">
+                                            <i class="fa-solid fa-plug"></i> Enrôler
+                                        </button>
+                                    </form>
+                                @endif
+                                <form method="POST" action="{{ route('platform.discovered-hosts.retire', $host) }}">
+                                    @csrf @method('PATCH')
+                                    <button class="action-btn danger" type="submit" style="width:100%">
+                                        <i class="fa-solid fa-ban"></i> Retirer
+                                    </button>
+                                </form>
+                            @else
+                                <form method="POST" action="{{ route('platform.discovered-hosts.restore', $host) }}">
+                                    @csrf @method('PATCH')
+                                    <button class="action-btn success" type="submit" style="width:100%">
+                                        <i class="fa-solid fa-rotate-left"></i> Réactiver
+                                    </button>
+                                </form>
+                            @endif
+                        </div>
+                    </article>
+                @endforeach
+            </div>
+
+            <div class="pagination-wrap section-gap">
+                {{ $hosts->links() }}
+            </div>
+        @else
+            @include('platform.partials.empty-state', [
+                'title'   => 'Aucun hôte pour ce filtre.',
+                'message' => 'Lance un scan réseau depuis la page Réseaux ou change le filtre.'
+            ])
+        @endif
+
     </div>
 @endsection

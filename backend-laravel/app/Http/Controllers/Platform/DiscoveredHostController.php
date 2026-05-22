@@ -28,8 +28,14 @@ class DiscoveredHostController extends Controller
         }
 
         return view('platform.discovered-hosts.index', [
-            'hosts' => $query->paginate(25)->withQueryString(),
+            'hosts'        => $query->paginate(25)->withQueryString(),
             'activeStatus' => $status,
+            'stats'        => [
+                'total'    => DiscoveredHost::count(),
+                'monitored'=> DiscoveredHost::where('is_monitored', true)->count(),
+                'enrolled' => DiscoveredHost::where('enrollment_status', 'enrolled')->count(),
+                'retired'  => DiscoveredHost::where('is_monitored', false)->count(),
+            ],
         ]);
     }
 

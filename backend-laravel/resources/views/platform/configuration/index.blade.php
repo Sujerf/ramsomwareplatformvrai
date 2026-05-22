@@ -195,13 +195,18 @@
                     </div>
 
                     <div class="btn-row">
-                        <form method="POST" action="{{ route('platform.configuration.reset-defaults') }}">
+                        <form method="POST" action="{{ route('platform.configuration.reset-defaults') }}" style="display:contents">
                             @csrf
-                            <button type="submit" class="btn btn-primary">Réinitialiser défauts</button>
+                            <button type="submit" class="action-btn warning">
+                                <i class="fa-solid fa-rotate-left"></i> Réinitialiser défauts
+                            </button>
                         </form>
-
-                        <a href="{{ route('platform.system-settings.index') }}" class="btn btn-soft">Paramètres</a>
-                        <a href="{{ route('platform.detection-rules.index') }}" class="btn btn-soft">Règles</a>
+                        <a href="{{ route('platform.system-settings.index') }}" class="action-btn">
+                            <i class="fa-solid fa-sliders"></i> Paramètres
+                        </a>
+                        <a href="{{ route('platform.detection-rules.index') }}" class="action-btn">
+                            <i class="fa-solid fa-list-check"></i> Règles
+                        </a>
                     </div>
                 </div>
 

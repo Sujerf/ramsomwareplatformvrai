@@ -95,4 +95,5 @@ Route::prefix('console')->name('platform.')->middleware('auth')->group(function 
     Route::post('/discovered-hosts/{discoveredHost}/enroll', [DiscoveredHostController::class, 'enroll'])->name('discovered-hosts.enroll');
     Route::get('/events', [\App\Http\Controllers\Platform\EventController::class, 'index'])->name('events.index');
     Route::get('/events/{event}', [\App\Http\Controllers\Platform\EventController::class, 'show'])->name('events.show');
+    Route::get('/notifications/poll', \App\Http\Controllers\Platform\NotificationPollController::class)->name('notifications.poll');
 });

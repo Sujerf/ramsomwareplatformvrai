@@ -27,8 +27,14 @@ class ManagedNetworkController extends Controller
         }
 
         return view('platform.networks.index', [
-            'networks' => $query->paginate(20)->withQueryString(),
+            'networks'     => $query->paginate(20)->withQueryString(),
             'activeStatus' => $status,
+            'stats'        => [
+                'total'     => ManagedNetwork::count(),
+                'monitored' => ManagedNetwork::where('is_monitored', true)->count(),
+                'retired'   => ManagedNetwork::where('is_monitored', false)->count(),
+                'approved'  => ManagedNetwork::where('status', 'approved')->count(),
+            ],
         ]);
     }
 

@@ -1,7 +1,7 @@
 @extends('layouts.soc')
 
-@section('title', 'RansomShield — Analyse alerte')
-@section('page_title', 'Analyse alerte')
+@section('title', 'RansomShield — Alerte')
+@section('page_title', 'Détail alerte')
 @section('page_subtitle', $alert->title)
 
 @section('content')
@@ -9,169 +9,510 @@
     @include('platform.partials.network-visual-style')
 
     @php
-        $riskClass = match ($alert->risk_level) {
-            'critical' => 'badge-critical',
-            'high' => 'badge-high',
-            'suspect' => 'badge-suspect',
-            default => 'badge-normal',
+        $riskColor = match ($alert->risk_level) {
+            'critical' => '#ef4444',
+            'high'     => '#f97316',
+            'suspect'  => '#eab308',
+            default    => '#6366f1',
         };
 
-        $signals = data_get($alert->metadata, 'signals', []);
-        $path = data_get($alert->metadata, 'path');
-        $isSimulation = data_get($alert->metadata, 'is_simulation');
+        $riskIcon = match ($alert->risk_level) {
+            'critical' => 'fa-skull-crossbones',
+            'high'     => 'fa-triangle-exclamation',
+            'suspect'  => 'fa-eye',
+            default    => 'fa-bell',
+        };
+
+        $statusLabel = match ($alert->status) {
+            'open'           => 'Ouverte',
+            'acknowledged'   => 'Reconnue',
+            'investigating'  => 'En investigation',
+            'resolved'       => 'Résolue',
+            'false_positive' => 'Faux positif',
+            default          => $alert->status,
+        };
+
+        $statusColor = match ($alert->status) {
+            'resolved'       => '#22c55e',
+            'false_positive' => '#eab308',
+            'investigating',
+            'acknowledged'   => '#f97316',
+            default          => '#ef4444',
+        };
+
+        $signals    = data_get($alert->metadata, 'signals', []);
+        $path       = data_get($alert->metadata, 'path');
+        $isSim      = data_get($alert->metadata, 'is_simulation', false);
+        $isActive   = !in_array($alert->status, ['resolved', 'false_positive'], true);
     @endphp
 
+    <style>
+        /* Hero */
+        .al-show-hero {
+            position: relative;
+            overflow: hidden;
+            padding: 32px;
+            border-radius: 32px;
+            background:
+                radial-gradient(circle at 8% 20%, color-mix(in srgb, {{ $riskColor }} 14%, transparent), transparent 30%),
+                radial-gradient(circle at 90% 5%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 25%),
+                var(--bg-card);
+            border: 1px solid var(--border-soft);
+            border-left: 4px solid {{ $riskColor }};
+            box-shadow: var(--shadow-soft);
+        }
+
+        .al-show-hero h2 {
+            margin: 0;
+            font-size: clamp(28px, 4vw, 52px);
+            line-height: 1;
+            letter-spacing: -.06em;
+            font-weight: 950;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .al-hero-icon {
+            width: 52px;
+            height: 52px;
+            border-radius: 16px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            background: color-mix(in srgb, {{ $riskColor }} 14%, transparent);
+            color: {{ $riskColor }};
+            flex-shrink: 0;
+        }
+
+        .al-show-hero p {
+            color: var(--text-muted);
+            max-width: 780px;
+            line-height: 1.75;
+            margin-top: 12px;
+        }
+
+        .btn-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 18px;
+        }
+
+        /* Status bar */
+        .al-status-bar {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1px;
+            background: var(--border-soft);
+            border-radius: 20px;
+            overflow: hidden;
+            border: 1px solid var(--border-soft);
+        }
+
+        .status-block {
+            padding: 16px 20px;
+            background: var(--bg-card);
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .status-block-label {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: .06em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+
+        .status-block-value {
+            font-size: 15px;
+            font-weight: 850;
+            letter-spacing: -.02em;
+        }
+
+        @media (max-width: 700px) {
+            .al-status-bar { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        /* Context strip */
+        .al-ctx {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+
+        .ctx-block {
+            padding: 14px 16px;
+            border-radius: 16px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-soft);
+        }
+
+        .ctx-label {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: .06em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 5px;
+        }
+
+        .ctx-value {
+            font-size: 14px;
+            font-weight: 750;
+            letter-spacing: -.02em;
+        }
+
+        @media (max-width: 700px) {
+            .al-ctx { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        /* Signal cards */
+        .signal-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .signal-card {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-radius: 16px;
+            border: 1px solid var(--border-soft);
+            background: color-mix(in srgb, var(--bg-panel-soft) 60%, transparent);
+            border-left-width: 3px;
+        }
+
+        .signal-card.risk-critical { border-left-color: #ef4444; }
+        .signal-card.risk-high     { border-left-color: #f97316; }
+        .signal-card.risk-suspect  { border-left-color: #eab308; }
+        .signal-card.risk-normal   { border-left-color: #6366f1; }
+
+        .signal-icon-col {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 15px;
+            flex-shrink: 0;
+        }
+
+        .signal-body { flex: 1; min-width: 0; }
+
+        .signal-name {
+            font-size: 13px;
+            font-weight: 800;
+            letter-spacing: -.02em;
+        }
+
+        .signal-meta {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        /* Recommendation box */
+        .rec-box {
+            padding: 18px;
+            border-radius: 18px;
+            background: color-mix(in srgb, var(--accent) 6%, transparent);
+            border: 1px solid color-mix(in srgb, var(--accent) 16%, transparent);
+            font-size: 14px;
+            line-height: 1.7;
+        }
+
+        .rec-title {
+            font-size: 13px;
+            font-weight: 800;
+            letter-spacing: -.01em;
+            margin-bottom: 8px;
+            color: var(--accent);
+        }
+
+        /* Metadata accordion */
+        .meta-toggle-btn {
+            background: none;
+            border: none;
+            padding: 0;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-muted);
+        }
+
+        .meta-toggle-btn:hover { color: var(--text-main); }
+
+        .meta-body {
+            display: none;
+            margin-top: 10px;
+        }
+
+        .meta-body.open { display: block; }
+
+        .meta-pre {
+            background: #0a0f1e;
+            border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
+            border-radius: 14px;
+            padding: 16px;
+            font-size: 12px;
+            font-family: monospace;
+            color: #a5b4fc;
+            overflow-x: auto;
+            line-height: 1.6;
+        }
+
+        /* Path box */
+        .path-box {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            border-radius: 12px;
+            background: #0a0f1e;
+            border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
+            font-family: monospace;
+            font-size: 13px;
+            color: #a5b4fc;
+            word-break: break-all;
+        }
+    </style>
+
     <div class="animated-page">
-        <section class="analysis-hero">
-            <div class="analysis-hero-content">
-                <div>
-                    <div class="analysis-kicker"><span class="analysis-dot"></span> Fiche alerte</div>
-                    <h2>{{ $alert->title }}</h2>
-                    <p>{{ $alert->message }}</p>
 
-                    <div class="section-gap" style="display:flex; gap:8px; flex-wrap:wrap;">
-                        <span class="badge {{ $riskClass }}">Risque : {{ $alert->risk_level }}</span>
-                        <span class="badge">Score : {{ $alert->score }}</span>
-                        <span class="badge">Statut : {{ $alert->status }}</span>
-                        <span class="badge">{{ $isSimulation ? 'Simulation contrôlée' : 'Événement réel' }}</span>
-                    </div>
+        {{-- Hero --}}
+        <section class="al-show-hero">
+            <div class="analysis-kicker">
+                <span class="analysis-dot"></span>
+                Alerte #{{ $alert->id }}
+                @if($isSim)
+                    &nbsp;·&nbsp;<span style="color:#6366f1">Simulation contrôlée</span>
+                @endif
+            </div>
 
-                    <div class="btn-row">
-                        <a href="{{ route('platform.alerts.index') }}" class="btn btn-soft">Retour alertes</a>
-                        @if($alert->incident)
-                            <a href="{{ route('platform.incidents.show', $alert->incident) }}" class="btn btn-primary">Ouvrir incident</a>
-                        @endif
-                    </div>
-                </div>
+            <h2>
+                <span class="al-hero-icon"><i class="fa-solid {{ $riskIcon }}"></i></span>
+                {{ $alert->title }}
+            </h2>
 
-                <div class="network-orbit">
-                    <div class="orbit-ring"></div>
-                    <div class="orbit-ring"></div>
-                    <div class="orbit-node n1"></div>
-                    <div class="orbit-node n2"></div>
-                    <div class="orbit-node n3"></div>
-                    <div class="orbit-core">{{ strtoupper(substr($alert->risk_level, 0, 3)) }}</div>
-                </div>
+            @if($alert->message)
+                <p>{{ $alert->message }}</p>
+            @endif
+
+            <div class="btn-row">
+                <a href="{{ route('platform.alerts.index') }}" class="action-btn">
+                    <i class="fa-solid fa-arrow-left"></i> Retour alertes
+                </a>
+                @if($alert->incident)
+                    <a href="{{ route('platform.incidents.show', $alert->incident) }}" class="action-btn primary">
+                        <i class="fa-solid fa-shield-halved"></i> Ouvrir incident
+                    </a>
+                @endif
+
+                @if($isActive)
+                    <form method="POST" action="{{ route('platform.alerts.resolve', $alert) }}" style="display:contents">
+                        @csrf @method('PATCH')
+                        <button class="action-btn lg success" type="submit">
+                            <i class="fa-solid fa-check"></i> Résoudre
+                        </button>
+                    </form>
+                    <form method="POST" action="{{ route('platform.alerts.false-positive', $alert) }}" style="display:contents">
+                        @csrf @method('PATCH')
+                        <button class="action-btn lg warning" type="submit">
+                            <i class="fa-solid fa-xmark"></i> Faux positif
+                        </button>
+                    </form>
+                @else
+                    <form method="POST" action="{{ route('platform.alerts.reopen', $alert) }}" style="display:contents">
+                        @csrf @method('PATCH')
+                        <button class="action-btn lg" type="submit">
+                            <i class="fa-solid fa-rotate-left"></i> Réouvrir
+                        </button>
+                    </form>
+                @endif
             </div>
         </section>
 
-        <section class="page-toolbar">
-            <div>
-                <h2>Décision sur l'alerte</h2>
-                <p>Les décisions restent réversibles : tu peux résoudre, marquer faux positif ou réouvrir.</p>
+        {{-- Status bar --}}
+        <div class="al-status-bar section-gap">
+            <div class="status-block">
+                <div class="status-block-label">Risque</div>
+                <div class="status-block-value" style="color:{{ $riskColor }}">{{ ucfirst($alert->risk_level) }}</div>
             </div>
-
-            <div class="inline-actions">
-                <form method="POST" action="{{ route('platform.alerts.resolve', $alert) }}">
-                    @csrf
-                    @method('PATCH')
-                    <button class="action-btn success" type="submit">Résoudre</button>
-                </form>
-
-                <form method="POST" action="{{ route('platform.alerts.false-positive', $alert) }}">
-                    @csrf
-                    @method('PATCH')
-                    <button class="action-btn warning" type="submit">Faux positif</button>
-                </form>
-
-                <form method="POST" action="{{ route('platform.alerts.reopen', $alert) }}">
-                    @csrf
-                    @method('PATCH')
-                    <button class="action-btn primary" type="submit">Réouvrir</button>
-                </form>
+            <div class="status-block">
+                <div class="status-block-label">Score</div>
+                <div class="status-block-value">{{ $alert->score }}</div>
             </div>
-        </section>
+            <div class="status-block">
+                <div class="status-block-label">Statut</div>
+                <div class="status-block-value" style="color:{{ $statusColor }}">{{ $statusLabel }}</div>
+            </div>
+            <div class="status-block">
+                <div class="status-block-label">Mode</div>
+                <div class="status-block-value" style="color:{{ $isSim ? '#6366f1' : 'var(--text-main)' }}">
+                    {{ $isSim ? 'Simulation' : 'Réel' }}
+                </div>
+            </div>
+        </div>
 
-        <section class="smart-stats">
+        {{-- Context strip --}}
+        <div class="al-ctx section-gap">
+            <div class="ctx-block">
+                <div class="ctx-label"><i class="fa-solid fa-microchip" style="margin-right:5px"></i>Agent</div>
+                <div class="ctx-value">{{ $alert->agent?->agent_name ?? '—' }}</div>
+            </div>
+            <div class="ctx-block">
+                <div class="ctx-label"><i class="fa-solid fa-shield-halved" style="margin-right:5px"></i>Incident</div>
+                <div class="ctx-value">
+                    @if($alert->incident)
+                        <a href="{{ route('platform.incidents.show', $alert->incident) }}" style="color:var(--accent)">
+                            {{ Str::limit($alert->incident->title, 30) }}
+                        </a>
+                    @else
+                        —
+                    @endif
+                </div>
+            </div>
+            <div class="ctx-block">
+                <div class="ctx-label"><i class="fa-solid fa-bolt" style="margin-right:5px"></i>Événement</div>
+                <div class="ctx-value">{{ $alert->event?->event_type ?? '—' }}</div>
+            </div>
+            <div class="ctx-block">
+                <div class="ctx-label"><i class="fa-regular fa-clock" style="margin-right:5px"></i>Détectée</div>
+                <div class="ctx-value">{{ $alert->detected_at?->format('d/m/Y H:i') ?? $alert->created_at?->format('d/m/Y H:i') ?? '—' }}</div>
+            </div>
+        </div>
+
+        {{-- Stats --}}
+        <section class="smart-stats section-gap">
             <div class="smart-stat">
+                <div class="smart-stat-icon"><i class="fa-solid {{ $riskIcon }}"></i></div>
                 <div class="smart-stat-label">Risque</div>
-                <div class="smart-stat-value">{{ $alert->risk_level }}</div>
+                <div class="smart-stat-value" style="color:{{ $riskColor }}">{{ ucfirst($alert->risk_level) }}</div>
                 <div class="smart-stat-hint">Niveau attribué par le moteur.</div>
             </div>
             <div class="smart-stat">
+                <div class="smart-stat-icon"><i class="fa-solid fa-chart-bar"></i></div>
                 <div class="smart-stat-label">Score</div>
                 <div class="smart-stat-value">{{ $alert->score }}</div>
-                <div class="smart-stat-hint">Score calculé.</div>
+                <div class="smart-stat-hint">Score de dangerosité calculé.</div>
             </div>
             <div class="smart-stat">
+                <div class="smart-stat-icon"><i class="fa-solid fa-bell"></i></div>
                 <div class="smart-stat-label">Notifications</div>
                 <div class="smart-stat-value">{{ $alert->notifications->count() }}</div>
-                <div class="smart-stat-hint">UI, son ou mail pending.</div>
+                <div class="smart-stat-hint">Alertes UI / son / email.</div>
             </div>
             <div class="smart-stat">
+                <div class="smart-stat-icon"><i class="fa-solid fa-list-check"></i></div>
                 <div class="smart-stat-label">Signaux</div>
                 <div class="smart-stat-value">{{ count($signals) }}</div>
-                <div class="smart-stat-hint">Règles déclenchées.</div>
+                <div class="smart-stat-hint">Règles de détection déclenchées.</div>
             </div>
         </section>
 
-        <section class="grid grid-2 section-gap">
-            <div class="smart-card">
-                <h3 class="smart-card-title">Pourquoi cette alerte existe ?</h3>
-                <p class="smart-card-subtitle">Règles et contexte enregistrés par le moteur.</p>
+        {{-- Signals + Recommendation --}}
+        <div class="grid grid-2 section-gap">
+            {{-- Signals --}}
+            <div class="soc-card">
+                <h3 class="soc-card-title">Signaux déclencheurs</h3>
+                <p class="soc-card-subtitle">Règles activées par le moteur pour cette alerte.</p>
 
-                <div class="recommendation-box section-gap">
-                    @if(count($signals))
-                        @foreach($signals as $signal)
-                            <div>
-                                <strong>{{ $signal['rule_name'] ?? $signal['rule_code'] ?? 'Règle' }}</strong>
-                                <br>
-                                Risque : {{ $signal['risk_level'] ?? '—' }} —
-                                poids : {{ $signal['score_weight'] ?? '—' }}
+                <div class="signal-list section-gap">
+                    @forelse($signals as $sig)
+                        @php
+                            $sl = data_get($sig, 'risk_level', 'normal');
+                            $sc = match($sl) {
+                                'critical' => '#ef4444',
+                                'high'     => '#f97316',
+                                'suspect'  => '#eab308',
+                                default    => '#6366f1',
+                            };
+                        @endphp
+                        <div class="signal-card risk-{{ $sl }}">
+                            <div class="signal-icon-col" style="background:color-mix(in srgb, {{ $sc }} 12%, transparent); color:{{ $sc }}">
+                                <i class="fa-solid fa-list-check"></i>
                             </div>
-                            @if(!$loop->last)<br>@endif
-                        @endforeach
-                    @else
-                        <strong>Aucun signal détaillé disponible.</strong>
-                        <br>
-                        L'alerte existe mais ses signaux ne sont pas encore enrichis.
-                    @endif
+                            <div class="signal-body">
+                                <div class="signal-name">{{ data_get($sig, 'rule_name') ?? data_get($sig, 'rule_code', 'Règle inconnue') }}</div>
+                                <div class="signal-meta">
+                                    Risque : {{ $sl }}
+                                    @if(data_get($sig, 'score_weight'))
+                                        &nbsp;·&nbsp; Poids : {{ $sig['score_weight'] }}
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                    @empty
+                        <p style="color:var(--text-muted); font-size:13px">
+                            Aucun signal détaillé disponible. L'alerte existe mais ses signaux ne sont pas encore enrichis.
+                        </p>
+                    @endforelse
                 </div>
             </div>
 
-            <div class="smart-card">
-                <h3 class="smart-card-title">Recommandation RansomShield</h3>
-                <p class="smart-card-subtitle">Ce que l'analyste doit vérifier.</p>
+            {{-- Recommendation --}}
+            <div class="soc-card">
+                <h3 class="soc-card-title">Recommandation SOC</h3>
+                <p class="soc-card-subtitle">Marche à suivre recommandée pour cette alerte.</p>
 
-                <div class="recommendation-box section-gap">
+                <div class="rec-box section-gap">
                     @if($alert->risk_level === 'critical')
-                        <strong>Alerte critique.</strong>
-                        <br>
-                        Ouvre l'incident lié, vérifie le fichier concerné, confirme si l'événement est une simulation,
-                        puis traite les actions de protection proposées.
+                        <div class="rec-title"><i class="fa-solid fa-skull-crossbones" style="margin-right:6px"></i>Alerte critique — action immédiate</div>
+                        Ouvre l'incident lié et confirme si l'événement est réel ou une simulation.
+                        Traite les actions de protection proposées avant de résoudre.
                     @elseif($alert->risk_level === 'high')
-                        <strong>Alerte de risque élevé.</strong>
-                        <br>
-                        Vérifie l'agent, le chemin concerné et les répétitions d'événements.
+                        <div class="rec-title"><i class="fa-solid fa-triangle-exclamation" style="margin-right:6px"></i>Risque élevé</div>
+                        Vérifie l'agent concerné, le chemin impliqué et les répétitions d'événements similaires.
                     @else
-                        <strong>Alerte à surveiller.</strong>
-                        <br>
-                        Consulte le contexte avant de résoudre ou classer faux positif.
+                        <div class="rec-title"><i class="fa-solid fa-eye" style="margin-right:6px"></i>Alerte à surveiller</div>
+                        Consulte le contexte complet avant de résoudre ou classer en faux positif.
                     @endif
 
                     @if($path)
-                        <br><br>
-                        Chemin concerné : <span class="mono">{{ $path }}</span>
+                        <div style="margin-top:14px">
+                            <div style="font-size:12px; font-weight:700; color:var(--text-muted); margin-bottom:6px">CHEMIN CONCERNÉ</div>
+                            <div class="path-box">
+                                <i class="fa-solid fa-folder-open" style="color:#6366f1"></i>
+                                {{ $path }}
+                            </div>
+                        </div>
+                    @endif
+
+                    @if($alert->resolved_at)
+                        <div style="margin-top:14px; font-size:12px; color:#22c55e">
+                            <i class="fa-solid fa-circle-check" style="margin-right:5px"></i>
+                            Résolue le {{ $alert->resolved_at->format('d/m/Y à H:i') }}
+                            @if($alert->resolvedBy)
+                                par {{ $alert->resolvedBy->name }}
+                            @endif
+                        </div>
                     @endif
                 </div>
             </div>
-        </section>
+        </div>
 
-        <section class="detail-grid section-gap">
-            <div class="soc-card">
-                <h3 class="soc-card-title">Relations</h3>
-                <div class="detail-list section-gap">
-                    <div class="detail-row"><div class="detail-label">Agent</div><div class="detail-value">{{ $alert->agent?->agent_name ?? '—' }}</div></div>
-                    <div class="detail-row"><div class="detail-label">Incident</div><div class="detail-value">{{ $alert->incident?->title ?? '—' }}</div></div>
-                    <div class="detail-row"><div class="detail-label">Événement</div><div class="detail-value">{{ $alert->event?->event_type ?? '—' }}</div></div>
-                    <div class="detail-row"><div class="detail-label">Détectée</div><div class="detail-value">{{ $alert->detected_at?->format('d/m/Y H:i:s') ?? '—' }}</div></div>
-                </div>
+        {{-- Metadata accordion --}}
+        <div class="soc-card section-gap">
+            <button class="meta-toggle-btn" onclick="document.getElementById('metaBody').classList.toggle('open')">
+                <i class="fa-solid fa-code"></i>
+                Métadonnées brutes
+                <i class="fa-solid fa-chevron-down" style="font-size:10px"></i>
+            </button>
+            <div id="metaBody" class="meta-body">
+                <pre class="meta-pre">{{ json_encode($alert->metadata ?? [], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
             </div>
+        </div>
 
-            <div class="soc-card">
-                <h3 class="soc-card-title">Métadonnées</h3>
-                <pre class="json-box section-gap">{{ json_encode($alert->metadata ?? [], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
-            </div>
-        </section>
     </div>
 @endsection

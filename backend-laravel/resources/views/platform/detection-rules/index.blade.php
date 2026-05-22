@@ -6,6 +6,7 @@
 
 @section('content')
     @include('platform.partials.page-tools-style')
+    @include('platform.partials.network-visual-style')
     @include('platform.partials.config-premium-style')
 
     @php
@@ -25,12 +26,12 @@
 
         $ruleIcon = function ($code) {
             return match ($code) {
-                'rule_sensitive_extension' => '🧬',
-                'rule_mass_rename' => '🔁',
-                'rule_ransom_note' => '📝',
-                'rule_fast_write_activity' => '⚡',
-                'rule_simulation_marker' => '🧪',
-                default => '🧠',
+                'rule_sensitive_extension'  => 'fa-file-circle-exclamation',
+                'rule_mass_rename'          => 'fa-arrows-rotate',
+                'rule_ransom_note'          => 'fa-note-sticky',
+                'rule_fast_write_activity'  => 'fa-bolt',
+                'rule_simulation_marker'    => 'fa-flask',
+                default                     => 'fa-brain',
             };
         };
 
@@ -57,12 +58,15 @@
         .rule-icon {
             width: 58px;
             height: 58px;
-            display: grid;
-            place-items: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             border-radius: 20px;
             background: color-mix(in srgb, var(--accent) 11%, transparent);
             border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
-            font-size: 25px;
+            font-size: 22px;
+            color: var(--accent);
+            flex-shrink: 0;
         }
 
         .score-meter {
@@ -114,17 +118,17 @@
             </p>
 
             <div class="btn-row">
-                <a href="{{ route('platform.configuration.index') }}" class="btn btn-primary">
-                    Centre configuration
+                <a href="{{ route('platform.configuration.index') }}" class="action-btn primary">
+                    <i class="fa-solid fa-diagram-project"></i> Centre configuration
                 </a>
-
-                <a href="{{ route('platform.detection-thresholds.index') }}" class="btn btn-soft">
-                    Voir seuils
+                <a href="{{ route('platform.detection-thresholds.index') }}" class="action-btn">
+                    <i class="fa-solid fa-gauge-high"></i> Voir seuils
                 </a>
-
-                <form method="POST" action="{{ route('platform.configuration.reset-defaults') }}">
+                <form method="POST" action="{{ route('platform.configuration.reset-defaults') }}" style="display:contents">
                     @csrf
-                    <button class="btn btn-soft" type="submit">Restaurer défauts</button>
+                    <button class="action-btn warning" type="submit">
+                        <i class="fa-solid fa-rotate-left"></i> Restaurer défauts
+                    </button>
                 </form>
             </div>
         </section>
@@ -172,7 +176,7 @@
 
                 <article class="config-card">
                     <div class="rule-card">
-                        <div class="rule-icon">{{ $ruleIcon($rule->code) }}</div>
+                        <div class="rule-icon"><i class="fa-solid {{ $ruleIcon($rule->code) }}"></i></div>
 
                         <div>
                             <div class="config-card-head">
