@@ -77,6 +77,7 @@ class DetectionThresholdSeeder extends Seeder
         ];
 
         foreach ($thresholds as $threshold) {
+            $threshold['code'] = $threshold['code'] ?? $threshold['key'];
             DetectionThreshold::updateOrCreate(
                 ['key' => $threshold['key']],
                 $threshold

@@ -17,9 +17,12 @@ backend-laravel/auth.json
 agent-python/__pycache__/
 agent-python/*.pyc
 agent-python/.venv/
+agent-python/venv/
+agent-python/.ransomshield_host_agent_state.json
 collector-agent/__pycache__/
 collector-agent/*.pyc
 collector-agent/.venv/
+collector-agent/venv/
 
 # Logs
 *.log
