@@ -448,43 +448,42 @@
         }
 
         /*
-         * Icônes automatiques.
+         * Icônes automatiques — Font Awesome 6 (ordre du plus spécifique au plus général).
          */
         const iconMap = [
-            ['dashboard', '📊'],
-            ['accueil', '🏠'],
-            ['configuration', '⚙️'],
-            ['paramètre', '🔧'],
-            ['parametre', '🔧'],
-            ['réseau', '🌐'],
-            ['reseau', '🌐'],
-            ['hôte', '🖥️'],
-            ['hote', '🖥️'],
-            ['machine', '💻'],
-            ['agent', '🛰️'],
-            ['alerte', '🚨'],
-            ['incident', '🔥'],
-            ['action', '🛡️'],
-            ['approbation', '✅'],
-            ['règle', '🧠'],
-            ['regle', '🧠'],
-            ['seuil', '📈'],
-            ['politique', '🧩'],
-            ['extension', '🧬'],
-            ['détection', '🎯'],
-            ['detection', '🎯'],
-            ['infrastructure', '🏗️'],
-            ['historique', '🕘'],
+            ['découvert',    'fa-satellite-dish'],
+            ['dashboard',    'fa-chart-pie'],
+            ['accueil',      'fa-house-chimney'],
+            ['réseau',       'fa-diagram-project'],
+            ['reseau',       'fa-diagram-project'],
+            ['agent',        'fa-microchip'],
+            ['alerte',       'fa-triangle-exclamation'],
+            ['incident',     'fa-fire'],
+            ['événement',    'fa-timeline'],
+            ['evenement',    'fa-timeline'],
+            ['approbation',  'fa-clipboard-check'],
+            ['règle',        'fa-filter'],
+            ['regle',        'fa-filter'],
+            ['seuil',        'fa-wave-square'],
+            ['politique',    'fa-file-shield'],
+            ['extension',    'fa-tags'],
+            ['configuration','fa-table-cells-large'],
+            ['paramètre',    'fa-gears'],
+            ['parametre',    'fa-gears'],
+            ['machine',      'fa-desktop'],
+            ['hôte',         'fa-desktop'],
+            ['hote',         'fa-desktop'],
+            ['action',       'fa-lock'],
         ];
 
         function pickIcon(label) {
             const normalized = label.toLowerCase();
 
-            for (const item of iconMap) {
-                if (normalized.includes(item[0])) return item[1];
+            for (const [key, cls] of iconMap) {
+                if (normalized.includes(key)) return cls;
             }
 
-            return '•';
+            return 'fa-circle-dot';
         }
 
         document.querySelectorAll('.soc-nav a').forEach(link => {
@@ -498,10 +497,9 @@
 
             link.innerHTML = `
                 <span class="rs-final-nav-left">
-                    <span class="rs-final-nav-icon">${icon}</span>
+                    <span class="rs-final-nav-icon"><i class="fa-solid ${icon}"></i></span>
                     <span class="rs-final-nav-text">${rawLabel}</span>
                 </span>
-                <span>→</span>
             `;
         });
 

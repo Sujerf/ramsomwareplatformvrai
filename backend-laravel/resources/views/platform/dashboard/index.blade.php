@@ -691,11 +691,11 @@
                     <div class="section-gap" style="display:flex; gap:8px; flex-wrap:wrap;">
                         <span class="badge {{ $riskClass($globalLevel) }}">{{ $globalLabel }}</span>
                         <span class="badge">
-                            <i class="fa-solid fa-robot" style="font-size:11px; margin-right:4px;"></i>
+                            <i class="fa-solid fa-microchip" style="font-size:11px; margin-right:4px;"></i>
                             {{ $stats['agents_total'] }} agent(s)
                         </span>
                         <span class="badge">
-                            <i class="fa-solid fa-network-wired" style="font-size:11px; margin-right:4px;"></i>
+                            <i class="fa-solid fa-diagram-project" style="font-size:11px; margin-right:4px;"></i>
                             {{ $stats['monitored_networks'] }} réseau(x)
                         </span>
                         <span class="badge">
@@ -706,13 +706,13 @@
 
                     <div class="btn-row">
                         <a href="{{ route('platform.configuration.index') }}" class="btn btn-primary">
-                            <i class="fa-solid fa-sliders"></i> Configuration
+                            <i class="fa-solid fa-table-cells-large"></i> Configuration
                         </a>
                         <a href="{{ route('platform.alerts.index') }}" class="btn btn-soft">
-                            <i class="fa-solid fa-bell"></i> Alertes actives
+                            <i class="fa-solid fa-triangle-exclamation"></i> Alertes actives
                         </a>
                         <a href="{{ route('platform.approval-queue.index') }}" class="btn btn-soft">
-                            <i class="fa-solid fa-list-check"></i> Approbation
+                            <i class="fa-solid fa-clipboard-check"></i> Approbation
                         </a>
                     </div>
                 </div>
@@ -730,7 +730,7 @@
         <section class="smart-stats section-gap">
             <div class="smart-stat">
                 <div class="smart-stat-label">
-                    <i class="fa-solid fa-bell" style="color:#ef4444; margin-right:6px;"></i>
+                    <i class="fa-solid fa-triangle-exclamation" style="color:#ef4444; margin-right:6px;"></i>
                     Alertes actives
                 </div>
                 <div class="smart-stat-value" style="{{ $stats['active_alerts'] > 0 ? 'color:#ef4444;' : '' }}">
@@ -741,7 +741,7 @@
 
             <div class="smart-stat">
                 <div class="smart-stat-label">
-                    <i class="fa-solid fa-fire-flame-curved" style="color:#fb923c; margin-right:6px;"></i>
+                    <i class="fa-solid fa-fire" style="color:#fb923c; margin-right:6px;"></i>
                     Incidents actifs
                 </div>
                 <div class="smart-stat-value" style="{{ $stats['active_incidents'] > 0 ? 'color:#fb923c;' : '' }}">
@@ -962,7 +962,7 @@
                 <div class="chart-head">
                     <div>
                         <h3 class="chart-title">
-                            <i class="fa-solid fa-chart-line" style="color:var(--accent); margin-right:8px; font-size:15px;"></i>
+                            <i class="fa-solid fa-wave-square" style="color:var(--accent); margin-right:8px; font-size:15px;"></i>
                             Activité SOC — 7 jours
                         </h3>
                         <p class="chart-subtitle">Alertes, incidents et actions déclenchées par le moteur.</p>
@@ -978,7 +978,7 @@
                 <div class="chart-head">
                     <div>
                         <h3 class="chart-title">
-                            <i class="fa-solid fa-bell" style="color:#ef4444; margin-right:8px; font-size:15px;"></i>
+                            <i class="fa-solid fa-triangle-exclamation" style="color:#ef4444; margin-right:8px; font-size:15px;"></i>
                             Risques des alertes
                         </h3>
                         <p class="chart-subtitle">Répartition globale par niveau de risque.</p>
@@ -1012,7 +1012,7 @@
                 <div class="chart-head">
                     <div>
                         <h3 class="chart-title">
-                            <i class="fa-solid fa-robot" style="color:var(--accent); margin-right:8px; font-size:15px;"></i>
+                            <i class="fa-solid fa-microchip" style="color:var(--accent); margin-right:8px; font-size:15px;"></i>
                             Distribution agents
                         </h3>
                         <p class="chart-subtitle">Répartition par niveau de risque actuel.</p>
@@ -1029,7 +1029,7 @@
         <section class="quick-actions section-gap">
             <a class="quick-action" href="{{ route('platform.networks.index') }}">
                 <div class="qa-icon-wrap blue">
-                    <i class="fa-solid fa-network-wired"></i>
+                    <i class="fa-solid fa-diagram-project"></i>
                 </div>
                 <strong>Infrastructure</strong>
                 <small>Réseaux et hôtes surveillés.</small>
@@ -1051,7 +1051,7 @@
 
             <a class="quick-action" href="{{ route('platform.protection-actions.index') }}">
                 <div class="qa-icon-wrap green">
-                    <i class="fa-solid fa-shield-virus"></i>
+                    <i class="fa-solid fa-lock"></i>
                 </div>
                 <strong>Réponse SOC</strong>
                 <small>Actions et file d'approbation.</small>
@@ -1062,7 +1062,7 @@
 
             <a class="quick-action" href="{{ route('platform.system-settings.index') }}">
                 <div class="qa-icon-wrap purple">
-                    <i class="fa-solid fa-sliders"></i>
+                    <i class="fa-solid fa-table-cells-large"></i>
                 </div>
                 <strong>Paramètres</strong>
                 <small>Configuration complète du système.</small>
@@ -1078,7 +1078,7 @@
                 <div class="soc-card-header">
                     <div>
                         <h3 class="soc-card-title">
-                            <i class="fa-solid fa-gauge-high" style="color:var(--accent); margin-right:8px; font-size:14px;"></i>
+                            <i class="fa-solid fa-chart-pie" style="color:var(--accent); margin-right:8px; font-size:14px;"></i>
                             Répartition des risques agents
                         </h3>
                         <p class="soc-card-subtitle">État actuel de toutes les machines enrôlées.</p>
@@ -1132,7 +1132,7 @@
                 <div class="soc-card-header">
                     <div>
                         <h3 class="soc-card-title">
-                            <i class="fa-solid fa-network-wired" style="color:var(--accent); margin-right:8px; font-size:14px;"></i>
+                            <i class="fa-solid fa-diagram-project" style="color:var(--accent); margin-right:8px; font-size:14px;"></i>
                             État réseau
                         </h3>
                         <p class="soc-card-subtitle">Derniers réseaux enregistrés.</p>
@@ -1144,7 +1144,7 @@
                     @forelse($networks as $network)
                         <div class="activity-item">
                             <div class="activity-icon {{ $network->is_monitored ? 'green' : 'blue' }}">
-                                <i class="fa-solid fa-network-wired"></i>
+                                <i class="fa-solid fa-diagram-project"></i>
                             </div>
                             <div>
                                 <p class="activity-title">{{ $network->name }}</p>
@@ -1172,7 +1172,7 @@
                 <div class="soc-card-header">
                     <div>
                         <h3 class="soc-card-title">
-                            <i class="fa-solid fa-bell" style="color:#ef4444; margin-right:8px; font-size:14px;"></i>
+                            <i class="fa-solid fa-triangle-exclamation" style="color:#ef4444; margin-right:8px; font-size:14px;"></i>
                             Dernières alertes
                         </h3>
                         <p class="soc-card-subtitle">Alertes récentes, actives ou historiques.</p>
@@ -1192,7 +1192,7 @@
                         @endphp
                         <div class="activity-item">
                             <div class="activity-icon {{ $aIconClass }}">
-                                <i class="fa-solid fa-bell"></i>
+                                <i class="fa-solid fa-triangle-exclamation"></i>
                             </div>
                             <div>
                                 <p class="activity-title">{{ $alert->title }}</p>
@@ -1216,7 +1216,7 @@
                 <div class="soc-card-header">
                     <div>
                         <h3 class="soc-card-title">
-                            <i class="fa-solid fa-fire-flame-curved" style="color:#fb923c; margin-right:8px; font-size:14px;"></i>
+                            <i class="fa-solid fa-fire" style="color:#fb923c; margin-right:8px; font-size:14px;"></i>
                             Incidents récents
                         </h3>
                         <p class="soc-card-subtitle">Derniers incidents créés par le moteur.</p>
@@ -1236,7 +1236,7 @@
                         @endphp
                         <div class="activity-item">
                             <div class="activity-icon {{ $iIconClass }}">
-                                <i class="fa-solid fa-fire-flame-curved"></i>
+                                <i class="fa-solid fa-fire"></i>
                             </div>
                             <div>
                                 <p class="activity-title">{{ $incident->title }}</p>
@@ -1262,7 +1262,7 @@
             <div class="soc-card-header">
                 <div>
                     <h3 class="soc-card-title">
-                        <i class="fa-solid fa-shield-virus" style="color:var(--accent-2); margin-right:8px; font-size:14px;"></i>
+                        <i class="fa-solid fa-lock" style="color:var(--accent-2); margin-right:8px; font-size:14px;"></i>
                         Décisions SOC récentes
                     </h3>
                     <p class="soc-card-subtitle">Actions proposées, exécutées, rejetées ou en attente.</p>
