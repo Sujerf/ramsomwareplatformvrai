@@ -24,7 +24,7 @@ Route::get('/login', [LoginController::class, 'showForm'])->name('platform.login
 Route::post('/login', [LoginController::class, 'login'])->name('platform.login.post')->middleware('guest');
 Route::post('/logout', [LoginController::class, 'logout'])->name('platform.logout')->middleware('auth');
 
-Route::get('/', HomeController::class)->name('platform.home')->middleware('auth');
+Route::get('/', HomeController::class)->name('platform.home');
 
 Route::prefix('console')->name('platform.')->middleware('auth')->group(function () {
     Route::post('/appearance/theme', [AppearanceController::class, 'updateTheme'])->name('appearance.theme');

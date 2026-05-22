@@ -17,6 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->redirectGuestsTo(fn () => route('platform.login'));
+        $middleware->redirectUsersTo(fn () => route('platform.dashboard'));
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
