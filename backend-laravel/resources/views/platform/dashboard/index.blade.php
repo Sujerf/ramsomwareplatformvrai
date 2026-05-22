@@ -452,6 +452,39 @@
             margin-bottom: 16px;
         }
 
+        .period-filter {
+            display: flex;
+            gap: 3px;
+            background: color-mix(in srgb, var(--bg-panel-soft) 80%, transparent);
+            border: 1px solid var(--border-soft);
+            border-radius: 999px;
+            padding: 4px;
+            flex-shrink: 0;
+        }
+
+        .period-btn {
+            padding: 5px 13px;
+            border: none;
+            border-radius: 999px;
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 12px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.18s ease;
+            font-family: inherit;
+        }
+
+        .period-btn:hover:not(.period-btn-active) {
+            color: var(--text-main);
+            background: color-mix(in srgb, var(--accent) 12%, transparent);
+        }
+
+        .period-btn-active {
+            background: var(--accent) !important;
+            color: var(--accent-contrast) !important;
+        }
+
         .chart-title {
             margin: 0;
             font-size: 17px;
@@ -963,14 +996,21 @@
                     <div>
                         <h3 class="chart-title">
                             <i class="fa-solid fa-wave-square" style="color:var(--accent); margin-right:8px; font-size:15px;"></i>
-                            Activité SOC — 7 jours
+                            Activité SOC — <span id="activityPeriodLabel">7 jours</span>
                         </h3>
                         <p class="chart-subtitle">Alertes, incidents et actions déclenchées par le moteur.</p>
                     </div>
-                    <span class="badge">Temps réel</span>
+                    <div class="period-filter">
+                        <button class="period-btn" data-period="24h">24h</button>
+                        <button class="period-btn period-btn-active" data-period="week">7j</button>
+                        <button class="period-btn" data-period="month">30j</button>
+                    </div>
                 </div>
-                <div class="chart-box">
+                <div class="chart-box" style="position:relative;">
                     <canvas id="socActivityChart"></canvas>
+                    <div id="chartLoader" style="display:none; position:absolute; inset:0; display:none; align-items:center; justify-content:center; background:color-mix(in srgb, var(--bg-panel) 80%, transparent); border-radius:12px;">
+                        <i class="fa-solid fa-circle-notch fa-spin" style="font-size:22px; color:var(--accent);"></i>
+                    </div>
                 </div>
             </div>
 
@@ -1348,10 +1388,12 @@
             }
         };
 
+        let socActivityChart = null;
+
         (function makeLineChart() {
             const el = document.getElementById('socActivityChart');
             if (!el) return;
-            new Chart(el, {
+            socActivityChart = new Chart(el, {
                 type: 'line',
                 data: {
                     labels  : chartData.labels || [],
@@ -1364,6 +1406,38 @@
                 options: baseOpts
             });
         })();
+
+        /* ── Period filter ───────────────────────────────────────────────── */
+        const periodLabels = { '24h': '24 heures', 'week': '7 jours', 'month': '30 jours' };
+        const loader       = document.getElementById('chartLoader');
+
+        document.querySelectorAll('.period-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                if (this.classList.contains('period-btn-active')) return;
+
+                document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('period-btn-active'));
+                this.classList.add('period-btn-active');
+
+                const period = this.dataset.period;
+                document.getElementById('activityPeriodLabel').textContent = periodLabels[period] || period;
+
+                if (loader) loader.style.display = 'flex';
+
+                fetch('{{ route("platform.dashboard.chart-data") }}?period=' + period, {
+                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (!socActivityChart) return;
+                    socActivityChart.data.labels           = data.labels    || [];
+                    socActivityChart.data.datasets[0].data = data.alerts    || [];
+                    socActivityChart.data.datasets[1].data = data.incidents || [];
+                    socActivityChart.data.datasets[2].data = data.actions   || [];
+                    socActivityChart.update('active');
+                })
+                .finally(() => { if (loader) loader.style.display = 'none'; });
+            });
+        });
 
         (function makeDoughnutCharts() {
             function doughnut(id, labels, data, palette) {

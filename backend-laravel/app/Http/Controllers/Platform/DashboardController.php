@@ -11,6 +11,8 @@ use App\Models\ManagedNetwork;
 use App\Models\ProtectionAction;
 use App\Models\SystemSetting;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -98,56 +100,61 @@ class DashboardController extends Controller
         ]);
     }
 
-    private function buildCharts(): array
+    public function chartData(Request $request): JsonResponse
     {
-        $days = collect(range(6, 0))->map(function ($offset) {
-            return now()->subDays($offset)->startOfDay();
-        });
+        $period = in_array($request->input('period'), ['24h', 'week', 'month'])
+            ? $request->input('period')
+            : 'week';
 
-        $labels = $days->map(fn (Carbon $day) => $day->format('d/m'))->values();
+        return response()->json($this->buildCharts($period));
+    }
 
-        $alertSeries = $days->map(function (Carbon $day) {
-            return Alert::whereBetween('created_at', [
-                $day->copy()->startOfDay(),
-                $day->copy()->endOfDay(),
-            ])->count();
-        })->values();
+    private function buildCharts(string $period = 'week'): array
+    {
+        if ($period === '24h') {
+            $points = collect(range(23, 0))->map(fn ($h) => now()->subHours($h)->startOfHour());
+            $labels = $points->map(fn (Carbon $h) => $h->format('H\h'))->values();
+            $groupFn = fn (Carbon $p) => [
+                $p->copy()->startOfHour(),
+                $p->copy()->endOfHour(),
+            ];
+        } elseif ($period === 'month') {
+            $points = collect(range(29, 0))->map(fn ($d) => now()->subDays($d)->startOfDay());
+            $labels = $points->map(fn (Carbon $d) => $d->format('d/m'))->values();
+            $groupFn = fn (Carbon $p) => [
+                $p->copy()->startOfDay(),
+                $p->copy()->endOfDay(),
+            ];
+        } else {
+            $points = collect(range(6, 0))->map(fn ($d) => now()->subDays($d)->startOfDay());
+            $labels = $points->map(fn (Carbon $d) => $d->isoFormat('ddd'))->values();
+            $groupFn = fn (Carbon $p) => [
+                $p->copy()->startOfDay(),
+                $p->copy()->endOfDay(),
+            ];
+        }
 
-        $incidentSeries = $days->map(function (Carbon $day) {
-            return Incident::whereBetween('created_at', [
-                $day->copy()->startOfDay(),
-                $day->copy()->endOfDay(),
-            ])->count();
-        })->values();
-
-        $actionSeries = $days->map(function (Carbon $day) {
-            return ProtectionAction::whereBetween('created_at', [
-                $day->copy()->startOfDay(),
-                $day->copy()->endOfDay(),
-            ])->count();
-        })->values();
-
-        $riskByAlert = [
-            'normal' => Alert::where('risk_level', 'normal')->count(),
-            'suspect' => Alert::where('risk_level', 'suspect')->count(),
-            'high' => Alert::where('risk_level', 'high')->count(),
-            'critical' => Alert::where('risk_level', 'critical')->count(),
-        ];
-
-        $actionsByStatus = [
-            'pending' => ProtectionAction::where('approval_status', 'pending')->count(),
-            'approved' => ProtectionAction::where('approval_status', 'approved')->count(),
-            'rejected' => ProtectionAction::where('approval_status', 'rejected')->count(),
-            'cancelled' => ProtectionAction::where('approval_status', 'cancelled')->count(),
-        ];
+        $alertSeries = $points->map(fn ($p) => Alert::whereBetween('created_at', $groupFn($p))->count())->values();
+        $incidentSeries = $points->map(fn ($p) => Incident::whereBetween('created_at', $groupFn($p))->count())->values();
+        $actionSeries = $points->map(fn ($p) => ProtectionAction::whereBetween('created_at', $groupFn($p))->count())->values();
 
         return [
-            'labels' => $labels,
-            'alerts' => $alertSeries,
-            'incidents' => $incidentSeries,
-            'actions' => $actionSeries,
-            'risk_by_alert' => $riskByAlert,
-            'actions_by_status' => $actionsByStatus,
+            'labels'           => $labels,
+            'alerts'           => $alertSeries,
+            'incidents'        => $incidentSeries,
+            'actions'          => $actionSeries,
+            'risk_by_alert'    => [
+                'normal'   => Alert::where('risk_level', 'normal')->count(),
+                'suspect'  => Alert::where('risk_level', 'suspect')->count(),
+                'high'     => Alert::where('risk_level', 'high')->count(),
+                'critical' => Alert::where('risk_level', 'critical')->count(),
+            ],
+            'actions_by_status' => [
+                'pending'   => ProtectionAction::where('approval_status', 'pending')->count(),
+                'approved'  => ProtectionAction::where('approval_status', 'approved')->count(),
+                'rejected'  => ProtectionAction::where('approval_status', 'rejected')->count(),
+                'cancelled' => ProtectionAction::where('approval_status', 'cancelled')->count(),
+            ],
         ];
     }
 }

@@ -25,6 +25,7 @@ Route::prefix('console')->name('platform.')->group(function () {
     Route::post('/appearance/theme', [AppearanceController::class, 'updateTheme'])->name('appearance.theme');
 
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
+    Route::get('/dashboard/chart-data', [DashboardController::class, 'chartData'])->name('dashboard.chart-data');
 
     Route::get('/local-host', [LocalHostController::class, 'index'])->name('local-host.index');
     Route::post('/local-host/detect', [LocalHostController::class, 'detect'])->name('local-host.detect');
