@@ -125,4 +125,10 @@ return [
 
     'agent_api_secret' => env('RANSHIELD_API_SECRET', ''),
 
+    // URL externe du SOC accessible depuis les VMs/machines surveillées.
+    // Différente de APP_URL (qui pointe vers localhost pour le dev).
+    // Ex : http://10.20.0.1:8080  pour les VMs sur virbr-soc
+    //      http://10.15.55.88:8000 pour les machines WiFi
+    'soc_url' => env('RANSHIELD_SOC_URL', env('APP_URL', 'http://127.0.0.1:8000')),
+
 ];

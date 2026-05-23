@@ -48,20 +48,23 @@ class AgentController extends Controller
             'protectionActions' => fn ($query) => $query->latest()->limit(8),
         ]);
 
-        $baseUrl = rtrim(config('app.url') ?: url('/'), '/');
-
         return view('platform.agents.show', [
             'agent'       => $agent,
-            'installInfo' => $this->agentInstallInfo($agent, $baseUrl),
+            'installInfo' => $this->agentInstallInfo($agent),
         ]);
     }
 
     /**
-     * Retourne les informations nécessaires à l'installation manuelle de l'agent.
-     * Plus de fausse commande curl : on guide l'opérateur étape par étape.
+     * Retourne les informations d'installation de l'agent.
+     *
+     * RANSHIELD_SOC_URL (dans .env) = URL du SOC accessible depuis les VMs.
+     * Différente de APP_URL (localhost dev) → l'opérateur la configure une fois.
      */
-    private function agentInstallInfo(Agent $agent, string $baseUrl): array
+    private function agentInstallInfo(Agent $agent): array
     {
+        // URL externe du SOC, accessible depuis les machines cibles
+        $socUrl    = rtrim(config('app.soc_url', config('app.url')), '/');
+        $apiUrl    = $socUrl.'/api';
         $apiSecret = config('app.agent_api_secret', '');
 
         $enrollmentToken   = $agent->enrollment_token;
@@ -71,33 +74,49 @@ class AgentController extends Controller
             ? ($tokenIsExpired ? 'EXPIRÉ' : $tokenExpiresAt->diffForHumans())
             : null;
 
-        // Le token est inclus dans le .env uniquement si valide (non nul, non expiré).
-        // Sans token valide, l'API refusera l'enrôlement — l'opérateur doit re-pré-enrôler.
+        $hasValidToken = $enrollmentToken && ! $tokenIsExpired;
+
+        // .env complet généré pour copier-coller ou pour le script bootstrap
+        $hostRole = $agent->host_role ?? 'client';
+
         $envLines = [
-            "RANSHIELD_API_URL={$baseUrl}/api",
+            "RANSHIELD_API_URL={$apiUrl}",
             "RANSHIELD_API_SECRET={$apiSecret}",
             "RANSHIELD_AGENT_UUID={$agent->agent_uuid}",
             "RANSHIELD_AGENT_NAME={$agent->agent_name}",
-            "RANSHIELD_HOST_ROLE={$agent->host_role}",
+            "RANSHIELD_HOST_ROLE={$hostRole}",
             "RANSHIELD_MONITOR_MODE=host",
+            "RANSHIELD_HEARTBEAT_INTERVAL=30",
+            "RANSHIELD_SCAN_INTERVAL=5",
         ];
 
-        if ($enrollmentToken && ! $tokenIsExpired) {
+        if ($hasValidToken) {
             $envLines[] = "RANSHIELD_ENROLLMENT_TOKEN={$enrollmentToken}";
         }
 
+        // Commande one-liner (uniquement si token valide)
+        $bootstrapUrl = $hasValidToken
+            ? $socUrl.'/api/agent/bootstrap/'.$agent->agent_uuid
+            : null;
+
+        // Chemin réel vers les fichiers agent pour rsync
+        $agentSourcePath = base_path('../agent-python/');
+
         return [
-            'api_url'              => $baseUrl.'/api',
+            'soc_url'              => $socUrl,
+            'api_url'              => $apiUrl,
             'api_secret'           => $apiSecret,
             'agent_uuid'           => $agent->agent_uuid,
             'agent_name'           => $agent->agent_name,
-            'host_role'            => $agent->host_role ?? 'client',
+            'host_role'            => $hostRole,
             'enrollment_token'     => $enrollmentToken,
             'token_expires_at'     => $tokenExpiresAt,
             'token_expires_label'  => $tokenExpiresLabel,
             'token_is_expired'     => $tokenIsExpired,
+            'has_valid_token'      => $hasValidToken,
             'env_content'          => implode("\n", $envLines),
-            'install_cmd'          => 'sudo bash install.sh',
+            'bootstrap_url'        => $bootstrapUrl,
+            'agent_source_path'    => $agentSourcePath,
             'service_name'         => 'ransomshield-agent',
         ];
     }

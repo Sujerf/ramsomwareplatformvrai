@@ -502,111 +502,118 @@
                     <div>
                         <h3 class="soc-card-title">
                             <i class="fa-solid fa-terminal" style="color:#6366f1; margin-right:8px;"></i>
-                            Installation de l'agent sur la machine cible
+                            Installer l'agent sur <strong>{{ $agent->ip_address ?? $agent->agent_name }}</strong>
                         </h3>
                         <p class="soc-card-subtitle">
-                            Trois étapes à réaliser sur <strong>{{ $agent->ip_address ?? $agent->agent_name }}</strong>.
-                            Une fois l'agent lancé, il appellera <code style="font-size:12px;">POST /api/agent/enroll</code>
-                            et la machine passera automatiquement en état <strong>Enrôlé</strong>.
+                            Lance la commande ci-dessous sur la machine cible. Le script télécharge l'agent,
+                            configure le <code>.env</code> et démarre le service automatiquement.
                         </p>
                     </div>
                 </div>
 
-                {{-- Step 1 --}}
-                <div style="display:flex; gap:12px; align-items:flex-start; margin-bottom:14px;">
-                    <div style="width:32px; height:32px; border-radius:50%; background:color-mix(in srgb, #6366f1 14%, transparent);
-                                color:#6366f1; display:grid; place-items:center; font-size:13px; font-weight:950; flex-shrink:0;">1</div>
-                    <div style="flex:1">
-                        <p style="margin:0 0 8px; font-size:13px; font-weight:850;">
-                            Copier les fichiers de l'agent sur la machine cible
-                        </p>
-                        <div class="install-box">
-                            <button type="button" class="copy-btn" data-copy="copyStep1">
-                                <i class="fa-solid fa-copy"></i> Copier
-                            </button>
-                            <code id="copyStep1">rsync -avz /chemin/vers/ransomshield/agent-python/ {{ $agent->ip_address ?? 'IP_MACHINE' }}:/opt/ransomshield-agent/
-# ou sur la VM directement :
-# cp -r agent-python/ /opt/ransomshield-agent/</code>
-                        </div>
-                    </div>
-                </div>
+                @if($installInfo['has_valid_token'])
 
-                {{-- Step 2 --}}
-                <div style="display:flex; gap:12px; align-items:flex-start; margin-bottom:14px;">
-                    <div style="width:32px; height:32px; border-radius:50%; background:color-mix(in srgb, #6366f1 14%, transparent);
-                                color:#6366f1; display:grid; place-items:center; font-size:13px; font-weight:950; flex-shrink:0;">2</div>
-                    <div style="flex:1">
-                        <p style="margin:0 0 8px; font-size:13px; font-weight:850;">
-                            Configurer le fichier <code style="font-size:12px;">.env</code> de l'agent
-                        </p>
-                        <p style="margin:0 0 8px; font-size:12px; color:var(--text-muted);">
-                            Dans <code>/opt/ransomshield-agent/</code>, crée ou édite le fichier <code>.env</code> avec ces valeurs :
-                        </p>
-                        <div class="install-box">
-                            <button type="button" class="copy-btn" data-copy="copyStep2">
+                    {{-- ── ONE-LINER BOOTSTRAP (méthode recommandée) ────────── --}}
+                    <div style="border-radius:16px; border:2px solid color-mix(in srgb, #22c55e 35%, transparent);
+                                background:color-mix(in srgb, #22c55e 5%, transparent);
+                                padding:18px 20px; margin-bottom:20px;">
+
+                        <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
+                            <i class="fa-solid fa-bolt" style="color:#22c55e; font-size:15px;"></i>
+                            <span style="font-size:13px; font-weight:850; color:#22c55e;">Installation en une commande</span>
+                            <span style="margin-left:auto; font-size:11px; color:var(--text-muted);">
+                                Token valide — expire {{ $installInfo['token_expires_label'] }}
+                            </span>
+                        </div>
+
+                        <div class="install-box" style="border-color:color-mix(in srgb, #22c55e 30%, transparent);">
+                            <button type="button" class="copy-btn" data-copy="copyBootstrap">
                                 <i class="fa-solid fa-copy"></i> Copier
                             </button>
-                            <code id="copyStep2">{{ $installInfo['env_content'] }}</code>
+                            <code id="copyBootstrap">curl -fsSL {{ $installInfo['bootstrap_url'] }} | sudo bash</code>
                         </div>
-                        @if(!$installInfo['api_secret'])
-                            <p style="margin:8px 0 0; font-size:11px; color:#f59e0b;">
-                                <i class="fa-solid fa-triangle-exclamation"></i>
-                                Le secret API n'est pas configuré dans le <code>.env</code> Laravel (<code>APP_AGENT_SECRET</code>).
-                                Configure-le avant de lancer l'agent.
-                            </p>
-                        @endif
-                        @if($installInfo['token_is_expired'])
-                            <p style="margin:8px 0 0; padding:10px 14px; border-radius:10px;
-                                      background:color-mix(in srgb,#ef4444 10%,transparent);
-                                      border:1px solid color-mix(in srgb,#ef4444 25%,transparent);
-                                      font-size:12px; color:#ef4444;">
-                                <i class="fa-solid fa-lock-open" style="margin-right:6px;"></i>
-                                <strong>Token d'enrôlement expiré.</strong>
-                                L'agent ne pourra pas s'enrôler avec ce fichier <code>.env</code>.
-                                Retourne sur <a href="{{ route('platform.discovered-hosts.index') }}" style="color:#ef4444;text-decoration:underline;">Hôtes découverts</a>
+
+                        <p style="margin:10px 0 0; font-size:12px; color:var(--text-muted);">
+                            <i class="fa-solid fa-circle-info" style="margin-right:4px; color:#22c55e;"></i>
+                            Le script télécharge l'agent depuis le SOC, écrit le <code>.env</code>, installe les dépendances
+                            et active le service systemd. Le token est détruit dès l'enrôlement réussi.
+                        </p>
+                    </div>
+
+                @elseif($installInfo['token_is_expired'])
+
+                    {{-- ── TOKEN EXPIRÉ ──────────────────────────────────────── --}}
+                    <div style="border-radius:12px; border:1px solid color-mix(in srgb, #ef4444 30%, transparent);
+                                background:color-mix(in srgb, #ef4444 7%, transparent);
+                                padding:14px 18px; margin-bottom:20px; display:flex; gap:12px; align-items:flex-start;">
+                        <i class="fa-solid fa-lock-open" style="color:#ef4444; font-size:16px; margin-top:2px; flex-shrink:0;"></i>
+                        <div>
+                            <p style="margin:0 0 4px; font-size:13px; font-weight:850; color:#ef4444;">Token d'enrôlement expiré</p>
+                            <p style="margin:0; font-size:12px; color:var(--text-muted);">
+                                Le script d'installation automatique n'est plus disponible.
+                                Retourne sur <a href="{{ route('platform.discovered-hosts.index') }}" style="color:#ef4444;">Hôtes découverts</a>
                                 et clique à nouveau sur <strong>Enrôler</strong> pour générer un nouveau token.
                             </p>
-                        @elseif($installInfo['enrollment_token'])
-                            <p style="margin:8px 0 0; font-size:11px; color:#22c55e;">
-                                <i class="fa-solid fa-shield-halved" style="margin-right:4px;"></i>
-                                Token valide — expire {{ $installInfo['token_expires_label'] }}.
-                                Usage unique : il sera détruit dès l'enrôlement réussi.
-                            </p>
-                        @endif
-                    </div>
-                </div>
-
-                {{-- Step 3 --}}
-                <div style="display:flex; gap:12px; align-items:flex-start;">
-                    <div style="width:32px; height:32px; border-radius:50%; background:color-mix(in srgb, #22c55e 14%, transparent);
-                                color:#22c55e; display:grid; place-items:center; font-size:13px; font-weight:950; flex-shrink:0;">3</div>
-                    <div style="flex:1">
-                        <p style="margin:0 0 8px; font-size:13px; font-weight:850;">
-                            Installer et démarrer le service
-                        </p>
-                        <div class="install-box">
-                            <button type="button" class="copy-btn" data-copy="copyStep3">
-                                <i class="fa-solid fa-copy"></i> Copier
-                            </button>
-                            <code id="copyStep3">cd /opt/ransomshield-agent
-sudo bash install.sh
-
-# Vérifier le statut après installation :
-systemctl status {{ $installInfo['service_name'] }}
-journalctl -u {{ $installInfo['service_name'] }} -f</code>
                         </div>
-                        <p style="margin:8px 0 0; font-size:12px; color:var(--text-muted);">
-                            <i class="fa-solid fa-circle-info" style="margin-right:4px;"></i>
-                            L'agent présente son token à l'API qui le valide puis le détruit.
-                            Cette page se met à jour dès le premier heartbeat reçu.
-                        </p>
                     </div>
-                </div>
 
-                {{-- Bandeau sécurité : UUID + état token --}}
-                <div style="margin-top:16px; display:flex; flex-direction:column; gap:8px;">
+                @endif
 
-                    {{-- UUID --}}
+                {{-- ── MÉTHODE MANUELLE (détails repliables) ──────────────── --}}
+                <details style="border-radius:12px; border:1px solid var(--border-soft);
+                                background:color-mix(in srgb, var(--bg-panel-soft) 40%, transparent); overflow:hidden;">
+                    <summary style="padding:12px 16px; cursor:pointer; font-size:13px; font-weight:750;
+                                    color:var(--text-muted); list-style:none; display:flex; align-items:center; gap:8px;
+                                    user-select:none;">
+                        <i class="fa-solid fa-chevron-right" style="font-size:10px; transition:.15s;"></i>
+                        Installation manuelle (alternative)
+                    </summary>
+                    <div style="padding:0 16px 16px; display:flex; flex-direction:column; gap:14px; border-top:1px solid var(--border-soft); padding-top:14px; margin-top:0;">
+
+                        {{-- Step 1 --}}
+                        <div>
+                            <p style="margin:0 0 6px; font-size:12px; font-weight:850; color:var(--text-muted);">
+                                1 — Copier les fichiers sur la cible
+                            </p>
+                            <div class="install-box">
+                                <button type="button" class="copy-btn" data-copy="copyStep1">
+                                    <i class="fa-solid fa-copy"></i> Copier
+                                </button>
+                                <code id="copyStep1">rsync -avz {{ $installInfo['agent_source_path'] }} {{ $agent->ip_address ?? 'IP_MACHINE' }}:/opt/ransomshield-agent/</code>
+                            </div>
+                        </div>
+
+                        {{-- Step 2 --}}
+                        <div>
+                            <p style="margin:0 0 6px; font-size:12px; font-weight:850; color:var(--text-muted);">
+                                2 — Créer le fichier <code>.env</code>
+                            </p>
+                            <div class="install-box">
+                                <button type="button" class="copy-btn" data-copy="copyStep2">
+                                    <i class="fa-solid fa-copy"></i> Copier
+                                </button>
+                                <code id="copyStep2">{{ $installInfo['env_content'] }}</code>
+                            </div>
+                        </div>
+
+                        {{-- Step 3 --}}
+                        <div>
+                            <p style="margin:0 0 6px; font-size:12px; font-weight:850; color:var(--text-muted);">
+                                3 — Installer le service
+                            </p>
+                            <div class="install-box">
+                                <button type="button" class="copy-btn" data-copy="copyStep3">
+                                    <i class="fa-solid fa-copy"></i> Copier
+                                </button>
+                                <code id="copyStep3">cd /opt/ransomshield-agent && sudo bash install.sh</code>
+                            </div>
+                        </div>
+
+                    </div>
+                </details>
+
+                {{-- ── BANDEAU UUID + TOKEN ──────────────────────────────── --}}
+                <div style="margin-top:14px; display:flex; flex-direction:column; gap:8px;">
                     <div style="padding:10px 14px; border-radius:12px;
                                 background:color-mix(in srgb, var(--bg-panel-soft) 60%, transparent);
                                 border:1px solid var(--border-soft); display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
@@ -615,7 +622,6 @@ journalctl -u {{ $installInfo['service_name'] }} -f</code>
                         <code style="font-size:12px; color:var(--accent);">{{ $installInfo['agent_uuid'] }}</code>
                     </div>
 
-                    {{-- Token status --}}
                     @if($installInfo['enrollment_token'])
                         <div style="padding:10px 14px; border-radius:12px;
                                     background:color-mix(in srgb, {{ $installInfo['token_is_expired'] ? '#ef4444' : '#22c55e' }} 7%, transparent);
@@ -623,13 +629,12 @@ journalctl -u {{ $installInfo['service_name'] }} -f</code>
                                     display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
                             <i class="fa-solid {{ $installInfo['token_is_expired'] ? 'fa-lock-open' : 'fa-lock' }}"
                                style="color:{{ $installInfo['token_is_expired'] ? '#ef4444' : '#22c55e' }}; font-size:13px;"></i>
-                            <span style="font-size:11px; font-weight:850; text-transform:uppercase; letter-spacing:.06em; color:var(--text-muted);">Token enrôlement</span>
+                            <span style="font-size:11px; font-weight:850; text-transform:uppercase; letter-spacing:.06em; color:var(--text-muted);">Token</span>
                             <code style="font-size:12px; color:{{ $installInfo['token_is_expired'] ? '#ef4444' : '#22c55e' }};">
-                                {{ substr($installInfo['enrollment_token'], 0, 8) }}••••••••••••••••••••••••••••••••••••••••
+                                {{ substr($installInfo['enrollment_token'], 0, 8) }}••••••••••••••
                             </code>
                             <span style="font-size:11px; color:var(--text-muted); margin-left:auto;">
-                                {{ $installInfo['token_is_expired'] ? '⚠ Expiré' : 'Expire '.$installInfo['token_expires_label'] }}
-                                — usage unique
+                                {{ $installInfo['token_is_expired'] ? '⚠ Expiré' : 'Expire '.$installInfo['token_expires_label'].' — usage unique' }}
                             </span>
                         </div>
                     @else
@@ -638,13 +643,11 @@ journalctl -u {{ $installInfo['service_name'] }} -f</code>
                                     border:1px solid color-mix(in srgb, #22c55e 22%, transparent);
                                     display:flex; align-items:center; gap:10px;">
                             <i class="fa-solid fa-circle-check" style="color:#22c55e; font-size:13px;"></i>
-                            <span style="font-size:12px; color:#22c55e; font-weight:700;">
-                                Agent enrôlé — token détruit après usage.
-                            </span>
+                            <span style="font-size:12px; color:#22c55e; font-weight:700;">Agent enrôlé — token détruit après usage.</span>
                         </div>
                     @endif
-
                 </div>
+
             </section>
         @endif
 
