@@ -6,22 +6,21 @@ use App\Http\Controllers\Controller;
 use App\Models\Agent;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
- * Génère un script bash auto-suffisant pour installer l'agent sur une machine cible.
+ * Génère un script d'installation auto-suffisant pour l'agent RansomShield.
  *
  * Endpoint public (pas de middleware agent.secret) :
- *   GET /api/agent/bootstrap/{uuid}
+ *   GET /api/agent/bootstrap/{uuid}           → Bash (Linux/macOS)
+ *   GET /api/agent/bootstrap/{uuid}?os=windows → PowerShell (Windows)
  *
- * L'UUID sert de jeton d'accès — il est assez entropique (122 bits) pour être
- * utilisé en identification one-time sans secret supplémentaire.
+ * L'UUID sert de jeton d'accès — 122 bits d'entropie, usage one-time.
  * Le script embarque le .env complet avec le token d'enrôlement.
  * Une fois l'agent enrôlé, le token est détruit → le script n'est plus rejouable.
  */
 class AgentBootstrapController extends Controller
 {
-    public function script(string $uuid): Response
+    public function script(Request $request, string $uuid): Response
     {
         $agent = Agent::where('agent_uuid', $uuid)->first();
 
@@ -43,20 +42,28 @@ class AgentBootstrapController extends Controller
 
         $socUrl    = rtrim(config('app.soc_url'), '/');
         $apiSecret = config('app.agent_api_secret', '');
+        $isWindows = strtolower($request->query('os', 'linux')) === 'windows';
 
-        $script = $this->buildScript(
-            agent: $agent,
-            socUrl: $socUrl,
-            apiSecret: $apiSecret,
-        );
+        if ($isWindows) {
+            $script   = $this->buildPowerShellScript(agent: $agent, socUrl: $socUrl, apiSecret: $apiSecret);
+            $filename = 'ransomshield-install.ps1';
+            $mime     = 'text/plain; charset=utf-8';
+        } else {
+            $script   = $this->buildBashScript(agent: $agent, socUrl: $socUrl, apiSecret: $apiSecret);
+            $filename = 'ransomshield-install.sh';
+            $mime     = 'text/plain; charset=utf-8';
+        }
 
         return response($script, 200)
-            ->header('Content-Type', 'text/plain; charset=utf-8')
-            ->header('Content-Disposition', 'inline; filename="ransomshield-install.sh"')
+            ->header('Content-Type', $mime)
+            ->header('Content-Disposition', "inline; filename=\"{$filename}\"")
             ->header('Cache-Control', 'no-store, no-cache');
     }
 
-    private function buildScript(Agent $agent, string $socUrl, string $apiSecret): string
+    // ─────────────────────────────────────────────────────────────────────────
+    //  BASH — Linux / macOS
+    // ─────────────────────────────────────────────────────────────────────────
+    private function buildBashScript(Agent $agent, string $socUrl, string $apiSecret): string
     {
         $uuid    = $agent->agent_uuid;
         $token   = $agent->enrollment_token;
@@ -69,7 +76,7 @@ class AgentBootstrapController extends Controller
         return <<<BASH
         #!/usr/bin/env bash
         # ─────────────────────────────────────────────────────────────────────────────
-        #  RansomShield Host Agent — Script d'installation auto-généré
+        #  RansomShield Host Agent — Script d'installation Linux/macOS auto-généré
         #  Généré le : {$now}
         #  Agent     : {$name} ({$uuid})
         #  Token     : usage unique, expire le {$expires}
@@ -133,7 +140,10 @@ class AgentBootstrapController extends Controller
         echo "[INFO] Écriture du fichier .env..."
         cat > .env << 'ENVEOF'
         RANSHIELD_API_URL={$apiUrl}
-        RANSHIELD_API_SECRET={$apiSecret}
+        # RANSHIELD_API_SECRET est vide ici intentionnellement.
+        # L'agent recevra sa clé API unique lors du premier enrôlement
+        # et la persistera dans son state local (.ransomshield_host_agent_state.json).
+        RANSHIELD_API_SECRET=
         RANSHIELD_AGENT_UUID={$uuid}
         RANSHIELD_ENROLLMENT_TOKEN={$token}
         RANSHIELD_AGENT_NAME={$name}
@@ -193,5 +203,149 @@ class AgentBootstrapController extends Controller
         echo "  Logs   : journalctl -u \$SERVICE_NAME -f"
         echo ""
         BASH;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  POWERSHELL — Windows
+    // ─────────────────────────────────────────────────────────────────────────
+    private function buildPowerShellScript(Agent $agent, string $socUrl, string $apiSecret): string
+    {
+        $uuid    = $agent->agent_uuid;
+        $token   = $agent->enrollment_token;
+        $name    = addslashes($agent->agent_name);
+        $role    = $agent->host_role ?? 'client';
+        $apiUrl  = $socUrl.'/api';
+        $expires = optional($agent->enrollment_token_expires_at)->toDateTimeString() ?? 'inconnue';
+        $now     = now()->toDateTimeString();
+
+        return <<<PS1
+        # ─────────────────────────────────────────────────────────────────────────────
+        #  RansomShield Host Agent — Script d'installation Windows auto-généré
+        #  Généré le : {$now}
+        #  Agent     : {$name} ({$uuid})
+        #  Token     : usage unique, expire le {$expires}
+        #
+        #  Exécution : powershell -ExecutionPolicy Bypass -File ransomshield-install.ps1
+        # ─────────────────────────────────────────────────────────────────────────────
+        #Requires -RunAsAdministrator
+
+        \$ErrorActionPreference = "Stop"
+
+        \$AGENT_UUID        = "{$uuid}"
+        \$AGENT_NAME        = "{$name}"
+        \$HOST_ROLE         = "{$role}"
+        \$API_URL           = "{$apiUrl}"
+        \$API_SECRET        = "{$apiSecret}"
+        \$ENROLLMENT_TOKEN  = "{$token}"
+        \$SOC_BASE          = "{$socUrl}"
+        \$INSTALL_DIR       = "C:\RansomShieldAgent"
+        \$SERVICE_NAME      = "RansomShieldAgent"
+        \$PYTHON_MIN_VER    = [version]"3.10"
+
+        Write-Host ""
+        Write-Host "╔══════════════════════════════════════════════════╗"
+        Write-Host "║    RansomShield — Installation de l'agent        ║"
+        Write-Host "╚══════════════════════════════════════════════════╝"
+        Write-Host ""
+        Write-Host ("  Machine cible : " + \$env:COMPUTERNAME + " (" + (Get-NetIPAddress -AddressFamily IPv4 | Where-Object { \$_.IPAddress -notlike "127.*" } | Select-Object -First 1 -ExpandProperty IPAddress) + ")")
+        Write-Host ("  Agent UUID    : " + \$AGENT_UUID)
+        Write-Host ("  SOC API       : " + \$API_URL)
+        Write-Host ""
+
+        # ── 1. Python 3.10+ ───────────────────────────────────────────────────────
+        \$pythonCmd = Get-Command python -ErrorAction SilentlyContinue
+        if (-not \$pythonCmd) {
+            Write-Host "[INFO] Python introuvable. Téléchargement de Python 3.12..."
+            \$pyInstaller = "\$env:TEMP\python-installer.exe"
+            Invoke-WebRequest -Uri "https://www.python.org/ftp/python/3.12.0/python-3.12.0-amd64.exe" -OutFile \$pyInstaller
+            Start-Process -FilePath \$pyInstaller -ArgumentList "/quiet InstallAllUsers=1 PrependPath=1" -Wait
+            \$env:PATH += ";\$env:ProgramFiles\Python312"
+            \$pythonCmd = Get-Command python -ErrorAction SilentlyContinue
+        }
+
+        if (-not \$pythonCmd) {
+            Write-Error "[ERREUR] Python n'a pas pu être installé. Installez Python 3.10+ manuellement depuis https://python.org"
+            exit 1
+        }
+
+        \$pyVer = & python -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}')"
+        Write-Host ("[OK] Python \$pyVer")
+
+        # ── 2. Dossier d'installation ─────────────────────────────────────────────
+        Write-Host ("[INFO] Création du dossier \$INSTALL_DIR...")
+        if (-not (Test-Path \$INSTALL_DIR)) { New-Item -ItemType Directory -Path \$INSTALL_DIR | Out-Null }
+        Set-Location \$INSTALL_DIR
+
+        # ── 3. Téléchargement des fichiers agent ──────────────────────────────────
+        Write-Host "[INFO] Téléchargement des fichiers depuis le SOC..."
+
+        Invoke-WebRequest -Uri "\$SOC_BASE/api/agent/download/ransomshield_host_agent.py" `
+                          -OutFile "ransomshield_host_agent.py" -UseBasicParsing
+        Invoke-WebRequest -Uri "\$SOC_BASE/api/agent/download/requirements.txt" `
+                          -OutFile "requirements.txt" -UseBasicParsing
+
+        Write-Host "[OK] Fichiers téléchargés"
+
+        # ── 4. Fichier .env ───────────────────────────────────────────────────────
+        Write-Host "[INFO] Écriture du fichier .env..."
+        \$envContent = @"
+        RANSHIELD_API_URL={$apiUrl}
+        # RANSHIELD_API_SECRET est vide intentionnellement.
+        # L'agent reçoit sa clé API unique lors du premier enrôlement.
+        RANSHIELD_API_SECRET=
+        RANSHIELD_AGENT_UUID={$uuid}
+        RANSHIELD_ENROLLMENT_TOKEN={$token}
+        RANSHIELD_AGENT_NAME={$name}
+        RANSHIELD_HOST_ROLE={$role}
+        RANSHIELD_MONITOR_MODE=host
+        RANSHIELD_HEARTBEAT_INTERVAL=30
+        RANSHIELD_SCAN_INTERVAL=5
+        RANSHIELD_ENABLE_FILE_MONITOR=true
+        RANSHIELD_ENABLE_PROCESS_MONITOR=true
+        "@
+        \$envContent | Set-Content -Path ".env" -Encoding UTF8
+        Write-Host "[OK] .env configuré"
+
+        # ── 5. Environnement virtuel et dépendances ───────────────────────────────
+        Write-Host "[INFO] Création du venv Python..."
+        if (-not (Test-Path "venv")) { python -m venv venv }
+        & "venv\Scripts\pip.exe" install --quiet --upgrade pip
+        & "venv\Scripts\pip.exe" install --quiet -r requirements.txt
+        Write-Host "[OK] Dépendances installées"
+
+        # ── 6. Service Windows (NSSM ou sc.exe) ──────────────────────────────────
+        Write-Host "[INFO] Installation du service Windows..."
+
+        \$pythonExe = Resolve-Path "venv\Scripts\python.exe"
+        \$agentPy   = Resolve-Path "ransomshield_host_agent.py"
+
+        # Arrête et supprime le service existant si présent
+        \$existingSvc = Get-Service -Name \$SERVICE_NAME -ErrorAction SilentlyContinue
+        if (\$existingSvc) {
+            Stop-Service -Name \$SERVICE_NAME -Force -ErrorAction SilentlyContinue
+            sc.exe delete \$SERVICE_NAME | Out-Null
+            Start-Sleep -Seconds 2
+        }
+
+        # Crée le service via sc.exe
+        \$binPath = "`"\$pythonExe`" `"\$agentPy`""
+        sc.exe create \$SERVICE_NAME binPath= \$binPath start= auto obj= LocalSystem DisplayName= "RansomShield Host Agent" | Out-Null
+        sc.exe description \$SERVICE_NAME "Agent de surveillance RansomShield — protection anti-ransomware en temps réel." | Out-Null
+        sc.exe failure \$SERVICE_NAME reset= 60 actions= restart/10000/restart/10000/restart/30000 | Out-Null
+
+        # Démarre le service
+        Start-Service -Name \$SERVICE_NAME
+
+        Write-Host ""
+        Write-Host "╔══════════════════════════════════════════════════╗"
+        Write-Host "║          Installation terminée avec succès !     ║"
+        Write-Host "╚══════════════════════════════════════════════════╝"
+        Write-Host ""
+        Write-Host "  L'agent va maintenant contacter le SOC et s'enrôler."
+        Write-Host ""
+        Write-Host "  Statut : Get-Service -Name \$SERVICE_NAME"
+        Write-Host "  Logs   : Get-EventLog -LogName Application -Source \$SERVICE_NAME -Newest 50"
+        Write-Host ""
+        PS1;
     }
 }

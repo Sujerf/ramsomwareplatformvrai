@@ -1,5 +1,6 @@
 import json
 import os
+import platform
 import re
 import signal
 import socket
@@ -18,6 +19,10 @@ from watchdog.observers import Observer
 
 
 load_dotenv()
+
+# ── Détection OS ──────────────────────────────────────────────────────────────
+IS_WINDOWS = platform.system() == "Windows"
+OS_NAME    = platform.system()   # "Windows", "Linux", "Darwin"
 
 API_URL = os.getenv("RANSHIELD_API_URL", "http://127.0.0.1:8000/api").rstrip("/")
 API_SECRET = os.getenv("RANSHIELD_API_SECRET", "")
@@ -40,32 +45,50 @@ ENABLE_FILE_MONITOR = os.getenv("RANSHIELD_ENABLE_FILE_MONITOR", "true").lower()
 ENABLE_PROCESS_MONITOR = os.getenv("RANSHIELD_ENABLE_PROCESS_MONITOR", "true").lower() == "true"
 ENABLE_NETWORK_CONTEXT = os.getenv("RANSHIELD_ENABLE_NETWORK_CONTEXT", "true").lower() == "true"
 
+# ── Chemins à surveiller (dépend de l'OS) ────────────────────────────────────
+_DEFAULT_MONITOR_PATHS = (
+    r"C:\Users,C:\Program Files,C:\Program Files (x86),C:\ProgramData"
+    if IS_WINDOWS
+    # /tmp exclus par défaut — trop de faux positifs (IDE, outils, builds)
+    else "/home,/media,/mnt,/opt,/srv"
+)
+
 MONITOR_PATHS = [
     Path(p.strip()).expanduser()
-    for p in os.getenv(
-        "RANSHIELD_MONITOR_PATHS",
-        # /tmp exclus par défaut — trop de faux positifs (IDE, outils, builds)
-        # Pour surveiller /tmp, ajouter explicitement via RANSHIELD_MONITOR_PATHS
-        "/home,/media,/mnt,/opt,/srv",
-    ).split(",")
+    for p in os.getenv("RANSHIELD_MONITOR_PATHS", _DEFAULT_MONITOR_PATHS).split(",")
     if p.strip()
 ]
 
+# ── Chemins exclus (dépend de l'OS) ──────────────────────────────────────────
+_DEFAULT_EXCLUDED_PATHS = (
+    # Système Windows toujours exclus
+    r"C:\Windows\System32,C:\Windows\SysWOW64,C:\Windows\WinSxS,"
+    r"C:\ProgramData\Microsoft\Windows\Caches,"
+    # Outils de développement et IDE
+    r"node_modules,vendor,.git,venv,__pycache__,"
+    # Caches et temporaires Windows
+    r"AppData\Local\Temp,AppData\Local\Microsoft\Windows\Temporary Internet Files,"
+    r"\Temp,AppData\Roaming\npm-cache"
+    if IS_WINDOWS
+    else
+    # Chemins système Linux toujours exclus
+    "/proc,/sys,/dev,/run,/snap,/var/lib,/var/cache,/var/log,"
+    # Outils de développement et IDE — génèrent de l'I/O légitime intense
+    "node_modules,vendor,.git,venv,__pycache__,"
+    # Fichiers temporaires et caches système
+    "/tmp,/var/tmp,.cache,.npm,.cargo,.rustup,"
+    # Fichiers de session / outils IA
+    ".claude,.cursor,.vscode,claude-1000,claude-code"
+)
+
 EXCLUDED_PARTS = [
     p.strip()
-    for p in os.getenv(
-        "RANSHIELD_EXCLUDED_PATHS",
-        # Chemins système toujours exclus
-        "/proc,/sys,/dev,/run,/snap,/var/lib,/var/cache,/var/log,"
-        # Outils de développement et IDE — génèrent de l'I/O légitime intense
-        "node_modules,vendor,.git,venv,__pycache__,"
-        # Fichiers temporaires et caches système
-        "/tmp,/var/tmp,.cache,.npm,.cargo,.rustup,"
-        # Fichiers de session / outils IA
-        ".claude,.cursor,.vscode,claude-1000,claude-code",
-    ).split(",")
+    for p in os.getenv("RANSHIELD_EXCLUDED_PATHS", _DEFAULT_EXCLUDED_PATHS).split(",")
     if p.strip()
 ]
+
+# ── Chemin racine disque (pour disk_usage) ────────────────────────────────────
+_DISK_ROOT = "C:\\" if IS_WINDOWS else "/"
 
 STATE_FILE = Path(".ransomshield_host_agent_state.json")
 
@@ -190,23 +213,37 @@ def get_network_context() -> dict[str, Any]:
 
 
 def host_inventory() -> dict[str, Any]:
+    try:
+        disk_pct = psutil.disk_usage(_DISK_ROOT).percent
+    except Exception:
+        disk_pct = 0
+
     return {
         "hostname": socket.gethostname(),
         "ip_address": get_local_ip(),
+        "os": OS_NAME,
+        "os_version": platform.version(),
         "cpu_count": psutil.cpu_count(),
         "ram_total_gb": round(psutil.virtual_memory().total / (1024**3), 2),
-        "disk_root_percent": psutil.disk_usage("/").percent,
+        "disk_root_percent": disk_pct,
         "boot_time": psutil.boot_time(),
         "network": get_network_context(),
     }
 
 
+def _apply_api_key(key: str) -> None:
+    """Injecte la clé API per-agent dans les headers globaux (mutation en place)."""
+    API_HEADERS["X-Agent-Secret"] = key
+
+
 def enroll_agent() -> str:
     state = load_state()
 
-    # Priorité : UUID pré-enrôlé depuis la console SOC (.env RANSHIELD_AGENT_UUID),
-    # puis UUID sauvegardé en état local, sinon l'API en génère un nouveau.
+    # Priorité 1 : UUID déjà en état local (déjà enrôlé)
     if state.get("agent_uuid"):
+        # Restaure la clé per-agent si elle est sauvegardée
+        if state.get("agent_api_key"):
+            _apply_api_key(state["agent_api_key"])
         return state["agent_uuid"]
 
     payload = {
@@ -218,29 +255,47 @@ def enroll_agent() -> str:
             "source": "ransomshield_host_agent",
             "agent_local_id": str(uuid.uuid4()),
             "monitor_mode": MONITOR_MODE,
+            "os": OS_NAME,
             "inventory": host_inventory(),
         },
     }
 
-    # UUID pré-enrôlé : permet à l'API de retrouver le record existant
+    # UUID pré-enrôlé depuis le .env : permet à l'API de retrouver le record
     if AGENT_UUID_OVERRIDE:
         payload["agent_uuid"] = AGENT_UUID_OVERRIDE
 
-    # Token d'enrôlement : preuve d'autorisation SOC, usage unique
+    # Token d'enrôlement (usage unique, fourni par le bootstrap)
     if ENROLLMENT_TOKEN:
         payload["enrollment_token"] = ENROLLMENT_TOKEN
+
+    # L'endpoint /enroll n'est pas protégé par agent.secret (pas de clé encore)
+    # On envoie la requête sans le secret global pour éviter tout rejet
+    enroll_headers = {k: v for k, v in API_HEADERS.items() if k != "X-Agent-Secret"}
+    enroll_headers["Accept"] = "application/json"
 
     response = requests.post(
         f"{API_URL}/agent/enroll",
         json=payload,
-        headers=API_HEADERS,
+        headers=enroll_headers,
         timeout=12,
     )
 
     response.raise_for_status()
 
     data = response.json()
-    agent_uuid = data["agent"]["agent_uuid"]
+    agent_data = data["agent"]
+    agent_uuid = agent_data["agent_uuid"]
+
+    # ── Clé API per-agent ─────────────────────────────────────────────────────
+    # L'API génère une clé unique à l'enrôlement et la renvoie une seule fois.
+    # On la stocke dans le state local et on l'applique immédiatement aux headers.
+    api_key = agent_data.get("agent_api_key")
+    if api_key:
+        _apply_api_key(api_key)
+        state["agent_api_key"] = api_key
+        print(f"[ENROLL] Clé API per-agent reçue et stockée.")
+    else:
+        print(f"[ENROLL] Aucune clé per-agent dans la réponse (agent déjà enrôlé ?).")
 
     state["agent_uuid"] = agent_uuid
     state["api_url"] = API_URL
@@ -253,15 +308,21 @@ def enroll_agent() -> str:
 
 
 def heartbeat(agent_uuid: str) -> None:
+    try:
+        disk_pct = psutil.disk_usage(_DISK_ROOT).percent
+    except Exception:
+        disk_pct = 0
+
     payload = {
         "agent_uuid": agent_uuid,
         "hostname": socket.gethostname(),
         "ip_address": get_local_ip(),
         "metadata": {
             "source": "ransomshield_host_agent",
+            "os": OS_NAME,
             "cpu": psutil.cpu_percent(interval=0.2),
             "ram": psutil.virtual_memory().percent,
-            "disk": psutil.disk_usage("/").percent,
+            "disk": disk_pct,
             "inventory": host_inventory(),
         },
     }
@@ -315,16 +376,22 @@ def send_event(
         return
 
     if not event_limiter.allow():
-        print("[RATE-LIMIT] Trop d’événements, envoi temporairement limité.")
+        print("[RATE-LIMIT] Trop d'événements, envoi temporairement limité.")
         return
+
+    try:
+        disk_pct = psutil.disk_usage(_DISK_ROOT).percent
+    except Exception:
+        disk_pct = 0
 
     ext = file_extension(path)
     metadata = {
         "source": "ransomshield_host_agent",
         "monitor_mode": MONITOR_MODE,
+        "os": OS_NAME,
         "cpu": psutil.cpu_percent(interval=0.1),
         "ram": psutil.virtual_memory().percent,
-        "disk": psutil.disk_usage("/").percent,
+        "disk": disk_pct,
         "observed_by": socket.gethostname(),
         "is_sensitive_extension": ext in SENSITIVE_EXTENSIONS if ext else False,
         "looks_like_ransom_note": looks_like_ransom_note(path),
@@ -511,25 +578,62 @@ def _soc_ip_from_url() -> str:
 
 
 def execute_isolation(soc_ip: str) -> None:
-    rules = [
-        ["iptables", "-F"],
-        ["iptables", "-A", "INPUT", "-i", "lo", "-j", "ACCEPT"],
-        ["iptables", "-A", "OUTPUT", "-o", "lo", "-j", "ACCEPT"],
-        ["iptables", "-A", "INPUT", "-s", soc_ip, "-j", "ACCEPT"],
-        ["iptables", "-A", "OUTPUT", "-d", soc_ip, "-j", "ACCEPT"],
-        ["iptables", "-A", "INPUT", "-m", "state", "--state", "ESTABLISHED,RELATED", "-j", "ACCEPT"],
-        ["iptables", "-P", "INPUT", "DROP"],
-        ["iptables", "-P", "OUTPUT", "DROP"],
-        ["iptables", "-P", "FORWARD", "DROP"],
-    ]
-    for rule in rules:
-        subprocess.run(rule, check=True, capture_output=True)
-    print(f"[ISOLATION] Hôte isolé — SOC {soc_ip} autorisé uniquement.")
+    """Isole l'hôte — seul le SOC reste joignable.
+
+    Linux  : iptables — stateful, règles en mémoire.
+    Windows: netsh advfirewall — politique blockinbound/blockoutbound +
+             règles explicites pour le SOC et le loopback.
+    """
+    if IS_WINDOWS:
+        # Réinitialise toutes les règles RansomShield existantes
+        subprocess.run(
+            ["netsh", "advfirewall", "firewall", "delete", "rule", "name=RansomShield"],
+            capture_output=True,
+        )
+        rules = [
+            # Politique globale : tout bloquer par défaut
+            ["netsh", "advfirewall", "set", "allprofiles", "firewallpolicy", "blockinbound,blockoutbound"],
+            # Loopback entrant / sortant
+            ["netsh", "advfirewall", "firewall", "add", "rule",
+             "name=RansomShield Loopback In", "dir=in", "action=allow", "remoteip=127.0.0.1"],
+            ["netsh", "advfirewall", "firewall", "add", "rule",
+             "name=RansomShield Loopback Out", "dir=out", "action=allow", "remoteip=127.0.0.1"],
+            # SOC entrant / sortant
+            ["netsh", "advfirewall", "firewall", "add", "rule",
+             f"name=RansomShield SOC In", "dir=in", "action=allow", f"remoteip={soc_ip}"],
+            ["netsh", "advfirewall", "firewall", "add", "rule",
+             f"name=RansomShield SOC Out", "dir=out", "action=allow", f"remoteip={soc_ip}"],
+        ]
+        for rule in rules:
+            subprocess.run(rule, check=True, capture_output=True)
+        print(f"[ISOLATION] Hôte isolé (Windows) — SOC {soc_ip} autorisé uniquement.")
+    else:
+        rules = [
+            ["iptables", "-F"],
+            ["iptables", "-A", "INPUT", "-i", "lo", "-j", "ACCEPT"],
+            ["iptables", "-A", "OUTPUT", "-o", "lo", "-j", "ACCEPT"],
+            ["iptables", "-A", "INPUT", "-s", soc_ip, "-j", "ACCEPT"],
+            ["iptables", "-A", "OUTPUT", "-d", soc_ip, "-j", "ACCEPT"],
+            ["iptables", "-A", "INPUT", "-m", "state", "--state", "ESTABLISHED,RELATED", "-j", "ACCEPT"],
+            ["iptables", "-P", "INPUT", "DROP"],
+            ["iptables", "-P", "OUTPUT", "DROP"],
+            ["iptables", "-P", "FORWARD", "DROP"],
+        ]
+        for rule in rules:
+            subprocess.run(rule, check=True, capture_output=True)
+        print(f"[ISOLATION] Hôte isolé (Linux) — SOC {soc_ip} autorisé uniquement.")
 
 
 def execute_process_kill(pid: int) -> None:
-    os.kill(pid, signal.SIGKILL)
-    print(f"[KILL] Processus {pid} terminé (SIGKILL).")
+    """Termine un processus de façon cross-platform via psutil."""
+    try:
+        proc = psutil.Process(pid)
+        proc.kill()   # SIGKILL sur Linux, TerminateProcess() sur Windows
+        print(f"[KILL] Processus {pid} terminé.")
+    except psutil.NoSuchProcess:
+        print(f"[KILL] Processus {pid} introuvable (déjà terminé ?).")
+    except psutil.AccessDenied:
+        print(f"[KILL] Accès refusé pour terminer le processus {pid}.")
 
 
 def report_command_result(
@@ -597,6 +701,7 @@ def poll_commands(agent_uuid: str) -> None:
 def main() -> None:
     print("=== RansomShield Host Agent ===")
     print(f"API       : {API_URL}")
+    print(f"OS        : {OS_NAME} ({platform.version()})")
     print(f"Mode      : {MONITOR_MODE}")
     print(f"Hostname  : {socket.gethostname()}")
     print(f"IP        : {get_local_ip()}")
@@ -611,8 +716,21 @@ def main() -> None:
     last_process_scan = 0
     last_command_poll = 0
 
+    # Gestion du signal d'arrêt (SIGTERM sur Linux, CTRL_C_EVENT sur Windows)
+    _stop = [False]
+
+    def _handle_stop(signum, frame):
+        _stop[0] = True
+
+    signal.signal(signal.SIGTERM, _handle_stop)
+    if IS_WINDOWS:
+        try:
+            signal.signal(signal.SIGBREAK, _handle_stop)
+        except (OSError, AttributeError):
+            pass
+
     try:
-        while True:
+        while not _stop[0]:
             now = time.time()
 
             if now - last_heartbeat >= HEARTBEAT_INTERVAL:
@@ -638,6 +756,8 @@ def main() -> None:
 
         for observer in observers:
             observer.join()
+
+        print("[STOP] Agent arrêté proprement.")
 
 
 if __name__ == "__main__":

@@ -155,6 +155,42 @@
             gap: 16px;
         }
 
+        /* ── OS TAB SELECTOR ─────────────────────────────────────────────── */
+        .os-tabs {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 18px;
+        }
+
+        .os-tab {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            padding: 8px 16px;
+            border-radius: 12px;
+            border: 1px solid var(--border-soft);
+            background: color-mix(in srgb, var(--bg-panel-soft) 50%, transparent);
+            font-size: 12px;
+            font-weight: 850;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: .15s ease;
+            user-select: none;
+        }
+
+        .os-tab:hover { border-color: color-mix(in srgb, #6366f1 40%, transparent); color: var(--text-main); }
+
+        .os-tab.active {
+            border-color: #6366f1;
+            background: color-mix(in srgb, #6366f1 12%, transparent);
+            color: #a5b4fc;
+        }
+
+        .os-tab .os-tab-icon { font-size: 15px; }
+
+        .os-panel { display: none; }
+        .os-panel.active { display: block; }
+
         /* ── INSTALL COMMAND BOX ──────────────────────────────────────────── */
         .install-box {
             position: relative;
@@ -505,39 +541,157 @@
                             Installer l'agent sur <strong>{{ $agent->ip_address ?? $agent->agent_name }}</strong>
                         </h3>
                         <p class="soc-card-subtitle">
-                            Lance la commande ci-dessous sur la machine cible. Le script télécharge l'agent,
-                            configure le <code>.env</code> et démarre le service automatiquement.
+                            Sélectionne le système d'exploitation cible puis lance la commande sur la machine.
+                            Le script télécharge l'agent, configure le <code>.env</code> et démarre le service automatiquement.
                         </p>
                     </div>
                 </div>
 
+                {{-- ── SÉLECTEUR OS ──────────────────────────────────────────── --}}
+                <div class="os-tabs" id="osTabs">
+                    <button type="button" class="os-tab active" data-os="linux">
+                        <span class="os-tab-icon">🐧</span>
+                        Linux / macOS
+                    </button>
+                    <button type="button" class="os-tab" data-os="windows">
+                        <span class="os-tab-icon">🪟</span>
+                        Windows
+                    </button>
+                </div>
+
                 @if($installInfo['has_valid_token'])
 
-                    {{-- ── ONE-LINER BOOTSTRAP (méthode recommandée) ────────── --}}
-                    <div style="border-radius:16px; border:2px solid color-mix(in srgb, #22c55e 35%, transparent);
-                                background:color-mix(in srgb, #22c55e 5%, transparent);
-                                padding:18px 20px; margin-bottom:20px;">
+                    {{-- ── ONE-LINER BOOTSTRAP : LINUX ──────────────────────── --}}
+                    <div class="os-panel active" id="panel-linux">
+                        <div style="border-radius:16px; border:2px solid color-mix(in srgb, #22c55e 35%, transparent);
+                                    background:color-mix(in srgb, #22c55e 5%, transparent);
+                                    padding:18px 20px; margin-bottom:20px;">
 
-                        <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
-                            <i class="fa-solid fa-bolt" style="color:#22c55e; font-size:15px;"></i>
-                            <span style="font-size:13px; font-weight:850; color:#22c55e;">Installation en une commande</span>
-                            <span style="margin-left:auto; font-size:11px; color:var(--text-muted);">
-                                Token valide — expire {{ $installInfo['token_expires_label'] }}
-                            </span>
+                            <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
+                                <i class="fa-solid fa-bolt" style="color:#22c55e; font-size:15px;"></i>
+                                <span style="font-size:13px; font-weight:850; color:#22c55e;">Installation en une commande — Linux / macOS</span>
+                                <span style="margin-left:auto; font-size:11px; color:var(--text-muted);">
+                                    Token valide — expire {{ $installInfo['token_expires_label'] }}
+                                </span>
+                            </div>
+
+                            <div class="install-box" style="border-color:color-mix(in srgb, #22c55e 30%, transparent);">
+                                <button type="button" class="copy-btn" data-copy="copyBootstrapLinux">
+                                    <i class="fa-solid fa-copy"></i> Copier
+                                </button>
+                                <code id="copyBootstrapLinux">curl -fsSL {{ $installInfo['bootstrap_url'] }} | sudo bash</code>
+                            </div>
+
+                            <p style="margin:10px 0 0; font-size:12px; color:var(--text-muted);">
+                                <i class="fa-solid fa-circle-info" style="margin-right:4px; color:#22c55e;"></i>
+                                Télécharge l'agent depuis le SOC, écrit le <code>.env</code>, installe le venv Python
+                                et active le service <strong>systemd</strong>. Token détruit dès l'enrôlement réussi.
+                            </p>
                         </div>
 
-                        <div class="install-box" style="border-color:color-mix(in srgb, #22c55e 30%, transparent);">
-                            <button type="button" class="copy-btn" data-copy="copyBootstrap">
-                                <i class="fa-solid fa-copy"></i> Copier
-                            </button>
-                            <code id="copyBootstrap">curl -fsSL {{ $installInfo['bootstrap_url'] }} | sudo bash</code>
+                        {{-- Manuel Linux --}}
+                        <details style="border-radius:12px; border:1px solid var(--border-soft);
+                                        background:color-mix(in srgb, var(--bg-panel-soft) 40%, transparent); overflow:hidden;">
+                            <summary style="padding:12px 16px; cursor:pointer; font-size:13px; font-weight:750;
+                                            color:var(--text-muted); list-style:none; display:flex; align-items:center; gap:8px;">
+                                <i class="fa-solid fa-chevron-right" style="font-size:10px;"></i>
+                                Installation manuelle Linux (alternative)
+                            </summary>
+                            <div style="padding:14px 16px 16px; display:flex; flex-direction:column; gap:14px; border-top:1px solid var(--border-soft);">
+
+                                <div>
+                                    <p style="margin:0 0 6px; font-size:12px; font-weight:850; color:var(--text-muted);">1 — Copier les fichiers sur la cible</p>
+                                    <div class="install-box">
+                                        <button type="button" class="copy-btn" data-copy="copyLinuxStep1"><i class="fa-solid fa-copy"></i> Copier</button>
+                                        <code id="copyLinuxStep1">rsync -avz {{ $installInfo['agent_source_path'] }} {{ $agent->ip_address ?? 'IP_MACHINE' }}:/opt/ransomshield-agent/</code>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <p style="margin:0 0 6px; font-size:12px; font-weight:850; color:var(--text-muted);">2 — Créer le fichier <code>.env</code></p>
+                                    <div class="install-box">
+                                        <button type="button" class="copy-btn" data-copy="copyLinuxStep2"><i class="fa-solid fa-copy"></i> Copier</button>
+                                        <code id="copyLinuxStep2">{{ $installInfo['env_content'] }}</code>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <p style="margin:0 0 6px; font-size:12px; font-weight:850; color:var(--text-muted);">3 — Installer le service</p>
+                                    <div class="install-box">
+                                        <button type="button" class="copy-btn" data-copy="copyLinuxStep3"><i class="fa-solid fa-copy"></i> Copier</button>
+                                        <code id="copyLinuxStep3">cd /opt/ransomshield-agent && sudo bash install.sh</code>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </details>
+                    </div>
+
+                    {{-- ── ONE-LINER BOOTSTRAP : WINDOWS ────────────────────── --}}
+                    <div class="os-panel" id="panel-windows">
+                        <div style="border-radius:16px; border:2px solid color-mix(in srgb, #6366f1 40%, transparent);
+                                    background:color-mix(in srgb, #6366f1 6%, transparent);
+                                    padding:18px 20px; margin-bottom:20px;">
+
+                            <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
+                                <i class="fa-brands fa-windows" style="color:#6366f1; font-size:15px;"></i>
+                                <span style="font-size:13px; font-weight:850; color:#a5b4fc;">Installation en une commande — Windows (PowerShell admin)</span>
+                                <span style="margin-left:auto; font-size:11px; color:var(--text-muted);">
+                                    Token valide — expire {{ $installInfo['token_expires_label'] }}
+                                </span>
+                            </div>
+
+                            <div class="install-box" style="border-color:color-mix(in srgb, #6366f1 35%, transparent);">
+                                <button type="button" class="copy-btn" data-copy="copyBootstrapWin">
+                                    <i class="fa-solid fa-copy"></i> Copier
+                                </button>
+                                <code id="copyBootstrapWin">powershell -ExecutionPolicy Bypass -Command "iwr '{{ $installInfo['bootstrap_url'] }}?os=windows' -UseBasicParsing | iex"</code>
+                            </div>
+
+                            <p style="margin:10px 0 0; font-size:12px; color:var(--text-muted);">
+                                <i class="fa-solid fa-circle-info" style="margin-right:4px; color:#6366f1;"></i>
+                                À exécuter dans un <strong>PowerShell administrateur</strong>. Le script télécharge et configure
+                                l'agent, installe Python si absent, et enregistre un <strong>service Windows</strong>
+                                (<code>sc.exe</code>). Token détruit dès l'enrôlement réussi.
+                            </p>
                         </div>
 
-                        <p style="margin:10px 0 0; font-size:12px; color:var(--text-muted);">
-                            <i class="fa-solid fa-circle-info" style="margin-right:4px; color:#22c55e;"></i>
-                            Le script télécharge l'agent depuis le SOC, écrit le <code>.env</code>, installe les dépendances
-                            et active le service systemd. Le token est détruit dès l'enrôlement réussi.
-                        </p>
+                        {{-- Manuel Windows --}}
+                        <details style="border-radius:12px; border:1px solid var(--border-soft);
+                                        background:color-mix(in srgb, var(--bg-panel-soft) 40%, transparent); overflow:hidden;">
+                            <summary style="padding:12px 16px; cursor:pointer; font-size:13px; font-weight:750;
+                                            color:var(--text-muted); list-style:none; display:flex; align-items:center; gap:8px;">
+                                <i class="fa-solid fa-chevron-right" style="font-size:10px;"></i>
+                                Installation manuelle Windows (alternative)
+                            </summary>
+                            <div style="padding:14px 16px 16px; display:flex; flex-direction:column; gap:14px; border-top:1px solid var(--border-soft);">
+
+                                <div>
+                                    <p style="margin:0 0 6px; font-size:12px; font-weight:850; color:var(--text-muted);">1 — Télécharger le script PowerShell</p>
+                                    <div class="install-box">
+                                        <button type="button" class="copy-btn" data-copy="copyWinStep1"><i class="fa-solid fa-copy"></i> Copier</button>
+                                        <code id="copyWinStep1">Invoke-WebRequest -Uri '{{ $installInfo['bootstrap_url'] }}?os=windows' -OutFile 'ransomshield-install.ps1'; .\ransomshield-install.ps1</code>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <p style="margin:0 0 6px; font-size:12px; font-weight:850; color:var(--text-muted);">2 — Vérifier le service après installation</p>
+                                    <div class="install-box">
+                                        <button type="button" class="copy-btn" data-copy="copyWinStep2"><i class="fa-solid fa-copy"></i> Copier</button>
+                                        <code id="copyWinStep2">Get-Service -Name RansomShieldAgent | Select-Object Name, Status, StartType</code>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <p style="margin:0 0 6px; font-size:12px; font-weight:850; color:var(--text-muted);">3 — Consulter les logs</p>
+                                    <div class="install-box">
+                                        <button type="button" class="copy-btn" data-copy="copyWinStep3"><i class="fa-solid fa-copy"></i> Copier</button>
+                                        <code id="copyWinStep3">Get-Content C:\RansomShieldAgent\.ransomshield_host_agent_state.json</code>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </details>
                     </div>
 
                 @elseif($installInfo['token_is_expired'])
@@ -558,59 +712,6 @@
                     </div>
 
                 @endif
-
-                {{-- ── MÉTHODE MANUELLE (détails repliables) ──────────────── --}}
-                <details style="border-radius:12px; border:1px solid var(--border-soft);
-                                background:color-mix(in srgb, var(--bg-panel-soft) 40%, transparent); overflow:hidden;">
-                    <summary style="padding:12px 16px; cursor:pointer; font-size:13px; font-weight:750;
-                                    color:var(--text-muted); list-style:none; display:flex; align-items:center; gap:8px;
-                                    user-select:none;">
-                        <i class="fa-solid fa-chevron-right" style="font-size:10px; transition:.15s;"></i>
-                        Installation manuelle (alternative)
-                    </summary>
-                    <div style="padding:0 16px 16px; display:flex; flex-direction:column; gap:14px; border-top:1px solid var(--border-soft); padding-top:14px; margin-top:0;">
-
-                        {{-- Step 1 --}}
-                        <div>
-                            <p style="margin:0 0 6px; font-size:12px; font-weight:850; color:var(--text-muted);">
-                                1 — Copier les fichiers sur la cible
-                            </p>
-                            <div class="install-box">
-                                <button type="button" class="copy-btn" data-copy="copyStep1">
-                                    <i class="fa-solid fa-copy"></i> Copier
-                                </button>
-                                <code id="copyStep1">rsync -avz {{ $installInfo['agent_source_path'] }} {{ $agent->ip_address ?? 'IP_MACHINE' }}:/opt/ransomshield-agent/</code>
-                            </div>
-                        </div>
-
-                        {{-- Step 2 --}}
-                        <div>
-                            <p style="margin:0 0 6px; font-size:12px; font-weight:850; color:var(--text-muted);">
-                                2 — Créer le fichier <code>.env</code>
-                            </p>
-                            <div class="install-box">
-                                <button type="button" class="copy-btn" data-copy="copyStep2">
-                                    <i class="fa-solid fa-copy"></i> Copier
-                                </button>
-                                <code id="copyStep2">{{ $installInfo['env_content'] }}</code>
-                            </div>
-                        </div>
-
-                        {{-- Step 3 --}}
-                        <div>
-                            <p style="margin:0 0 6px; font-size:12px; font-weight:850; color:var(--text-muted);">
-                                3 — Installer le service
-                            </p>
-                            <div class="install-box">
-                                <button type="button" class="copy-btn" data-copy="copyStep3">
-                                    <i class="fa-solid fa-copy"></i> Copier
-                                </button>
-                                <code id="copyStep3">cd /opt/ransomshield-agent && sudo bash install.sh</code>
-                            </div>
-                        </div>
-
-                    </div>
-                </details>
 
                 {{-- ── BANDEAU UUID + TOKEN ──────────────────────────────── --}}
                 <div style="margin-top:14px; display:flex; flex-direction:column; gap:8px;">
@@ -930,6 +1031,7 @@
     </div>
 
     <script>
+    // ── Copie dans le presse-papier ─────────────────────────────────────────
     document.querySelectorAll('.copy-btn[data-copy]').forEach(function (btn) {
         btn.addEventListener('click', function () {
             const targetId = this.getAttribute('data-copy');
@@ -942,6 +1044,23 @@
                     this.innerHTML = '<i class="fa-solid fa-copy"></i> Copier';
                 }, 2000);
             });
+        });
+    });
+
+    // ── Sélecteur OS (Linux / Windows) ─────────────────────────────────────
+    const osTabs   = document.querySelectorAll('.os-tab');
+    const osPanels = document.querySelectorAll('.os-panel');
+
+    osTabs.forEach(function (tab) {
+        tab.addEventListener('click', function () {
+            const os = this.getAttribute('data-os');
+
+            osTabs.forEach(t => t.classList.remove('active'));
+            osPanels.forEach(p => p.classList.remove('active'));
+
+            this.classList.add('active');
+            const panel = document.getElementById('panel-' + os);
+            if (panel) panel.classList.add('active');
         });
     });
     </script>
