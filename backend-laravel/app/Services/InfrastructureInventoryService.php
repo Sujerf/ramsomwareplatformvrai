@@ -45,11 +45,21 @@ class InfrastructureInventoryService
 
         // ── Étape 2 : construction de la liste d'hôtes ───────────────────────
         //
+        // ORDRE IMPORTANT : localHostsForNetwork en PREMIER — ses rôles et
+        // hostnames explicites (soc_server, gateway) ont priorité sur les
+        // entrées anonymes issues du scan (fping/ARP ne connaissent pas les rôles).
+        // unique('ip_address') conserve la PREMIÈRE occurrence → local wins.
+        $hosts = collect();
+
+        // Étape 2a : SOC + passerelle avec rôles explicites (priorité maximale)
+        foreach ($this->localHostsForNetwork($network) as $host) {
+            $hosts->push($host);
+        }
+
+        // Étape 2b : hôtes découverts par le scan actif
         // • fping  → liste d'IPs certifiées vivantes (output direct) + lookup MAC dans ARP
         // • autres → table ARP filtrée sur états REACHABLE/DELAY/PROBE/PERMANENT uniquement
         //            (les entrées STALE / FAILED / INCOMPLETE = fantômes, ignorées)
-        $hosts = collect();
-
         if ($confirmedIps !== null) {
             $macMap = $this->macFromArpForIps($confirmedIps);
 
@@ -66,11 +76,6 @@ class InfrastructureInventoryService
             foreach ($this->hostsFromIpNeigh() as $host) {
                 $hosts->push($host);
             }
-        }
-
-        // ── Étape 3 : ajouter SOC + passerelle comme hôtes connus ───────────
-        foreach ($this->localHostsForNetwork($network) as $host) {
-            $hosts->push($host);
         }
 
         $hosts = $hosts
