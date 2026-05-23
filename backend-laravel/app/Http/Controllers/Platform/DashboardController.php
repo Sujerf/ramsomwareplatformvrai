@@ -73,6 +73,9 @@ class DashboardController extends Controller
             'enable_real_process_kill',
             'min_risk_level_for_incident',
             'min_risk_level_for_action',
+            'notification_ui_enabled',
+            'notification_sound_enabled',
+            'notification_mail_enabled',
         ])->get()->keyBy('key');
 
         return view('platform.dashboard.index', [

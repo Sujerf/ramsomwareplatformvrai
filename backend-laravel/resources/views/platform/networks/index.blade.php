@@ -217,7 +217,9 @@
                 dans l'historique mais n'est plus scanné ni surveillé.</p>
 
             <div class="btn-row" style="margin-top:18px">
-                <form method="POST" action="{{ route('platform.networks.detect') }}" style="display:contents">
+                <form method="POST" action="{{ route('platform.networks.detect') }}" style="display:contents"
+                      data-loading="Détection des réseaux en cours…"
+                      data-loading-hint="Scan ARP + fping sur toutes les interfaces actives. Cela prend 5 à 15 secondes selon votre réseau.">
                     @csrf
                     <button class="action-btn lg success" type="submit">
                         <i class="fa-solid fa-magnifying-glass-location"></i> Détecter réseaux locaux
@@ -323,7 +325,9 @@
 
                         <div class="net-strip">
                             @if($network->is_monitored)
-                                <form method="POST" action="{{ route('platform.networks.scan', $network) }}">
+                                <form method="POST" action="{{ route('platform.networks.scan', $network) }}"
+                                      data-loading="Scan de {{ $network->name }} ({{ $network->cidr }}) en cours…"
+                                      data-loading-hint="Découverte des hôtes actifs via fping + ARP. Quelques secondes…">
                                     @csrf
                                     <button class="action-btn primary" type="submit">
                                         <i class="fa-solid fa-satellite-dish"></i> Scanner

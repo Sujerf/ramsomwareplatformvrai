@@ -1339,5 +1339,69 @@
     setInterval(pollNotifications, 30000);
 })();
 </script>
+
+{{-- ── LOADING OVERLAY ────────────────────────────────────────────────────── --}}
+{{-- Affiché lors des opérations longues : scan réseau, détection, actions SOC --}}
+<div id="rsLoadingOverlay" aria-live="polite" style="
+    display:none;
+    position:fixed; inset:0; z-index:99999;
+    background:rgba(9,15,28,.78);
+    backdrop-filter:blur(10px);
+    -webkit-backdrop-filter:blur(10px);
+    align-items:center; justify-content:center; flex-direction:column; gap:20px;
+">
+    <div style="
+        width:64px; height:64px; border-radius:50%;
+        border:3px solid rgba(56,189,248,.18);
+        border-top-color:var(--accent,#38bdf8);
+        animation:rsSpinFull .75s linear infinite;
+    "></div>
+    <div style="text-align:center; max-width:360px; padding:0 24px;">
+        <p id="rsLoadingMsg"  style="margin:0; font-size:16px; font-weight:950; letter-spacing:-.03em; color:var(--text-main,#f1f5f9);">
+            Traitement en cours…
+        </p>
+        <p id="rsLoadingHint" style="margin:6px 0 0; font-size:13px; color:var(--text-muted,#64748b); line-height:1.5;">
+            Veuillez patienter, cette opération peut prendre quelques secondes.
+        </p>
+    </div>
+</div>
+
+<style>
+    @keyframes rsSpinFull { to { transform: rotate(360deg); } }
+</style>
+
+<script>
+(function () {
+    const overlay = document.getElementById('rsLoadingOverlay');
+    const msgEl   = document.getElementById('rsLoadingMsg');
+    const hintEl  = document.getElementById('rsLoadingHint');
+    if (!overlay) return;
+
+    function showOverlay(message, hint) {
+        if (msgEl)  msgEl.textContent  = message || 'Traitement en cours…';
+        if (hintEl) hintEl.textContent = hint    || 'Veuillez patienter, cette opération peut prendre quelques secondes.';
+        overlay.style.display = 'flex';
+        // Sécurité : disparaît automatiquement après 45 secondes
+        setTimeout(() => { overlay.style.display = 'none'; }, 45000);
+    }
+
+    // Déclenché par tout formulaire avec data-loading="Message"
+    document.querySelectorAll('form[data-loading]').forEach(function (form) {
+        form.addEventListener('submit', function (e) {
+            const btn = form.querySelector('[type=submit]');
+            // Ne pas bloquer si le bouton a data-confirm (confirmation déjà gérée)
+            if (btn && btn.disabled) return;
+            const msg  = form.dataset.loading  || 'Traitement en cours…';
+            const hint = form.dataset.loadingHint || 'Veuillez patienter, cette opération peut prendre quelques secondes.';
+            showOverlay(msg, hint);
+        });
+    });
+
+    // Exposé globalement pour les appels manuels depuis d'autres scripts
+    window.rsShowLoader = showOverlay;
+    window.rsHideLoader = function () { overlay.style.display = 'none'; };
+})();
+</script>
+
 </body>
 </html>

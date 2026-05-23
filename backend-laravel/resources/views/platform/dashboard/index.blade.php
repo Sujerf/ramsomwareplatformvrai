@@ -986,6 +986,93 @@
                 </div>
                 @endif
 
+                {{-- Notification UI --}}
+                @if($ss->has('notification_ui_enabled'))
+                @php $s = $ss->get('notification_ui_enabled'); $on = $s->value === '1'; @endphp
+                <div class="surv-card {{ $on ? 'active-card' : '' }}" id="card-notification_ui_enabled">
+                    <div class="surv-icon {{ $on ? 'blue' : '' }}">
+                        <i class="fa-solid fa-bell"></i>
+                    </div>
+                    <div class="surv-body">
+                        <div class="surv-label">Notifications</div>
+                        <div class="surv-title">Alertes interface</div>
+                        <div class="surv-desc">Affiche les pop-ups de notification dans l'interface SOC.</div>
+                        <div class="surv-control">
+                            <label class="toggle-switch" title="{{ $s->label }}">
+                                <input type="checkbox"
+                                       {{ $on ? 'checked' : '' }}
+                                       data-setting-id="{{ $s->id }}"
+                                       data-setting-key="{{ $s->key }}"
+                                       data-toggle-url="{{ route('platform.system-settings.toggle', $s) }}"
+                                       class="surv-toggle">
+                                <span class="toggle-track"></span>
+                            </label>
+                            <span class="toggle-status {{ $on ? 'on' : '' }}" id="status-{{ $s->key }}">
+                                {{ $on ? 'Actives' : 'Inactives' }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                @endif
+
+                {{-- Notification son --}}
+                @if($ss->has('notification_sound_enabled'))
+                @php $s = $ss->get('notification_sound_enabled'); $on = $s->value === '1'; @endphp
+                <div class="surv-card {{ $on ? 'active-card' : '' }}" id="card-notification_sound_enabled">
+                    <div class="surv-icon {{ $on ? 'orange' : '' }}">
+                        <i class="fa-solid fa-volume-high"></i>
+                    </div>
+                    <div class="surv-body">
+                        <div class="surv-label">Notifications</div>
+                        <div class="surv-title">Alarme sonore</div>
+                        <div class="surv-desc">Joue un bip d'alerte navigateur à chaque nouvelle alerte.</div>
+                        <div class="surv-control">
+                            <label class="toggle-switch" title="{{ $s->label }}">
+                                <input type="checkbox"
+                                       {{ $on ? 'checked' : '' }}
+                                       data-setting-id="{{ $s->id }}"
+                                       data-setting-key="{{ $s->key }}"
+                                       data-toggle-url="{{ route('platform.system-settings.toggle', $s) }}"
+                                       class="surv-toggle">
+                                <span class="toggle-track"></span>
+                            </label>
+                            <span class="toggle-status {{ $on ? 'on' : '' }}" id="status-{{ $s->key }}">
+                                {{ $on ? 'Activée' : 'Désactivée' }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                @endif
+
+                {{-- Notification mail --}}
+                @if($ss->has('notification_mail_enabled'))
+                @php $s = $ss->get('notification_mail_enabled'); $on = $s->value === '1'; @endphp
+                <div class="surv-card {{ $on ? 'active-card' : '' }}" id="card-notification_mail_enabled">
+                    <div class="surv-icon {{ $on ? 'green' : '' }}">
+                        <i class="fa-solid fa-envelope"></i>
+                    </div>
+                    <div class="surv-body">
+                        <div class="surv-label">Notifications</div>
+                        <div class="surv-title">Alertes par e-mail</div>
+                        <div class="surv-desc">Envoie un e-mail à l'opérateur SOC à chaque nouvelle alerte.</div>
+                        <div class="surv-control">
+                            <label class="toggle-switch" title="{{ $s->label }}">
+                                <input type="checkbox"
+                                       {{ $on ? 'checked' : '' }}
+                                       data-setting-id="{{ $s->id }}"
+                                       data-setting-key="{{ $s->key }}"
+                                       data-toggle-url="{{ route('platform.system-settings.toggle', $s) }}"
+                                       class="surv-toggle">
+                                <span class="toggle-track"></span>
+                            </label>
+                            <span class="toggle-status {{ $on ? 'on' : '' }}" id="status-{{ $s->key }}">
+                                {{ $on ? 'Activées' : 'Désactivées' }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                @endif
+
             </div>
         </section>
 
@@ -1008,7 +1095,7 @@
                 </div>
                 <div class="chart-box" style="position:relative;">
                     <canvas id="socActivityChart"></canvas>
-                    <div id="chartLoader" style="display:none; position:absolute; inset:0; display:none; align-items:center; justify-content:center; background:color-mix(in srgb, var(--bg-panel) 80%, transparent); border-radius:12px;">
+                    <div id="chartLoader" style="display:none; position:absolute; inset:0; align-items:center; justify-content:center; background:color-mix(in srgb, var(--bg-panel) 80%, transparent); border-radius:12px;">
                         <i class="fa-solid fa-circle-notch fa-spin" style="font-size:22px; color:var(--accent);"></i>
                     </div>
                 </div>
@@ -1532,14 +1619,16 @@
                     }
 
                     if (icon) {
-                        const isGreen  = ['protection_execution_enabled'].includes(key);
-                        const isBlue   = ['require_human_approval_for_sensitive_actions'].includes(key);
+                        const isGreen  = ['protection_execution_enabled','notification_mail_enabled'].includes(key);
+                        const isBlue   = ['require_human_approval_for_sensitive_actions','notification_ui_enabled'].includes(key);
+                        const isOrange = ['notification_sound_enabled'].includes(key);
                         const isDanger = ['enable_real_isolation','enable_real_process_kill'].includes(key);
                         icon.className = 'surv-icon';
                         if (data.active) {
-                            if (isDanger) icon.classList.add('red');
-                            else if (isBlue) icon.classList.add('blue');
-                            else if (isGreen) icon.classList.add('green');
+                            if (isDanger)  icon.classList.add('red');
+                            else if (isBlue)   icon.classList.add('blue');
+                            else if (isGreen)  icon.classList.add('green');
+                            else if (isOrange) icon.classList.add('orange');
                         }
                     }
 
@@ -1550,6 +1639,9 @@
                             require_human_approval_for_sensitive_actions : ['Non requise','Requise'],
                             enable_real_isolation                        : ['Désactivée','Autorisée'],
                             enable_real_process_kill                     : ['Désactivé','Autorisé'],
+                            notification_ui_enabled                      : ['Inactives','Actives'],
+                            notification_sound_enabled                   : ['Désactivée','Activée'],
+                            notification_mail_enabled                    : ['Désactivées','Activées'],
                         };
                         const pair = labels[key] || ['Off','On'];
                         statusSpan.textContent = data.active ? pair[1] : pair[0];

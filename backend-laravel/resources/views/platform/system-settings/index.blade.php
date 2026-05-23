@@ -373,9 +373,10 @@
                                     </div>
                                 @elseif($setting->key === 'ui_theme')
                                     <select name="value" class="form-control">
-                                        <option value="light" @selected($setting->value === 'light')>Light</option>
-                                        <option value="dark" @selected($setting->value === 'dark')>Dark</option>
-                                        <option value="system" @selected($setting->value === 'system')>System</option>
+                                        <option value="soc_dark"   @selected($setting->value === 'soc_dark')>🌑 Dark SOC (défaut)</option>
+                                        <option value="soc_light"  @selected($setting->value === 'soc_light')>☀️ Light SOC</option>
+                                        <option value="cyber_blue" @selected($setting->value === 'cyber_blue')>🔵 Cyber Blue</option>
+                                        <option value="oled_black" @selected($setting->value === 'oled_black')>⬛ OLED Black</option>
                                     </select>
                                 @elseif(in_array($setting->key, ['min_risk_level_for_incident', 'min_risk_level_for_action'], true))
                                     <select name="value" class="form-control">
