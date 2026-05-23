@@ -57,10 +57,18 @@ class InfrastructureInventoryService
         }
 
         // Étape 2b : hôtes découverts par le scan actif
-        // • fping  → liste d'IPs certifiées vivantes (output direct) + lookup MAC dans ARP
-        // • autres → table ARP filtrée sur états REACHABLE/DELAY/PROBE/PERMANENT uniquement
-        //            (les entrées STALE / FAILED / INCOMPLETE = fantômes, ignorées)
+        //
+        // STRATÉGIE FUSIONNÉE — on combine toujours fping ET la table ARP :
+        //
+        // • fping  → IPs certifiées vivantes (ICMP echo répond) → source = fping_direct
+        // • ARP    → hôtes REACHABLE/DELAY/PROBE/PERMANENT qui ont communiqué récemment,
+        //            même si leur pare-feu bloque ICMP (typique : Windows Firewall)
+        //            → source = ip_neigh
+        //
+        // unique('ip_address') ci-dessous conserve la PREMIÈRE occurrence :
+        //   fping est poussé en premier → ses entrées ont la priorité sur ARP.
         if ($confirmedIps !== null) {
+            // fping d'abord (IPs ping-OK)
             $macMap = $this->macFromArpForIps($confirmedIps);
 
             foreach ($confirmedIps as $ip) {
@@ -72,10 +80,12 @@ class InfrastructureInventoryService
                     'metadata'    => ['source' => 'fping_direct'],
                 ]);
             }
-        } else {
-            foreach ($this->hostsFromIpNeigh() as $host) {
-                $hosts->push($host);
-            }
+        }
+
+        // Table ARP toujours lue — rattrape les hôtes avec ICMP bloqué
+        // (Windows Firewall, appareils IoT, etc.)
+        foreach ($this->hostsFromIpNeigh() as $host) {
+            $hosts->push($host);
         }
 
         $hosts = $hosts
@@ -329,10 +339,10 @@ class InfrastructureInventoryService
     private function scanMethodNote(string $method): string
     {
         return match ($method) {
-            'fping'         => 'Scan actif via fping — tous les hôtes UP du réseau sont détectés.',
-            'nmap'          => 'Scan actif via nmap -sn — tous les hôtes UP du réseau sont détectés.',
-            'ping_sweep'    => 'Ping parallèle /24 — table ARP peuplée, hôtes UP détectés.',
-            'ip_neigh_only' => 'Table ARP locale uniquement (fping/nmap absents, réseau > /24). Installe fping pour un scan complet.',
+            'fping'         => 'fping + ARP — hôtes ICMP détectés + hôtes avec pare-feu ICMP (Windows) via table ARP.',
+            'nmap'          => 'nmap + ARP — hôtes détectés + hôtes avec pare-feu ICMP via table ARP.',
+            'ping_sweep'    => 'Ping sweep + ARP — hôtes UP détectés + hôtes avec pare-feu ICMP via table ARP.',
+            'ip_neigh_only' => 'Table ARP locale uniquement (fping/nmap absents ou réseau > /24).',
             default         => 'Méthode de scan inconnue.',
         };
     }
