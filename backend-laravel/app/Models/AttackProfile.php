@@ -27,8 +27,5 @@ class AttackProfile extends Model
         return $this->hasMany(Incident::class);
     }
 
-    public function simulationRuns(): HasMany
-    {
-        return $this->hasMany(SimulationRun::class);
-    }
+
 }

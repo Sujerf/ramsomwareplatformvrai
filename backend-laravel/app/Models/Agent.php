@@ -34,16 +34,6 @@ class Agent extends Model
         'metadata' => 'array',
     ];
 
-    public function monitoredPaths(): HasMany
-    {
-        return $this->hasMany(MonitoredPath::class);
-    }
-
-    public function networkShares(): HasMany
-    {
-        return $this->hasMany(NetworkShare::class);
-    }
-
     public function events(): HasMany
     {
         return $this->hasMany(Event::class);
@@ -69,10 +59,6 @@ class Agent extends Model
         return $this->hasMany(ProtectionAction::class);
     }
 
-    public function simulationRuns(): HasMany
-    {
-        return $this->hasMany(SimulationRun::class);
-    }
     public function discoveredHost()
     {
         return $this->belongsTo(DiscoveredHost::class, 'discovered_host_id');
