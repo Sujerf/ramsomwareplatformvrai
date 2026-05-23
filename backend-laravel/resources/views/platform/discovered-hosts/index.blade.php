@@ -271,7 +271,8 @@
                 </a>
                 @if($stats['retired'] > 0)
                     <form method="POST" action="{{ route('platform.discovered-hosts.purge-retired') }}"
-                          onsubmit="return confirm('Supprimer définitivement {{ $stats[\'retired\'] }} hôte(s) retiré(s) ? Cette action est irréversible.')">
+                          onsubmit="return confirm(this.dataset.confirm)"
+                          data-confirm="Supprimer définitivement {{ $stats['retired'] }} hôte(s) retiré(s) ? Cette action est irréversible.">
                         @csrf
                         @method('DELETE')
                         <button type="submit" class="action-btn" style="border-color:#ef4444;color:#ef4444">
