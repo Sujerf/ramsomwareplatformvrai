@@ -156,10 +156,13 @@ class InfrastructureInventoryService
         $network = ManagedNetwork::query()->where('cidr', $data['cidr'])->first();
 
         if ($network) {
-            // Réseau existant : on met à jour les infos techniques UNIQUEMENT.
-            // On ne touche PAS à is_monitored / retired_at / retired_reason :
-            // si l'opérateur a retiré ce réseau manuellement, ce choix est préservé.
-            DB::table('managed_networks')->where('id', $network->id)->update([
+            // Réseau existant : on met à jour les infos techniques.
+            // Si le réseau est "retired" mais qu'il est à nouveau physiquement détecté
+            // sur une interface active, on le restaure automatiquement — sa présence
+            // sur l'interface prouve que le réseau est de retour.
+            $isRetired = $network->status === 'retired' || ! $network->is_monitored;
+
+            $update = [
                 'name'           => $data['name'] ?? $network->name,
                 'gateway_ip'     => $data['gateway_ip'] ?? $network->gateway_ip,
                 'interface_name' => $data['interface_name'] ?? $network->interface_name,
@@ -169,7 +172,17 @@ class InfrastructureInventoryService
                     $data['metadata'] ?? []
                 ), JSON_UNESCAPED_UNICODE),
                 'updated_at'     => now(),
-            ]);
+            ];
+
+            // Restauration automatique si retiré et physiquement présent
+            if ($isRetired) {
+                $update['status']        = 'detected';
+                $update['is_monitored']  = true;
+                $update['retired_at']    = null;
+                $update['retired_reason'] = null;
+            }
+
+            DB::table('managed_networks')->where('id', $network->id)->update($update);
 
             return ManagedNetwork::find($network->id);
         }
