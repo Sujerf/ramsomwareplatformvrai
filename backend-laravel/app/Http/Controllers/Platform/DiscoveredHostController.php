@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Platform;
 use App\Http\Controllers\Controller;
 use App\Models\DiscoveredHost;
 use App\Services\HostEnrollmentService;
+use App\Services\InfrastructureInventoryService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -140,5 +141,18 @@ class DiscoveredHostController extends Controller
             ]);
 
         return back()->with('success', 'Hôte réactivé.');
+    }
+
+    /**
+     * Supprime définitivement tous les hôtes retirés (is_monitored = false).
+     * Utile pour nettoyer les fantômes accumulés lors des scans précédents.
+     */
+    public function purgeRetired(InfrastructureInventoryService $inventory): RedirectResponse
+    {
+        $deleted = $inventory->purgeRetiredDiscoveredHosts();
+
+        return redirect()
+            ->route('platform.discovered-hosts.index')
+            ->with('success', "{$deleted} hôte(s) retiré(s) supprimé(s) définitivement.");
     }
 }

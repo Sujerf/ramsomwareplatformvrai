@@ -92,6 +92,7 @@ Route::prefix('console')->name('platform.')->middleware('auth')->group(function 
     Route::patch('/discovered-hosts/{discoveredHost}/retire', [DiscoveredHostController::class, 'retire'])->name('discovered-hosts.retire');
     Route::patch('/discovered-hosts/{discoveredHost}/restore', [DiscoveredHostController::class, 'restore'])->name('discovered-hosts.restore');
     Route::post('/discovered-hosts/{discoveredHost}/enroll', [DiscoveredHostController::class, 'enroll'])->name('discovered-hosts.enroll');
+    Route::delete('/discovered-hosts/purge-retired', [DiscoveredHostController::class, 'purgeRetired'])->name('discovered-hosts.purge-retired');
     Route::get('/events', [\App\Http\Controllers\Platform\EventController::class, 'index'])->name('events.index');
     Route::get('/events/{event}', [\App\Http\Controllers\Platform\EventController::class, 'show'])->name('events.show');
     Route::get('/notifications/poll', \App\Http\Controllers\Platform\NotificationPollController::class)->name('notifications.poll');

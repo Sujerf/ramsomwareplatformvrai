@@ -269,6 +269,17 @@
                 <a href="{{ route('platform.local-host.index') }}" class="action-btn">
                     <i class="fa-solid fa-server"></i> Machine SOC
                 </a>
+                @if($stats['retired'] > 0)
+                    <form method="POST" action="{{ route('platform.discovered-hosts.purge-retired') }}"
+                          onsubmit="return confirm('Supprimer définitivement {{ $stats[\'retired\'] }} hôte(s) retiré(s) ? Cette action est irréversible.')">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="action-btn" style="border-color:#ef4444;color:#ef4444">
+                            <i class="fa-solid fa-trash-can"></i>
+                            Purger {{ $stats['retired'] }} fantôme(s)
+                        </button>
+                    </form>
+                @endif
             </div>
 
             <div class="filter-tabs">

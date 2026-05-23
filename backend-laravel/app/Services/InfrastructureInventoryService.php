@@ -75,26 +75,44 @@ class InfrastructureInventoryService
 
         $hosts = $hosts
             ->filter(fn ($host) => ! empty($host['ip_address']))
-            ->unique(fn ($host) => $host['ip_address'].'|'.($host['mac_address'] ?? ''))
+            ->filter(fn ($host) => $this->ipInCidr($host['ip_address'], $network->cidr))
+            ->unique('ip_address')
             ->values();
+
+        // ── Étape 4 : upsert des hôtes trouvés ──────────────────────────────
+        $foundIps = $hosts->pluck('ip_address')->toArray();
 
         foreach ($hosts as $host) {
             $this->upsertHost($network, $host);
         }
 
+        // ── Étape 5 : retirer les hôtes du réseau qui n'ont PAS été trouvés ─
+        //
+        // Seuls les hôtes non-enrôlés sont auto-retirés : un agent déployé
+        // manuellement ne doit pas disparaître parce que fping l'a raté.
+        $retired = DB::table('discovered_hosts')
+            ->where('managed_network_id', $network->id)
+            ->where('is_monitored', true)
+            ->where('enrollment_status', 'not_enrolled')
+            ->whereNotIn('ip_address', $foundIps)
+            ->update([
+                'is_monitored'   => false,
+                'retired_at'     => now(),
+                'retired_reason' => 'Non détecté lors du scan du '.now()->format('d/m/Y H:i'),
+                'updated_at'     => now(),
+            ]);
+
         DB::table('managed_networks')
             ->where('id', $network->id)
             ->update([
                 'last_scanned_at' => now(),
-                'is_monitored'    => true,
                 'is_scannable'    => true,
-                'status'          => 'approved',
-                'retired_at'      => null,
-                'retired_reason'  => null,
                 'metadata'        => json_encode(array_merge($this->asArray($network->metadata), [
-                    'last_scan_at'     => now()->toDateTimeString(),
-                    'last_scan_method' => $scanMethod,
-                    'last_scan_note'   => $this->scanMethodNote($scanMethod),
+                    'last_scan_at'      => now()->toDateTimeString(),
+                    'last_scan_method'  => $scanMethod,
+                    'last_scan_note'    => $this->scanMethodNote($scanMethod),
+                    'last_scan_found'   => count($foundIps),
+                    'last_scan_retired' => $retired,
                 ]), JSON_UNESCAPED_UNICODE),
                 'updated_at'      => now(),
             ]);
@@ -102,10 +120,22 @@ class InfrastructureInventoryService
         return [
             'network_id'     => $network->id,
             'cidr'           => $network->cidr,
-            'hosts_detected' => $hosts->count(),
+            'hosts_detected' => count($foundIps),
+            'hosts_retired'  => $retired,
             'method'         => $scanMethod,
             'note'           => $this->scanMethodNote($scanMethod),
         ];
+    }
+
+    /**
+     * Supprime définitivement tous les hôtes retirés (is_monitored = false).
+     * À appeler depuis un bouton "Purger" dans l'interface.
+     */
+    public function purgeRetiredDiscoveredHosts(): int
+    {
+        return DB::table('discovered_hosts')
+            ->where('is_monitored', false)
+            ->delete();
     }
 
     // ──────────────────────────────────────────────────────────────────────────
@@ -120,6 +150,26 @@ class InfrastructureInventoryService
 
         $network = ManagedNetwork::query()->where('cidr', $data['cidr'])->first();
 
+        if ($network) {
+            // Réseau existant : on met à jour les infos techniques UNIQUEMENT.
+            // On ne touche PAS à is_monitored / retired_at / retired_reason :
+            // si l'opérateur a retiré ce réseau manuellement, ce choix est préservé.
+            DB::table('managed_networks')->where('id', $network->id)->update([
+                'name'           => $data['name'] ?? $network->name,
+                'gateway_ip'     => $data['gateway_ip'] ?? $network->gateway_ip,
+                'interface_name' => $data['interface_name'] ?? $network->interface_name,
+                'is_scannable'   => true,
+                'metadata'       => json_encode(array_merge(
+                    $this->asArray($network->metadata),
+                    $data['metadata'] ?? []
+                ), JSON_UNESCAPED_UNICODE),
+                'updated_at'     => now(),
+            ]);
+
+            return ManagedNetwork::find($network->id);
+        }
+
+        // Nouveau réseau : créé actif par défaut
         $payload = [
             'name'           => $data['name'] ?? 'Réseau détecté '.($data['interface_name'] ?? $data['cidr']),
             'cidr'           => $data['cidr'],
@@ -131,16 +181,10 @@ class InfrastructureInventoryService
             'retired_at'     => null,
             'retired_reason' => null,
             'metadata'       => json_encode($data['metadata'] ?? [], JSON_UNESCAPED_UNICODE),
+            'created_at'     => now(),
             'updated_at'     => now(),
         ];
 
-        if ($network) {
-            DB::table('managed_networks')->where('id', $network->id)->update($payload);
-
-            return ManagedNetwork::find($network->id);
-        }
-
-        $payload['created_at'] = now();
         $id = DB::table('managed_networks')->insertGetId($payload);
 
         return ManagedNetwork::find($id);
@@ -387,7 +431,10 @@ class InfrastructureInventoryService
             ];
         }
 
-        if ($network->gateway_ip) {
+        // N'ajoute la passerelle que si c'est une machine DIFFÉRENTE du SOC.
+        // Sur un bridge KVM (virbr-soc, virbr0), la gateway = IP locale du SOC
+        // → déjà enregistrée ci-dessus, pas de doublon.
+        if ($network->gateway_ip && $network->gateway_ip !== $localIp) {
             $hosts[] = [
                 'ip_address'  => $network->gateway_ip,
                 'mac_address' => null,
@@ -412,8 +459,11 @@ class InfrastructureInventoryService
             return [];
         }
 
-        $gateway = $this->defaultGateway();
-        $items   = [];
+        // Récupère toutes les routes pour détection per-interface
+        $routeResult = Process::timeout(2)->run('ip route show');
+        $routeOutput = $routeResult->successful() ? $routeResult->output() : '';
+
+        $items = [];
 
         foreach (explode("\n", trim($result->output())) as $line) {
             if (! preg_match('/^\d+:\s+([^\s]+)\s+inet\s+([0-9.]+)\/(\d+)/', $line, $matches)) {
@@ -430,16 +480,28 @@ class InfrastructureInventoryService
 
             $cidr = $this->networkCidr($ip, $prefix);
 
+            // ── Filtrage des interfaces inactives (linkdown) ─────────────────
+            // Une interface bridge sans VM connectée affiche "linkdown" dans
+            // la table de routage — inutile de la surveiller.
+            if (preg_match('/\bdev\s+'.preg_quote($interface, '/').'\b.*\blinkdown\b/i', $routeOutput)) {
+                continue;
+            }
+
+            // ── Détection de la passerelle propre à cette interface ──────────
+            // Cas 1 : route par défaut via cette interface → la gateway est le routeur externe
+            // Cas 2 : pas de route par défaut → cette machine EST la gateway (bridge/routeur)
+            $gateway = $this->gatewayForInterface($interface, $ip, $routeOutput);
+
             $items[] = [
                 'name'           => 'Réseau détecté '.$interface,
                 'cidr'           => $cidr,
                 'gateway_ip'     => $gateway,
                 'interface_name' => $interface,
                 'metadata'       => [
-                    'ip'         => $ip,
-                    'prefix'     => $prefix,
-                    'source'     => 'local_interface_detection',
-                    'detected_at'=> now()->toDateTimeString(),
+                    'ip'          => $ip,
+                    'prefix'      => $prefix,
+                    'source'      => 'local_interface_detection',
+                    'detected_at' => now()->toDateTimeString(),
                 ],
             ];
         }
@@ -447,19 +509,23 @@ class InfrastructureInventoryService
         return $items;
     }
 
-    private function defaultGateway(): ?string
+    /**
+     * Retourne la passerelle appropriée pour une interface réseau donnée.
+     *
+     * • Si une route par défaut passe par cette interface (ex: WiFi → routeur DHCP) :
+     *   retourne l'IP du routeur.
+     * • Sinon (ex: bridge KVM virbr-soc) : cette machine est elle-même la gateway
+     *   du segment → retourne l'IP locale de l'interface.
+     */
+    private function gatewayForInterface(string $interface, string $localIp, string $routeOutput): string
     {
-        $result = Process::timeout(2)->run('ip route show default');
-
-        if (! $result->successful()) {
-            return null;
+        // Route par défaut spécifique à cette interface ?
+        if (preg_match('/default via ([0-9.]+)\s+dev\s+'.preg_quote($interface, '/').'/i', $routeOutput, $m)) {
+            return $m[1];
         }
 
-        if (preg_match('/default via ([0-9.]+)/', $result->output(), $matches)) {
-            return $matches[1];
-        }
-
-        return null;
+        // Aucune route par défaut → cette machine est la passerelle (bridge, routeur)
+        return $localIp;
     }
 
     // ──────────────────────────────────────────────────────────────────────────
@@ -488,6 +554,22 @@ class InfrastructureInventoryService
         $network = $long & $mask;
 
         return long2ip($network).'/'.$prefix;
+    }
+
+    /**
+     * Vérifie qu'une IP appartient bien au CIDR donné.
+     * Filtre les entrées ARP d'autres interfaces qui pourraient polluer un scan.
+     */
+    private function ipInCidr(string $ip, string $cidr): bool
+    {
+        [$network, $prefix] = explode('/', $cidr);
+        $prefix = (int) $prefix;
+
+        $ipLong  = ip2long($ip);
+        $netLong = ip2long($network);
+        $mask    = $prefix > 0 ? (-1 << (32 - $prefix)) : 0;
+
+        return ($ipLong & $mask) === ($netLong & $mask);
     }
 
     private function asArray(mixed $value): array
