@@ -108,15 +108,20 @@ class AgentRiskService
         $alertWasCreated = false;
         $actions         = collect();
 
-        if ($analysis['should_create_alert']) {
-
-            // ── Incident : créer ou mettre à jour l'existant ─────────────────
+        // ── Incident : créé seulement si le risque atteint le seuil configuré ──
+        // Le moteur calcule should_create_incident via min_risk_level_for_incident
+        // (réglé dans Settings → Détection). Les événements en-dessous du seuil
+        // sont quand même enregistrés comme events bruts, mais sans incident.
+        if ($analysis['should_create_incident']) {
             $incident = $this->createOrUpdateIncident($event, $analysis);
 
             $event->update(['incident_id' => $incident->id]);
             $riskSnapshot->update(['incident_id' => $incident->id]);
+        }
 
-            // ── Alerte : créer ou réutiliser (dédup 120 s) ───────────────────
+        // ── Alerte : créée pour tout événement non-normal (suspect → critical) ─
+        // Une alerte peut exister sans incident (pour les niveaux intermédiaires).
+        if ($analysis['should_create_alert']) {
             [$alert, $alertWasCreated] = $this->createOrReuseAlert($event, $incident, $analysis);
 
             if ($alertWasCreated) {
@@ -124,12 +129,14 @@ class AgentRiskService
                 $this->notificationService->notifyAlert($alert);
             }
 
-            $this->notificationService->notifyIncident(
-                $incident,
-                $alertWasCreated
-                    ? "Incident mis à jour après réception d'un nouvel événement suspect."
-                    : 'Incident mis à jour — alerte existante réutilisée (doublon < 120 s).'
-            );
+            if ($incident) {
+                $this->notificationService->notifyIncident(
+                    $incident,
+                    $alertWasCreated
+                        ? "Incident mis à jour après réception d'un nouvel événement suspect."
+                        : 'Incident mis à jour — alerte existante réutilisée (doublon < 120 s).'
+                );
+            }
         }
 
         // ── Actions de protection ─────────────────────────────────────────────
@@ -225,10 +232,12 @@ class AgentRiskService
     //  ALERTE — déduplication 120 secondes
     // ──────────────────────────────────────────────────────────────────────────
 
-    private function createOrReuseAlert(Event $event, Incident $incident, array $analysis): array
+    private function createOrReuseAlert(Event $event, ?Incident $incident, array $analysis): array
     {
         $recentDuplicate = Alert::query()
-            ->where('incident_id', $incident->id)
+            ->where('agent_id', $event->agent_id)
+            ->when($incident, fn ($q) => $q->where('incident_id', $incident->id))
+            ->when(! $incident, fn ($q) => $q->whereNull('incident_id'))
             ->where('status', 'open')
             ->where('title', 'Alerte comportement ransomware')
             ->where('created_at', '>=', now()->subSeconds(120))
@@ -254,7 +263,7 @@ class AgentRiskService
         $alert = Alert::create([
             'alert_uuid'  => (string) \Illuminate\Support\Str::uuid(),
             'agent_id'    => $event->agent_id,
-            'incident_id' => $incident->id,
+            'incident_id' => $incident?->id,
             'event_id'    => $event->id,
             'title'       => 'Alerte comportement ransomware',
             'message'     => 'RansomShield a détecté un événement suspect : '.$event->event_type,
