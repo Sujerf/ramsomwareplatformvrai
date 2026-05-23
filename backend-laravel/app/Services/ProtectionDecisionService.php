@@ -116,8 +116,22 @@ class ProtectionDecisionService
         string $actionType,
         bool $realExecutionAllowed
     ): string {
-        if ($this->isSensitiveRealAction($actionType) && ! $realExecutionAllowed) {
+        $isSensitive = $this->isSensitiveRealAction($actionType);
+
+        // ── Priorité 1 : exécution réelle désactivée → action proposée en manuel ─
+        if ($isSensitive && ! $realExecutionAllowed) {
             return 'manual';
+        }
+
+        // ── Priorité 2 : approbation humaine requise pour actions sensibles ──────
+        // Si require_human_approval_for_sensitive_actions = 1 ET l'action est
+        // sensible ET l'exécution réelle est autorisée, on force approval_required
+        // même si la politique dit "automatic". Sans ce garde-fou, activer
+        // enable_real_isolation sans approbation déclencherait une isolation auto.
+        if ($isSensitive && $realExecutionAllowed
+            && $this->settingBool('require_human_approval_for_sensitive_actions', true)
+        ) {
+            return 'approval_required';
         }
 
         return match ($policyExecutionMode) {
