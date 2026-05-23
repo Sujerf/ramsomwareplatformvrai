@@ -22,6 +22,70 @@ Artisan::command('ransomshield:reset-defaults', function () {
 })->purpose('Réinitialise les configurations RansomShield vers les valeurs par défaut.');
 
 
+/**
+ * Scan actif de tous les réseaux surveillés.
+ *
+ * Usage :
+ *   php artisan ransomshield:scan-networks              → scanne tous les réseaux surveillés
+ *   php artisan ransomshield:scan-networks --cidr=10.20.0.0/24  → scanne un réseau spécifique
+ *
+ * Planifié automatiquement toutes les 5 minutes via le scheduler Laravel.
+ */
+Artisan::command('ransomshield:scan-networks {--cidr= : Scanner uniquement ce CIDR}', function () {
+    $inventory = app(\App\Services\InfrastructureInventoryService::class);
+
+    $query = \App\Models\ManagedNetwork::where('is_monitored', true)
+        ->where('is_scannable', true);
+
+    $cidr = $this->option('cidr');
+
+    if ($cidr) {
+        $query->where('cidr', $cidr);
+    }
+
+    $networks = $query->get();
+
+    if ($networks->isEmpty()) {
+        $this->warn('Aucun réseau à scanner' . ($cidr ? " pour le CIDR {$cidr}" : '') . '.');
+        return 0;
+    }
+
+    $this->info("Scan de {$networks->count()} réseau(x) surveillé(s)...");
+    $this->newLine();
+
+    $totalHosts   = 0;
+    $totalRetired = 0;
+
+    foreach ($networks as $network) {
+        $this->line("  → Scan de <comment>{$network->cidr}</comment> ({$network->name})...");
+        $start  = microtime(true);
+        $result = $inventory->scanNetwork($network);
+        $ms     = round((microtime(true) - $start) * 1000);
+
+        $hosts   = $result['hosts_detected'] ?? 0;
+        $retired = $result['hosts_retired'] ?? 0;
+        $method  = $result['method'] ?? '?';
+        $ips     = implode(', ', array_slice($result['discovered_ips'] ?? [], 0, 8));
+        $more    = count($result['discovered_ips'] ?? []) > 8
+                    ? ' (+' . (count($result['discovered_ips']) - 8) . ')' : '';
+
+        $this->info("     ✓ {$hosts} hôte(s) détecté(s) — {$retired} retiré(s) — méthode: {$method} — {$ms}ms");
+
+        if ($ips) {
+            $this->line("       IPs: <fg=cyan>{$ips}{$more}</>");
+        }
+
+        $totalHosts   += $hosts;
+        $totalRetired += $retired;
+    }
+
+    $this->newLine();
+    $this->info("Terminé — {$totalHosts} hôte(s) au total, {$totalRetired} retiré(s).");
+
+    return 0;
+})->purpose('Scanne activement tous les réseaux surveillés et met à jour les hôtes découverts.');
+
+
 Artisan::command('ransomshield:reactivate-infrastructure', function () {
     $networks = \App\Models\ManagedNetwork::query()
         ->where('status', 'retired')

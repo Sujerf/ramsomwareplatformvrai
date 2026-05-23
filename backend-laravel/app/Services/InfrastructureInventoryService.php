@@ -123,12 +123,14 @@ class InfrastructureInventoryService
             ]);
 
         return [
-            'network_id'     => $network->id,
-            'cidr'           => $network->cidr,
-            'hosts_detected' => count($foundIps),
-            'hosts_retired'  => $retired,
-            'method'         => $scanMethod,
-            'note'           => $this->scanMethodNote($scanMethod),
+            'network_id'      => $network->id,
+            'cidr'            => $network->cidr,
+            'hosts_detected'  => count($foundIps),
+            'hosts_retired'   => $retired,
+            'method'          => $scanMethod,
+            'note'            => $this->scanMethodNote($scanMethod),
+            'discovered_ips'  => $foundIps,
+            'last_scanned_at' => now()->toDateTimeString(),
         ];
     }
 

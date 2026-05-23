@@ -11,6 +11,15 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
+    ->withSchedule(function (\Illuminate\Console\Scheduling\Schedule $schedule) {
+        // Scan actif de tous les réseaux surveillés toutes les 5 minutes.
+        // Utilise fping si disponible, sinon ping sweep ou ARP fallback.
+        $schedule->command('ransomshield:scan-networks')
+                 ->everyFiveMinutes()
+                 ->withoutOverlapping()
+                 ->runInBackground()
+                 ->appendOutputTo(storage_path('logs/network-scan.log'));
+    })
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'agent.secret' => \App\Http\Middleware\ValidateAgentSecret::class,
