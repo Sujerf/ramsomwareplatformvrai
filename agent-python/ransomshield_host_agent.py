@@ -21,6 +21,7 @@ load_dotenv()
 
 API_URL = os.getenv("RANSHIELD_API_URL", "http://127.0.0.1:8000/api").rstrip("/")
 API_SECRET = os.getenv("RANSHIELD_API_SECRET", "")
+AGENT_UUID_OVERRIDE = os.getenv("RANSHIELD_AGENT_UUID", "")  # UUID pré-enrôlé depuis la console SOC
 AGENT_NAME = os.getenv("RANSHIELD_AGENT_NAME", socket.gethostname())
 HOST_ROLE = os.getenv("RANSHIELD_HOST_ROLE", "client")
 
@@ -190,6 +191,8 @@ def host_inventory() -> dict[str, Any]:
 def enroll_agent() -> str:
     state = load_state()
 
+    # Priorité : UUID pré-enrôlé depuis la console SOC (.env RANSHIELD_AGENT_UUID),
+    # puis UUID sauvegardé en état local, sinon l'API en génère un nouveau.
     if state.get("agent_uuid"):
         return state["agent_uuid"]
 
@@ -205,6 +208,11 @@ def enroll_agent() -> str:
             "inventory": host_inventory(),
         },
     }
+
+    # Si un UUID pré-enrôlé est fourni dans le .env, on l'envoie à l'API
+    # afin de mettre à jour le record existant plutôt que d'en créer un doublon.
+    if AGENT_UUID_OVERRIDE:
+        payload["agent_uuid"] = AGENT_UUID_OVERRIDE
 
     response = requests.post(
         f"{API_URL}/agent/enroll",

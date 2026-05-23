@@ -34,13 +34,13 @@ Route::prefix('console')->name('platform.')->middleware('auth')->group(function 
 
     Route::get('/local-host', [LocalHostController::class, 'index'])->name('local-host.index');
     Route::post('/local-host/detect', [LocalHostController::class, 'detect'])->name('local-host.detect');
+    Route::post('/local-host/push-to-networks', [LocalHostController::class, 'pushToNetworks'])->name('local-host.push-to-networks');
 
     Route::get('/networks', [ManagedNetworkController::class, 'index'])->name('networks.index');
     Route::post('/networks', [ManagedNetworkController::class, 'store'])->name('networks.store');
     Route::post('/networks/detect', [ManagedNetworkController::class, 'detect'])->name('networks.detect');
     Route::post('/networks/{managedNetwork}/scan', [ManagedNetworkController::class, 'scan'])->name('networks.scan');
     Route::patch('/networks/{managedNetwork}/approve', [ManagedNetworkController::class, 'approve'])->name('networks.approve');
-    Route::patch('/networks/{managedNetwork}/ignore', [ManagedNetworkController::class, 'ignore'])->name('networks.ignore');
 
     Route::get('/discovered-hosts', [DiscoveredHostController::class, 'index'])->name('discovered-hosts.index');
     Route::patch('/discovered-hosts/{discoveredHost}/validate', [DiscoveredHostController::class, 'validateHost'])->name('discovered-hosts.validate');
@@ -48,7 +48,6 @@ Route::prefix('console')->name('platform.')->middleware('auth')->group(function 
     Route::patch('/discovered-hosts/{discoveredHost}/mark-client', [DiscoveredHostController::class, 'markClient'])->name('discovered-hosts.mark-client');
     Route::patch('/discovered-hosts/{discoveredHost}/mark-file-server', [DiscoveredHostController::class, 'markFileServer'])->name('discovered-hosts.mark-file-server');
     Route::patch('/discovered-hosts/{discoveredHost}/mark-soc-server', [DiscoveredHostController::class, 'markSocServer'])->name('discovered-hosts.mark-soc-server');
-    Route::patch('/discovered-hosts/{discoveredHost}/ignore', [DiscoveredHostController::class, 'ignore'])->name('discovered-hosts.ignore');
     Route::patch('/discovered-hosts/{discoveredHost}/mark-attacker-demo', [DiscoveredHostController::class, 'markAttackerDemo'])->name('discovered-hosts.mark-attacker-demo');
 
     Route::get('/agents', [AgentController::class, 'index'])->name('agents.index');

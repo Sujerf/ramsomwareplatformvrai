@@ -5,9 +5,10 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User=YOUR_USERNAME
-WorkingDirectory=/opt/ransomshield-agent
-ExecStart=/opt/ransomshield-agent/venv/bin/python /opt/ransomshield-agent/ransomshield_host_agent.py
+User=root
+WorkingDirectory=/opt/ransomshield
+EnvironmentFile=/opt/ransomshield/.env
+ExecStart=/opt/ransomshield/venv/bin/python /opt/ransomshield/ransomshield_host_agent.py
 Restart=always
 RestartSec=10
 StandardOutput=journal

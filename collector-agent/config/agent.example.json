@@ -1,0 +1,28 @@
+{
+  "agent_name": "victim-agent-demo",
+  "agent_uuid": null,
+  "soc_api_base_url": "http://127.0.0.1:8000/api",
+  "enrollment_token": null,
+  "heartbeat_interval_seconds": 30,
+  "watch_paths": [
+    "/home/user/ransomshield-watch"
+  ],
+  "local_queue_path": "queue/events.jsonl",
+  "log_file": "logs/agent.log",
+  "detect_suspicious_extensions": true,
+  "detect_ransom_notes": true,
+  "suspicious_extensions": [
+    "locked",
+    "enc",
+    "encrypted",
+    "crypted",
+    "locky"
+  ],
+  "ransom_note_keywords": [
+    "README_FOR_DECRYPT",
+    "HOW_TO_DECRYPT",
+    "DECRYPT_INSTRUCTIONS",
+    "RECOVER_FILES",
+    "ransom"
+  ]
+}

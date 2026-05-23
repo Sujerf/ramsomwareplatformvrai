@@ -84,21 +84,6 @@ class DiscoveredHostController extends Controller
         return back()->with('success', 'Hôte marqué comme serveur SOC.');
     }
 
-    public function ignore(DiscoveredHost $discoveredHost): RedirectResponse
-    {
-        DB::table('discovered_hosts')
-            ->where('id', $discoveredHost->id)
-            ->update([
-                'is_monitored' => false,
-                'discovery_status' => 'retired',
-                'retired_at' => now(),
-                'retired_reason' => 'Hôte ignoré depuis la console SOC.',
-                'updated_at' => now(),
-            ]);
-
-        return back()->with('success', 'Hôte ignoré.');
-    }
-
     public function markAttackerDemo(DiscoveredHost $discoveredHost): RedirectResponse
     {
         DB::table('discovered_hosts')

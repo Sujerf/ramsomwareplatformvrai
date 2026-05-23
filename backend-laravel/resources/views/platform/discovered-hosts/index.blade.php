@@ -186,6 +186,54 @@
 
         .host-strip form { display: contents; }
 
+        /* Role picker */
+        .role-picker {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid var(--border-soft);
+        }
+
+        .role-picker-label {
+            width: 100%;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: .06em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 2px;
+        }
+
+        .role-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 9px;
+            border-radius: 8px;
+            border: 1px solid var(--border-soft);
+            background: color-mix(in srgb, var(--bg-panel-soft) 60%, transparent);
+            color: var(--text-muted);
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: .12s ease;
+            white-space: nowrap;
+        }
+
+        .role-btn:hover {
+            border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+            color: var(--text-main);
+            background: color-mix(in srgb, var(--accent) 8%, transparent);
+        }
+
+        .role-btn.active {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: color-mix(in srgb, var(--accent) 10%, transparent);
+        }
+
         @media (max-width: 1050px) {
             .host-list { grid-template-columns: 1fr; }
         }
@@ -305,6 +353,28 @@
                                     </span>
                                 @endif
                             </div>
+
+                            {{-- Qualification du rôle --}}
+                            @if($host->is_monitored)
+                                <div class="role-picker">
+                                    <div class="role-picker-label"><i class="fa-solid fa-tag" style="margin-right:4px"></i>Rôle machine</div>
+                                    @foreach([
+                                        'client'        => ['fa-desktop',           'Client',          route('platform.discovered-hosts.mark-client',       $host)],
+                                        'file_server'   => ['fa-hard-drive',        'Serveur fichiers', route('platform.discovered-hosts.mark-file-server',  $host)],
+                                        'soc_server'    => ['fa-server',            'Serveur SOC',     route('platform.discovered-hosts.mark-soc-server',    $host)],
+                                        'attacker_demo' => ['fa-skull-crossbones',  'Attaquant démo',  route('platform.discovered-hosts.mark-attacker-demo', $host)],
+                                    ] as $roleKey => [$icon, $label, $action])
+                                        <form method="POST" action="{{ $action }}" style="display:contents">
+                                            @csrf @method('PATCH')
+                                            <button type="submit"
+                                                    class="role-btn {{ ($host->host_role ?? 'client') === $roleKey ? 'active' : '' }}"
+                                                    title="Marquer comme {{ $label }}">
+                                                <i class="fa-solid {{ $icon }}"></i> {{ $label }}
+                                            </button>
+                                        </form>
+                                    @endforeach
+                                </div>
+                            @endif
                         </div>
 
                         <div class="host-strip">

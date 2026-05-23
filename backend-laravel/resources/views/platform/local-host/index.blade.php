@@ -211,10 +211,18 @@
                 L'IP principale et les interfaces sont lues directement depuis le système d'exploitation.</p>
 
             <div class="btn-row">
+                @if($isReady)
+                    <form method="POST" action="{{ route('platform.local-host.push-to-networks') }}" style="display:contents">
+                        @csrf
+                        <button class="action-btn lg primary" type="submit">
+                            <i class="fa-solid fa-satellite-dish"></i> Détecter réseaux et hôtes
+                        </button>
+                    </form>
+                @endif
                 <form method="POST" action="{{ route('platform.local-host.detect') }}" style="display:contents">
                     @csrf
-                    <button class="action-btn lg primary" type="submit">
-                        <i class="fa-solid fa-rotate"></i> Actualiser la détection
+                    <button class="action-btn lg {{ $isReady ? '' : 'primary' }}" type="submit">
+                        <i class="fa-solid fa-rotate"></i> Actualiser
                     </button>
                 </form>
                 <a href="{{ route('platform.networks.index') }}" class="action-btn">
@@ -288,7 +296,14 @@
                             <i class="fa-solid fa-circle-check" style="margin-right:6px"></i>Machine SOC prête pour la découverte réseau.
                         </div>
                         L'interface <code>{{ $localHost['primary_interface'] ?? '—' }}</code> est active sur
-                        <code>{{ $networks->first() }}</code>. Lance la détection des réseaux puis scanne les hôtes.
+                        <code>{{ $networks->first() }}</code>. Clique sur le bouton ci-dessous pour détecter et surveiller les réseaux et hôtes en une seule action.
+
+                        <form method="POST" action="{{ route('platform.local-host.push-to-networks') }}" style="margin-top:14px">
+                            @csrf
+                            <button type="submit" style="display:inline-flex; align-items:center; gap:7px; padding:8px 18px; border-radius:10px; border:none; background:#22c55e; color:#fff; font-size:13px; font-weight:800; cursor:pointer; transition:.15s ease;">
+                                <i class="fa-solid fa-satellite-dish"></i> Détecter réseaux et hôtes maintenant
+                            </button>
+                        </form>
                     @else
                         <div class="rec-title" style="color:#ef4444">
                             <i class="fa-solid fa-triangle-exclamation" style="margin-right:6px"></i>Réseau non exploitable automatiquement.

@@ -51,15 +51,38 @@ class AgentController extends Controller
         $baseUrl = rtrim(config('app.url') ?: url('/'), '/');
 
         return view('platform.agents.show', [
-            'agent' => $agent,
-            'installCommand' => $this->installCommand($agent, $baseUrl),
+            'agent'       => $agent,
+            'installInfo' => $this->agentInstallInfo($agent, $baseUrl),
         ]);
     }
 
-    private function installCommand(Agent $agent, string $baseUrl): string
+    /**
+     * Retourne les informations nécessaires à l'installation manuelle de l'agent.
+     * Plus de fausse commande curl : on guide l'opérateur étape par étape.
+     */
+    private function agentInstallInfo(Agent $agent, string $baseUrl): array
     {
-        $token = $agent->enrollment_token ?: 'TOKEN_DEJA_UTILISE_OU_NON_REQUIS';
+        $apiSecret = config('app.agent_api_secret', '');
 
-        return "curl -fsSL {$baseUrl}/agent/install.sh | bash -s -- --server={$baseUrl} --token={$token} --agent-uuid={$agent->agent_uuid}";
+        $envContent = implode("\n", [
+            "RANSHIELD_API_URL={$baseUrl}/api",
+            "RANSHIELD_API_SECRET={$apiSecret}",
+            "RANSHIELD_AGENT_UUID={$agent->agent_uuid}",
+            "RANSHIELD_AGENT_NAME={$agent->agent_name}",
+            "RANSHIELD_HOST_ROLE={$agent->host_role}",
+            "RANSHIELD_MONITOR_MODE=host",
+        ]);
+
+        return [
+            'api_url'          => $baseUrl.'/api',
+            'api_secret'       => $apiSecret,
+            'agent_uuid'       => $agent->agent_uuid,
+            'agent_name'       => $agent->agent_name,
+            'host_role'        => $agent->host_role ?? 'client',
+            'enrollment_token' => $agent->enrollment_token,
+            'env_content'      => $envContent,
+            'install_cmd'      => 'sudo bash install.sh',
+            'service_name'     => 'ransomshield-agent',
+        ];
     }
 }

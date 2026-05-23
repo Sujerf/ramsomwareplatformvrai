@@ -56,22 +56,6 @@ class ManagedNetworkController extends Controller
         return back()->with('success', 'Réseau ajouté.');
     }
 
-    public function ignore(ManagedNetwork $managedNetwork): RedirectResponse
-    {
-        DB::table('managed_networks')
-            ->where('id', $managedNetwork->id)
-            ->update([
-                'is_monitored'  => false,
-                'status'        => 'retired',
-                'is_scannable'  => false,
-                'retired_at'    => now(),
-                'retired_reason' => 'Réseau ignoré depuis la console SOC.',
-                'updated_at'    => now(),
-            ]);
-
-        return back()->with('success', 'Réseau ignoré.');
-    }
-
     public function detect(InfrastructureInventoryService $inventory): RedirectResponse
     {
         $networks = $inventory->detectLocalNetworks();

@@ -495,27 +495,107 @@
             </div>
         </section>
 
-        {{-- ── INSTALL COMMAND ──────────────────────────────────────────── --}}
+        {{-- ── GUIDE D'INSTALLATION ─────────────────────────────────────── --}}
         @if($isPending)
             <section class="soc-card section-gap">
                 <div class="soc-card-header">
                     <div>
                         <h3 class="soc-card-title">
                             <i class="fa-solid fa-terminal" style="color:#6366f1; margin-right:8px;"></i>
-                            Commande d'installation
+                            Installation de l'agent sur la machine cible
                         </h3>
                         <p class="soc-card-subtitle">
-                            À exécuter sur la machine cible pour finaliser l'enrôlement.
-                            L'agent appellera ensuite <code style="font-size:12px;">/api/agent/enroll</code>.
+                            Trois étapes à réaliser sur <strong>{{ $agent->ip_address ?? $agent->agent_name }}</strong>.
+                            Une fois l'agent lancé, il appellera <code style="font-size:12px;">POST /api/agent/enroll</code>
+                            et la machine passera automatiquement en état <strong>Enrôlé</strong>.
                         </p>
                     </div>
                 </div>
 
-                <div class="install-box">
-                    <button type="button" class="copy-btn" id="copyInstall">
-                        <i class="fa-solid fa-copy"></i> Copier
-                    </button>
-                    <code id="installCmd">{{ $installCommand }}</code>
+                {{-- Step 1 --}}
+                <div style="display:flex; gap:12px; align-items:flex-start; margin-bottom:14px;">
+                    <div style="width:32px; height:32px; border-radius:50%; background:color-mix(in srgb, #6366f1 14%, transparent);
+                                color:#6366f1; display:grid; place-items:center; font-size:13px; font-weight:950; flex-shrink:0;">1</div>
+                    <div style="flex:1">
+                        <p style="margin:0 0 8px; font-size:13px; font-weight:850;">
+                            Copier les fichiers de l'agent sur la machine cible
+                        </p>
+                        <div class="install-box">
+                            <button type="button" class="copy-btn" data-copy="copyStep1">
+                                <i class="fa-solid fa-copy"></i> Copier
+                            </button>
+                            <code id="copyStep1">rsync -avz /chemin/vers/ransomshield/agent-python/ {{ $agent->ip_address ?? 'IP_MACHINE' }}:/opt/ransomshield-agent/
+# ou sur la VM directement :
+# cp -r agent-python/ /opt/ransomshield-agent/</code>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Step 2 --}}
+                <div style="display:flex; gap:12px; align-items:flex-start; margin-bottom:14px;">
+                    <div style="width:32px; height:32px; border-radius:50%; background:color-mix(in srgb, #6366f1 14%, transparent);
+                                color:#6366f1; display:grid; place-items:center; font-size:13px; font-weight:950; flex-shrink:0;">2</div>
+                    <div style="flex:1">
+                        <p style="margin:0 0 8px; font-size:13px; font-weight:850;">
+                            Configurer le fichier <code style="font-size:12px;">.env</code> de l'agent
+                        </p>
+                        <p style="margin:0 0 8px; font-size:12px; color:var(--text-muted);">
+                            Dans <code>/opt/ransomshield-agent/</code>, crée ou édite le fichier <code>.env</code> avec ces valeurs :
+                        </p>
+                        <div class="install-box">
+                            <button type="button" class="copy-btn" data-copy="copyStep2">
+                                <i class="fa-solid fa-copy"></i> Copier
+                            </button>
+                            <code id="copyStep2">{{ $installInfo['env_content'] }}</code>
+                        </div>
+                        @if(!$installInfo['api_secret'])
+                            <p style="margin:8px 0 0; font-size:11px; color:#f59e0b;">
+                                <i class="fa-solid fa-triangle-exclamation"></i>
+                                Le secret API n'est pas configuré dans le <code>.env</code> Laravel (<code>APP_AGENT_SECRET</code>).
+                                Configure-le avant de lancer l'agent.
+                            </p>
+                        @endif
+                    </div>
+                </div>
+
+                {{-- Step 3 --}}
+                <div style="display:flex; gap:12px; align-items:flex-start;">
+                    <div style="width:32px; height:32px; border-radius:50%; background:color-mix(in srgb, #22c55e 14%, transparent);
+                                color:#22c55e; display:grid; place-items:center; font-size:13px; font-weight:950; flex-shrink:0;">3</div>
+                    <div style="flex:1">
+                        <p style="margin:0 0 8px; font-size:13px; font-weight:850;">
+                            Installer et démarrer le service
+                        </p>
+                        <div class="install-box">
+                            <button type="button" class="copy-btn" data-copy="copyStep3">
+                                <i class="fa-solid fa-copy"></i> Copier
+                            </button>
+                            <code id="copyStep3">cd /opt/ransomshield-agent
+sudo bash install.sh
+
+# Vérifier le statut après installation :
+systemctl status {{ $installInfo['service_name'] }}
+journalctl -u {{ $installInfo['service_name'] }} -f</code>
+                        </div>
+                        <p style="margin:8px 0 0; font-size:12px; color:var(--text-muted);">
+                            <i class="fa-solid fa-circle-info" style="margin-right:4px;"></i>
+                            L'agent s'enrôle automatiquement au démarrage.
+                            Cette page se mettra à jour une fois le premier heartbeat reçu.
+                        </p>
+                    </div>
+                </div>
+
+                {{-- UUID pour référence --}}
+                <div style="margin-top:16px; padding:12px 16px; border-radius:14px;
+                            background:color-mix(in srgb, var(--bg-panel-soft) 60%, transparent);
+                            border:1px solid var(--border-soft); display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                    <span style="font-size:11px; font-weight:850; text-transform:uppercase; letter-spacing:.06em; color:var(--text-muted);">
+                        <i class="fa-solid fa-fingerprint" style="margin-right:4px;"></i>UUID agent
+                    </span>
+                    <code style="font-size:12px; color:var(--accent);">{{ $installInfo['agent_uuid'] }}</code>
+                    <span style="font-size:11px; color:var(--text-muted); margin-left:auto;">
+                        L'agent génère son propre UUID au premier enrôlement. Cet UUID est créé à titre de référence.
+                    </span>
                 </div>
             </section>
         @endif
@@ -799,15 +879,18 @@
     </div>
 
     <script>
-    document.getElementById('copyInstall')?.addEventListener('click', function () {
-        const text = document.getElementById('installCmd')?.textContent?.trim() || '';
-        navigator.clipboard.writeText(text).then(() => {
-            this.classList.add('copied');
-            this.innerHTML = '<i class="fa-solid fa-check"></i> Copié !';
-            setTimeout(() => {
-                this.classList.remove('copied');
-                this.innerHTML = '<i class="fa-solid fa-copy"></i> Copier';
-            }, 2000);
+    document.querySelectorAll('.copy-btn[data-copy]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            const targetId = this.getAttribute('data-copy');
+            const text = document.getElementById(targetId)?.textContent?.trim() || '';
+            navigator.clipboard.writeText(text).then(() => {
+                this.classList.add('copied');
+                this.innerHTML = '<i class="fa-solid fa-check"></i> Copié !';
+                setTimeout(() => {
+                    this.classList.remove('copied');
+                    this.innerHTML = '<i class="fa-solid fa-copy"></i> Copier';
+                }, 2000);
+            });
         });
     });
     </script>
