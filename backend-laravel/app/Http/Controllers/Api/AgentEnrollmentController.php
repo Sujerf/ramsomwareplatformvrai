@@ -106,19 +106,34 @@ class AgentEnrollmentController extends Controller
         // ── Finalisation de l'enrôlement (token détruit, lien DiscoveredHost) ─
         $agent = $hostEnrollment->linkRealEnrollment($validated, $agent);
 
+        // ── Génération de la clé API per-agent ───────────────────────────────
+        // Toujours régénérée sur un premier enrôlement.
+        // Sur reconnexion (déjà enrolled) : conserve la clé existante si présente,
+        // en génère une nouvelle si absente (migration depuis l'ancien système).
+        $newApiKey = null;
+
+        if ($isFirstEnrollment || ! $agent->agent_api_key) {
+            $newApiKey = Str::random(64);
+            $agent->agent_api_key = $newApiKey;
+            $agent->save();
+        }
+
         return response()->json([
             'message' => $isFirstEnrollment
                 ? 'Agent enrolled successfully.'
                 : 'Agent already enrolled — info updated.',
             'agent' => [
-                'id'           => $agent->id,
-                'agent_uuid'   => $agent->agent_uuid,
-                'agent_name'   => $agent->agent_name,
-                'status'       => $agent->status,
-                'risk_level'   => $agent->risk_level,
-                'risk_score'   => $agent->risk_score,
-                'is_isolated'  => $agent->is_isolated,
-                'last_seen_at' => optional($agent->last_seen_at)->toDateTimeString(),
+                'id'            => $agent->id,
+                'agent_uuid'    => $agent->agent_uuid,
+                'agent_name'    => $agent->agent_name,
+                'status'        => $agent->status,
+                'risk_level'    => $agent->risk_level,
+                'risk_score'    => $agent->risk_score,
+                'is_isolated'   => $agent->is_isolated,
+                'last_seen_at'  => optional($agent->last_seen_at)->toDateTimeString(),
+                // Clé API per-agent — à stocker dans le .env / state local de l'agent.
+                // NULL sur reconnexion si la clé existait déjà (l'agent la possède déjà).
+                'agent_api_key' => $newApiKey,
             ],
         ], $isFirstEnrollment ? 201 : 200);
     }

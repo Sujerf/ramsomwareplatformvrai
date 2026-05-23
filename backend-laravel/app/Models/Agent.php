@@ -24,6 +24,7 @@ class Agent extends Model
         'last_seen_at',
         'enrolled_at',
         'metadata',
+        'agent_api_key',
     ];
 
     protected $casts = [
@@ -31,6 +32,7 @@ class Agent extends Model
         'is_isolated' => 'boolean',
         'last_seen_at' => 'datetime',
         'enrolled_at' => 'datetime',
+        'enrollment_token_expires_at' => 'datetime',
         'metadata' => 'array',
     ];
 
