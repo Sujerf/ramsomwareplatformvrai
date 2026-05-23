@@ -474,6 +474,20 @@
         <div class="form-heading">Connexion SOC</div>
         <div class="form-sub">Identifiez-vous pour accéder à la console de surveillance.</div>
 
+        {{-- Bannière quand on arrive depuis une page protégée --}}
+        @if (session()->has('url.intended') || request()->query('from') === 'auth')
+            <div style="
+                display:flex; align-items:center; gap:10px;
+                padding:12px 14px; border-radius:14px; margin-bottom:16px;
+                background:rgba(56,189,248,.08);
+                border:1px solid rgba(56,189,248,.22);
+                color:#94c3d8; font-size:13px; font-weight:700;
+            ">
+                <i class="fa-solid fa-lock" style="color:#38bdf8; font-size:15px; flex-shrink:0;"></i>
+                <span>Cette page nécessite une connexion. Identifiez-vous pour continuer.</span>
+            </div>
+        @endif
+
         @if ($errors->any())
             <div class="alert-error">
                 <i class="fa-solid fa-circle-exclamation"></i>

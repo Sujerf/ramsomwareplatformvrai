@@ -212,14 +212,18 @@
 
             <div class="btn-row">
                 @if($isReady)
-                    <form method="POST" action="{{ route('platform.local-host.push-to-networks') }}" style="display:contents">
+                    <form method="POST" action="{{ route('platform.local-host.push-to-networks') }}" style="display:contents"
+                          data-loading="Détection des réseaux et hôtes en cours…"
+                          data-loading-hint="Scan ARP + fping sur toutes les interfaces actives. Cette opération peut prendre 10 à 20 secondes.">
                         @csrf
                         <button class="action-btn lg primary" type="submit">
                             <i class="fa-solid fa-satellite-dish"></i> Détecter réseaux et hôtes
                         </button>
                     </form>
                 @endif
-                <form method="POST" action="{{ route('platform.local-host.detect') }}" style="display:contents">
+                <form method="POST" action="{{ route('platform.local-host.detect') }}" style="display:contents"
+                      data-loading="Analyse de la machine SOC en cours…"
+                      data-loading-hint="Lecture des interfaces réseau, routes et adresses IP. Quelques secondes…">
                     @csrf
                     <button class="action-btn lg {{ $isReady ? '' : 'primary' }}" type="submit">
                         <i class="fa-solid fa-rotate"></i> Actualiser
@@ -298,7 +302,9 @@
                         L'interface <code>{{ $localHost['primary_interface'] ?? '—' }}</code> est active sur
                         <code>{{ $networks->first() }}</code>. Clique sur le bouton ci-dessous pour détecter et surveiller les réseaux et hôtes en une seule action.
 
-                        <form method="POST" action="{{ route('platform.local-host.push-to-networks') }}" style="margin-top:14px">
+                        <form method="POST" action="{{ route('platform.local-host.push-to-networks') }}" style="margin-top:14px"
+                              data-loading="Détection des réseaux et hôtes en cours…"
+                              data-loading-hint="Scan ARP + fping sur toutes les interfaces actives. Cette opération peut prendre 10 à 20 secondes.">
                             @csrf
                             <button type="submit" style="display:inline-flex; align-items:center; gap:7px; padding:8px 18px; border-radius:10px; border:none; background:#22c55e; color:#fff; font-size:13px; font-weight:800; cursor:pointer; transition:.15s ease;">
                                 <i class="fa-solid fa-satellite-dish"></i> Détecter réseaux et hôtes maintenant

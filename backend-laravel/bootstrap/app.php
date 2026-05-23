@@ -20,5 +20,32 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->redirectUsersTo(fn () => route('platform.dashboard'));
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        // ── Pages d'erreur personnalisées RansomShield ────────────────────────
+        // Utilisent errors/layout.blade.php (standalone, sans requêtes BDD)
+        $exceptions->render(function (
+            \Symfony\Component\HttpKernel\Exception\NotFoundHttpException $e,
+            \Illuminate\Http\Request $request
+        ) {
+            if (! $request->expectsJson()) {
+                return response()->view('errors.404', ['exception' => $e], 404);
+            }
+        });
+
+        $exceptions->render(function (
+            \Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException $e,
+            \Illuminate\Http\Request $request
+        ) {
+            if (! $request->expectsJson()) {
+                return response()->view('errors.403', ['exception' => $e], 403);
+            }
+        });
+
+        $exceptions->render(function (
+            \Illuminate\Session\TokenMismatchException $e,
+            \Illuminate\Http\Request $request
+        ) {
+            if (! $request->expectsJson()) {
+                return response()->view('errors.419', ['exception' => $e], 419);
+            }
+        });
     })->create();
