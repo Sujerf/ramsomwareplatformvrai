@@ -555,6 +555,24 @@
                                 Configure-le avant de lancer l'agent.
                             </p>
                         @endif
+                        @if($installInfo['token_is_expired'])
+                            <p style="margin:8px 0 0; padding:10px 14px; border-radius:10px;
+                                      background:color-mix(in srgb,#ef4444 10%,transparent);
+                                      border:1px solid color-mix(in srgb,#ef4444 25%,transparent);
+                                      font-size:12px; color:#ef4444;">
+                                <i class="fa-solid fa-lock-open" style="margin-right:6px;"></i>
+                                <strong>Token d'enrôlement expiré.</strong>
+                                L'agent ne pourra pas s'enrôler avec ce fichier <code>.env</code>.
+                                Retourne sur <a href="{{ route('platform.discovered-hosts.index') }}" style="color:#ef4444;text-decoration:underline;">Hôtes découverts</a>
+                                et clique à nouveau sur <strong>Enrôler</strong> pour générer un nouveau token.
+                            </p>
+                        @elseif($installInfo['enrollment_token'])
+                            <p style="margin:8px 0 0; font-size:11px; color:#22c55e;">
+                                <i class="fa-solid fa-shield-halved" style="margin-right:4px;"></i>
+                                Token valide — expire {{ $installInfo['token_expires_label'] }}.
+                                Usage unique : il sera détruit dès l'enrôlement réussi.
+                            </p>
+                        @endif
                     </div>
                 </div>
 
@@ -579,23 +597,53 @@ journalctl -u {{ $installInfo['service_name'] }} -f</code>
                         </div>
                         <p style="margin:8px 0 0; font-size:12px; color:var(--text-muted);">
                             <i class="fa-solid fa-circle-info" style="margin-right:4px;"></i>
-                            L'agent s'enrôle automatiquement au démarrage.
-                            Cette page se mettra à jour une fois le premier heartbeat reçu.
+                            L'agent présente son token à l'API qui le valide puis le détruit.
+                            Cette page se met à jour dès le premier heartbeat reçu.
                         </p>
                     </div>
                 </div>
 
-                {{-- UUID pour référence --}}
-                <div style="margin-top:16px; padding:12px 16px; border-radius:14px;
-                            background:color-mix(in srgb, var(--bg-panel-soft) 60%, transparent);
-                            border:1px solid var(--border-soft); display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
-                    <span style="font-size:11px; font-weight:850; text-transform:uppercase; letter-spacing:.06em; color:var(--text-muted);">
-                        <i class="fa-solid fa-fingerprint" style="margin-right:4px;"></i>UUID agent
-                    </span>
-                    <code style="font-size:12px; color:var(--accent);">{{ $installInfo['agent_uuid'] }}</code>
-                    <span style="font-size:11px; color:var(--text-muted); margin-left:auto;">
-                        L'agent génère son propre UUID au premier enrôlement. Cet UUID est créé à titre de référence.
-                    </span>
+                {{-- Bandeau sécurité : UUID + état token --}}
+                <div style="margin-top:16px; display:flex; flex-direction:column; gap:8px;">
+
+                    {{-- UUID --}}
+                    <div style="padding:10px 14px; border-radius:12px;
+                                background:color-mix(in srgb, var(--bg-panel-soft) 60%, transparent);
+                                border:1px solid var(--border-soft); display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                        <i class="fa-solid fa-fingerprint" style="color:var(--accent); font-size:13px;"></i>
+                        <span style="font-size:11px; font-weight:850; text-transform:uppercase; letter-spacing:.06em; color:var(--text-muted);">UUID agent</span>
+                        <code style="font-size:12px; color:var(--accent);">{{ $installInfo['agent_uuid'] }}</code>
+                    </div>
+
+                    {{-- Token status --}}
+                    @if($installInfo['enrollment_token'])
+                        <div style="padding:10px 14px; border-radius:12px;
+                                    background:color-mix(in srgb, {{ $installInfo['token_is_expired'] ? '#ef4444' : '#22c55e' }} 7%, transparent);
+                                    border:1px solid color-mix(in srgb, {{ $installInfo['token_is_expired'] ? '#ef4444' : '#22c55e' }} 22%, transparent);
+                                    display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                            <i class="fa-solid {{ $installInfo['token_is_expired'] ? 'fa-lock-open' : 'fa-lock' }}"
+                               style="color:{{ $installInfo['token_is_expired'] ? '#ef4444' : '#22c55e' }}; font-size:13px;"></i>
+                            <span style="font-size:11px; font-weight:850; text-transform:uppercase; letter-spacing:.06em; color:var(--text-muted);">Token enrôlement</span>
+                            <code style="font-size:12px; color:{{ $installInfo['token_is_expired'] ? '#ef4444' : '#22c55e' }};">
+                                {{ substr($installInfo['enrollment_token'], 0, 8) }}••••••••••••••••••••••••••••••••••••••••
+                            </code>
+                            <span style="font-size:11px; color:var(--text-muted); margin-left:auto;">
+                                {{ $installInfo['token_is_expired'] ? '⚠ Expiré' : 'Expire '.$installInfo['token_expires_label'] }}
+                                — usage unique
+                            </span>
+                        </div>
+                    @else
+                        <div style="padding:10px 14px; border-radius:12px;
+                                    background:color-mix(in srgb, #22c55e 7%, transparent);
+                                    border:1px solid color-mix(in srgb, #22c55e 22%, transparent);
+                                    display:flex; align-items:center; gap:10px;">
+                            <i class="fa-solid fa-circle-check" style="color:#22c55e; font-size:13px;"></i>
+                            <span style="font-size:12px; color:#22c55e; font-weight:700;">
+                                Agent enrôlé — token détruit après usage.
+                            </span>
+                        </div>
+                    @endif
+
                 </div>
             </section>
         @endif

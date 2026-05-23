@@ -64,25 +64,41 @@ class AgentController extends Controller
     {
         $apiSecret = config('app.agent_api_secret', '');
 
-        $envContent = implode("\n", [
+        $enrollmentToken   = $agent->enrollment_token;
+        $tokenExpiresAt    = $agent->enrollment_token_expires_at;
+        $tokenIsExpired    = $tokenExpiresAt && now()->gt($tokenExpiresAt);
+        $tokenExpiresLabel = $tokenExpiresAt
+            ? ($tokenIsExpired ? 'EXPIRÉ' : $tokenExpiresAt->diffForHumans())
+            : null;
+
+        // Le token est inclus dans le .env uniquement si valide (non nul, non expiré).
+        // Sans token valide, l'API refusera l'enrôlement — l'opérateur doit re-pré-enrôler.
+        $envLines = [
             "RANSHIELD_API_URL={$baseUrl}/api",
             "RANSHIELD_API_SECRET={$apiSecret}",
             "RANSHIELD_AGENT_UUID={$agent->agent_uuid}",
             "RANSHIELD_AGENT_NAME={$agent->agent_name}",
             "RANSHIELD_HOST_ROLE={$agent->host_role}",
             "RANSHIELD_MONITOR_MODE=host",
-        ]);
+        ];
+
+        if ($enrollmentToken && ! $tokenIsExpired) {
+            $envLines[] = "RANSHIELD_ENROLLMENT_TOKEN={$enrollmentToken}";
+        }
 
         return [
-            'api_url'          => $baseUrl.'/api',
-            'api_secret'       => $apiSecret,
-            'agent_uuid'       => $agent->agent_uuid,
-            'agent_name'       => $agent->agent_name,
-            'host_role'        => $agent->host_role ?? 'client',
-            'enrollment_token' => $agent->enrollment_token,
-            'env_content'      => $envContent,
-            'install_cmd'      => 'sudo bash install.sh',
-            'service_name'     => 'ransomshield-agent',
+            'api_url'              => $baseUrl.'/api',
+            'api_secret'           => $apiSecret,
+            'agent_uuid'           => $agent->agent_uuid,
+            'agent_name'           => $agent->agent_name,
+            'host_role'            => $agent->host_role ?? 'client',
+            'enrollment_token'     => $enrollmentToken,
+            'token_expires_at'     => $tokenExpiresAt,
+            'token_expires_label'  => $tokenExpiresLabel,
+            'token_is_expired'     => $tokenIsExpired,
+            'env_content'          => implode("\n", $envLines),
+            'install_cmd'          => 'sudo bash install.sh',
+            'service_name'         => 'ransomshield-agent',
         ];
     }
 }
