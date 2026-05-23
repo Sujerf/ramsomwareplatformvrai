@@ -42,7 +42,12 @@ ENABLE_NETWORK_CONTEXT = os.getenv("RANSHIELD_ENABLE_NETWORK_CONTEXT", "true").l
 
 MONITOR_PATHS = [
     Path(p.strip()).expanduser()
-    for p in os.getenv("RANSHIELD_MONITOR_PATHS", "/home,/tmp,/media,/mnt").split(",")
+    for p in os.getenv(
+        "RANSHIELD_MONITOR_PATHS",
+        # /tmp exclus par défaut — trop de faux positifs (IDE, outils, builds)
+        # Pour surveiller /tmp, ajouter explicitement via RANSHIELD_MONITOR_PATHS
+        "/home,/media,/mnt,/opt,/srv",
+    ).split(",")
     if p.strip()
 ]
 
@@ -50,7 +55,14 @@ EXCLUDED_PARTS = [
     p.strip()
     for p in os.getenv(
         "RANSHIELD_EXCLUDED_PATHS",
-        "/proc,/sys,/dev,/run,/snap,/var/lib,node_modules,vendor,.git,venv,__pycache__",
+        # Chemins système toujours exclus
+        "/proc,/sys,/dev,/run,/snap,/var/lib,/var/cache,/var/log,"
+        # Outils de développement et IDE — génèrent de l'I/O légitime intense
+        "node_modules,vendor,.git,venv,__pycache__,"
+        # Fichiers temporaires et caches système
+        "/tmp,/var/tmp,.cache,.npm,.cargo,.rustup,"
+        # Fichiers de session / outils IA
+        ".claude,.cursor,.vscode,claude-1000,claude-code",
     ).split(",")
     if p.strip()
 ]

@@ -36,6 +36,34 @@ class AgentRiskService
     {
         $event->loadMissing('agent');
 
+        // ── Le serveur SOC ne doit pas générer d'incidents/alertes ───────────
+        // Le rôle soc_server signifie que la machine fait tourner la console de
+        // supervision elle-même. Elle génère naturellement de l'I/O intense
+        // (PHP, MySQL, logs, outils de travail) qui déclencherait des centaines
+        // de faux positifs. On enregistre l'event brut mais on n'escalade pas.
+        if (($event->agent->host_role ?? '') === 'soc_server') {
+            \Illuminate\Support\Facades\DB::table('events')
+                ->where('id', $event->id)
+                ->update([
+                    'score'      => 0,
+                    'risk_level' => 'normal',
+                    'metadata'   => json_encode(array_merge(
+                        is_array($event->metadata) ? $event->metadata : [],
+                        ['skipped_reason' => 'soc_server role — no alerting on SOC machine']
+                    ), JSON_UNESCAPED_UNICODE),
+                    'updated_at' => now(),
+                ]);
+
+            return [
+                'risk_level'  => 'normal',
+                'score'       => 0,
+                'signals'     => [],
+                'threshold'   => [],
+                'alert_id'    => null,
+                'incident_id' => null,
+            ];
+        }
+
         // ── Analyse via le moteur dynamique ──────────────────────────────────
         $analysis = $this->detectionEngine->analyze([
             'event_type'     => $event->event_type,
