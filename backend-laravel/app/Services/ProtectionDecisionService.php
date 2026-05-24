@@ -7,6 +7,7 @@ use App\Models\ProtectionAction;
 use App\Models\ProtectionPolicy;
 use App\Models\SystemSetting;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 
 class ProtectionDecisionService
 {
@@ -41,32 +42,35 @@ class ProtectionDecisionService
 
                 $action = ProtectionAction::firstOrCreate(
                     [
-                        'agent_id' => $incident->agent_id,
-                        'incident_id' => $incident->id,
+                        'agent_id'             => $incident->agent_id,
+                        'incident_id'          => $incident->id,
                         'protection_policy_id' => $policy->id,
-                        'action_type' => $actionType,
+                        'action_type'          => $actionType,
                     ],
                     [
-                        'decision_mode' => $effectiveDecisionMode,
-                        'execution_status' => $shouldAutoExecute ? 'success' : 'pending',
-                        'approval_status' => $shouldAutoExecute ? 'executed' : 'pending',
-                        'is_reversible' => $this->isReversible($actionType),
+                        // action_uuid : identifiant stable utilisé par l'agent Python
+                        // pour dépiler les commandes via GET /api/agent/pending-commands
+                        'action_uuid'      => (string) Str::uuid(),
+                        'decision_mode'    => $effectiveDecisionMode,
+                        'execution_status' => $shouldAutoExecute ? 'executed' : 'pending',
+                        'approval_status'  => $shouldAutoExecute ? 'approved'  : 'pending',
+                        'is_reversible'    => $this->isReversible($actionType),
                         'rollback_available' => false,
-                        'description' => $this->descriptionForAction(
+                        'description'      => $this->descriptionForAction(
                             actionType: $actionType,
                             riskLevel: $incident->risk_level,
                             realExecutionAllowed: $realExecutionAllowed,
                             effectiveDecisionMode: $effectiveDecisionMode
                         ),
                         'payload' => [
-                            'risk_level' => $incident->risk_level,
-                            'risk_score' => $incident->risk_score,
-                            'policy_code' => $policy->code,
-                            'policy_execution_mode' => $policy->execution_mode,
-                            'effective_decision_mode' => $effectiveDecisionMode,
-                            'real_execution_allowed' => $realExecutionAllowed,
+                            'risk_level'               => $incident->risk_level,
+                            'risk_score'               => $incident->risk_score,
+                            'policy_code'              => $policy->code,
+                            'policy_execution_mode'    => $policy->execution_mode,
+                            'effective_decision_mode'  => $effectiveDecisionMode,
+                            'real_execution_allowed'   => $realExecutionAllowed,
                             'is_sensitive_real_action' => $isSensitiveAction,
-                            'timeline_message' => $this->timelineMessageForAction($actionType, $effectiveDecisionMode),
+                            'timeline_message'         => $this->timelineMessageForAction($actionType, $effectiveDecisionMode),
                         ],
                         'proposed_at' => now(),
                         'executed_at' => $shouldAutoExecute ? now() : null,
