@@ -18,6 +18,7 @@ use App\Http\Controllers\Platform\ManagedNetworkController;
 use App\Http\Controllers\Platform\ProtectionActionController;
 use App\Http\Controllers\Platform\ProtectionPolicyController;
 use App\Http\Controllers\Platform\SensitiveExtensionController;
+use App\Http\Controllers\Platform\SimulationController;
 use App\Http\Controllers\Platform\SystemSettingController;
 use Illuminate\Support\Facades\Route;
 
@@ -107,4 +108,8 @@ Route::prefix('console')->name('platform.')->middleware('auth')->group(function 
     Route::get('/events', [\App\Http\Controllers\Platform\EventController::class, 'index'])->name('events.index');
     Route::get('/events/{event}', [\App\Http\Controllers\Platform\EventController::class, 'show'])->name('events.show');
     Route::get('/notifications/poll', \App\Http\Controllers\Platform\NotificationPollController::class)->name('notifications.poll');
+
+    // ── Simulateur d'attaque ───────────────────────────────────────────────
+    Route::get('/simulation',      [SimulationController::class, 'index'])->name('simulation.index');
+    Route::post('/simulation/run', [SimulationController::class, 'run'])->name('simulation.run');
 });

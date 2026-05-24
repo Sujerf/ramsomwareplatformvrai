@@ -1086,6 +1086,10 @@
                             <span class="nav-badge nav-badge-warning">{{ $navPendingActions }}</span>
                         @endif
                     </a>
+                    <a href="{{ route('platform.simulation.index') }}" class="soc-nav-link {{ request()->routeIs('platform.simulation.*') ? 'active' : '' }}">
+                        <span class="nav-icon"><i class="fa-solid fa-biohazard"></i></span>
+                        <span class="nav-label">Simulateur d'attaque</span>
+                    </a>
                 </nav>
             </div>
 
