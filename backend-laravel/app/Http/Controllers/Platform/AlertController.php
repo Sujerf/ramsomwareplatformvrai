@@ -32,17 +32,45 @@ class AlertController extends Controller
             $query->where('risk_level', $risk);
         }
 
+        // Compteurs par statut (pour les onglets de filtre)
+        $cntActive   = Alert::whereIn('status', ['open', 'acknowledged', 'investigating'])->count();
+        $cntResolved = Alert::where('status', 'resolved')->count();
+        $cntFalsePos = Alert::where('status', 'false_positive')->count();
+        $cntTotal    = Alert::count();
+
+        // Compteurs par niveau de risque (parmi les alertes actives)
+        $riskCounts = Alert::whereIn('status', ['open', 'acknowledged', 'investigating'])
+            ->selectRaw('risk_level, COUNT(*) as cnt')
+            ->groupBy('risk_level')
+            ->pluck('cnt', 'risk_level')
+            ->toArray();
+
         return view('platform.alerts.index', [
-            'alerts' => $query->paginate(25)->withQueryString(),
+            'alerts'       => $query->paginate(25)->withQueryString(),
             'activeStatus' => $status,
-            'activeRisk' => $risk,
-            'stats' => [
-                'active' => Alert::whereIn('status', ['open', 'acknowledged', 'investigating'])->count(),
-                'resolved' => Alert::where('status', 'resolved')->count(),
-                'false_positive' => Alert::where('status', 'false_positive')->count(),
-                'critical' => Alert::where('risk_level', 'critical')->count(),
-                'high' => Alert::where('risk_level', 'high')->count(),
-                'total' => Alert::count(),
+            'activeRisk'   => $risk,
+            'stats'        => [
+                'active'        => $cntActive,
+                'resolved'      => $cntResolved,
+                'false_positive'=> $cntFalsePos,
+                'critical'      => Alert::where('risk_level', 'critical')->count(),
+                'high'          => Alert::where('risk_level', 'high')->count(),
+                'total'         => $cntTotal,
+            ],
+            'filterCounts' => [
+                'status' => [
+                    'active'        => $cntActive,
+                    'resolved'      => $cntResolved,
+                    'false_positive'=> $cntFalsePos,
+                    'all'           => $cntTotal,
+                ],
+                'risk' => [
+                    ''         => $cntActive,
+                    'critical' => $riskCounts['critical'] ?? 0,
+                    'high'     => $riskCounts['high']     ?? 0,
+                    'suspect'  => $riskCounts['suspect']  ?? 0,
+                    'normal'   => $riskCounts['normal']   ?? 0,
+                ],
             ],
         ]);
     }

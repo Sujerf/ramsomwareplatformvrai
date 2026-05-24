@@ -27,15 +27,45 @@
             };
         };
 
+        // [Amélioration 1] Badge statut coloré — couleur sémantique par statut
         $statusLabel = function ($status) {
             return match ($status) {
-                'open'          => 'Ouverte',
-                'acknowledged'  => 'Reconnue',
-                'investigating' => 'En investigation',
-                'resolved'      => 'Résolue',
-                'false_positive'=> 'Faux positif',
-                default         => $status,
+                'open'           => 'Ouverte',
+                'acknowledged'   => 'Reconnue',
+                'investigating'  => 'En investigation',
+                'resolved'       => 'Résolue',
+                'false_positive' => 'Faux positif',
+                default          => $status,
             };
+        };
+
+        $statusBadgeClass = function ($status) {
+            return match ($status) {
+                'open'           => 'badge-open',
+                'acknowledged'   => 'badge-acknowledged',
+                'investigating'  => 'badge-investigating',
+                'resolved'       => 'badge-resolved',
+                'false_positive' => 'badge-false-positive',
+                default          => 'badge',
+            };
+        };
+
+        $statusIcon = function ($status) {
+            return match ($status) {
+                'open'           => 'fa-circle-dot',
+                'acknowledged'   => 'fa-eye',
+                'investigating'  => 'fa-magnifying-glass',
+                'resolved'       => 'fa-circle-check',
+                'false_positive' => 'fa-circle-xmark',
+                default          => 'fa-circle',
+            };
+        };
+
+        // [Amélioration 8] Hero gradient adaptatif selon filtre actif
+        $heroGradient = match($activeStatus) {
+            'resolved'       => 'radial-gradient(circle at 10% 20%, color-mix(in srgb, #22c55e 14%, transparent), transparent 30%)',
+            'false_positive' => 'radial-gradient(circle at 10% 20%, color-mix(in srgb, #94a3b8 14%, transparent), transparent 30%)',
+            default          => 'radial-gradient(circle at 10% 20%, color-mix(in srgb, #ef4444 14%, transparent), transparent 30%)',
         };
 
         $heroTitle = match($activeStatus) {
@@ -46,13 +76,15 @@
     @endphp
 
     <style>
+        /* ── Hero ────────────────────────────────────────────────────────────── */
         .al-hero {
             position: relative;
             overflow: hidden;
             padding: 32px;
             border-radius: 32px;
+            /* [Amélioration 8] gradient injecté via variable PHP */
             background:
-                radial-gradient(circle at 10% 20%, color-mix(in srgb, #ef4444 14%, transparent), transparent 30%),
+                {{ $heroGradient }},
                 radial-gradient(circle at 88% 8%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 28%),
                 var(--bg-card);
             border: 1px solid var(--border-soft);
@@ -74,7 +106,7 @@
             margin-top: 12px;
         }
 
-        /* Filter tabs */
+        /* ── Filter tabs ─────────────────────────────────────────────────────── */
         .filter-tabs {
             display: flex;
             flex-wrap: wrap;
@@ -117,7 +149,27 @@
             border-color: color-mix(in srgb, var(--accent) 60%, transparent);
         }
 
-        /* Alert cards */
+        /* [Amélioration 7] Compteur dans les onglets */
+        .filter-tab .ft-count {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 18px;
+            height: 18px;
+            padding: 0 5px;
+            border-radius: 9px;
+            font-size: 11px;
+            font-weight: 900;
+            background: color-mix(in srgb, currentColor 15%, transparent);
+            line-height: 1;
+        }
+
+        .filter-tab.active .ft-count {
+            background: rgba(255,255,255,.25);
+            color: #fff;
+        }
+
+        /* ── Alert cards ─────────────────────────────────────────────────────── */
         .alert-card {
             display: flex;
             align-items: flex-start;
@@ -142,13 +194,13 @@
         .alert-card.risk-normal   { border-left-color: #6366f1; }
 
         .al-icon-col {
-            width: 48px;
-            height: 48px;
-            border-radius: 14px;
+            width: 52px;
+            height: 52px;
+            border-radius: 16px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 20px;
+            font-size: 22px;
             flex-shrink: 0;
             background: color-mix(in srgb, var(--icon-color, #6366f1) 12%, transparent);
             color: var(--icon-color, #6366f1);
@@ -159,21 +211,46 @@
             min-width: 0;
         }
 
+        /* [Amélioration 5] Titre → 2 lignes au lieu de tronqué */
         .al-title {
             margin: 0 0 4px;
             font-size: 15px;
             font-weight: 850;
             letter-spacing: -.02em;
-            white-space: nowrap;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
             overflow: hidden;
-            text-overflow: ellipsis;
+            line-height: 1.35;
         }
 
         .al-meta {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 4px 10px;
             font-size: 12px;
             color: var(--text-muted);
             margin-bottom: 6px;
         }
+
+        .al-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* [Amélioration 4] IP sous le nom agent */
+        .al-agent-ip {
+            font-size: 11px;
+            font-family: monospace;
+            color: var(--text-muted);
+            opacity: .75;
+        }
+
+        /* [Amélioration 3] Âge urgency */
+        .al-meta-item.age-warning { color: #f59e0b; font-weight: 800; }
+        .al-meta-item.age-critical { color: #ef4444; font-weight: 800; }
 
         .al-msg {
             font-size: 13px;
@@ -186,6 +263,91 @@
             display: flex;
             flex-wrap: wrap;
             gap: 6px;
+            align-items: center;
+        }
+
+        /* [Amélioration 2] Score mini-bar */
+        .al-score-wrap {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: default;
+        }
+
+        .al-score-num {
+            font-size: 12px;
+            font-weight: 800;
+            font-variant-numeric: tabular-nums;
+            color: var(--text-main);
+            min-width: 24px;
+            text-align: right;
+        }
+
+        .al-score-track {
+            width: 64px;
+            height: 5px;
+            border-radius: 3px;
+            background: var(--border-soft);
+            overflow: hidden;
+        }
+
+        .al-score-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width .3s ease;
+        }
+
+        .al-score-fill.critical { background: #ef4444; }
+        .al-score-fill.high     { background: #f97316; }
+        .al-score-fill.suspect  { background: #eab308; }
+        .al-score-fill.normal   { background: #6366f1; }
+
+        /* [Amélioration 1] Badges statut colorés */
+        .badge-open {
+            background: color-mix(in srgb, #ef4444 12%, transparent);
+            color: #ef4444;
+            border: 1px solid color-mix(in srgb, #ef4444 25%, transparent);
+        }
+
+        .badge-acknowledged {
+            background: color-mix(in srgb, #3b82f6 12%, transparent);
+            color: #3b82f6;
+            border: 1px solid color-mix(in srgb, #3b82f6 25%, transparent);
+        }
+
+        .badge-investigating {
+            background: color-mix(in srgb, #8b5cf6 12%, transparent);
+            color: #8b5cf6;
+            border: 1px solid color-mix(in srgb, #8b5cf6 25%, transparent);
+        }
+
+        .badge-resolved {
+            background: color-mix(in srgb, #22c55e 12%, transparent);
+            color: #22c55e;
+            border: 1px solid color-mix(in srgb, #22c55e 25%, transparent);
+        }
+
+        .badge-false-positive {
+            background: color-mix(in srgb, #94a3b8 10%, transparent);
+            color: #64748b;
+            border: 1px solid color-mix(in srgb, #94a3b8 22%, transparent);
+        }
+
+        /* [Amélioration 6] Badge "Incident lié" cliquable */
+        .badge-incident-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: color-mix(in srgb, var(--accent) 10%, transparent);
+            color: var(--accent);
+            border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
+            text-decoration: none;
+            transition: background .15s ease;
+        }
+
+        .badge-incident-link:hover {
+            background: color-mix(in srgb, var(--accent) 18%, transparent);
+            color: var(--accent);
         }
 
         .al-strip {
@@ -234,25 +396,47 @@
             <p>Les alertes représentent les signaux générés par le moteur de détection. Résoudre ou classer faux positif
                 retire l'alerte de la file active tout en conservant l'historique complet.</p>
 
+            {{-- [Amélioration 7] Onglets avec compteurs --}}
             <div class="filter-tabs">
                 @php
-                    $statusFilters = ['active' => 'Actives', 'resolved' => 'Résolues', 'false_positive' => 'Faux positifs', 'all' => 'Toutes'];
-                    $riskFilters = ['' => 'Tous risques', 'critical' => 'Critical', 'high' => 'High', 'suspect' => 'Suspect', 'normal' => 'Normal'];
+                    $statusFilters = [
+                        'active'        => ['label' => 'Actives',      'icon' => 'fa-bolt'],
+                        'resolved'      => ['label' => 'Résolues',     'icon' => 'fa-circle-check'],
+                        'false_positive'=> ['label' => 'Faux positifs','icon' => 'fa-circle-xmark'],
+                        'all'           => ['label' => 'Toutes',       'icon' => 'fa-list'],
+                    ];
+                    $riskFilters = [
+                        ''         => ['label' => 'Tous risques', 'icon' => 'fa-layer-group'],
+                        'critical' => ['label' => 'Critical',    'icon' => 'fa-skull-crossbones'],
+                        'high'     => ['label' => 'High',        'icon' => 'fa-triangle-exclamation'],
+                        'suspect'  => ['label' => 'Suspect',     'icon' => 'fa-eye'],
+                        'normal'   => ['label' => 'Normal',      'icon' => 'fa-circle-dot'],
+                    ];
                 @endphp
 
-                @foreach($statusFilters as $key => $label)
+                @foreach($statusFilters as $key => $sf)
+                    @php $cnt = $filterCounts['status'][$key] ?? 0; @endphp
                     <a class="filter-tab {{ $activeStatus === $key ? 'active' : '' }}"
                        href="{{ route('platform.alerts.index', array_filter(['status' => $key, 'risk' => $activeRisk], fn($v) => $v !== '' && $v !== null)) }}">
-                        {{ $label }}
+                        <i class="fa-solid {{ $sf['icon'] }}"></i>
+                        {{ $sf['label'] }}
+                        @if($cnt > 0)
+                            <span class="ft-count">{{ $cnt }}</span>
+                        @endif
                     </a>
                 @endforeach
 
                 <div class="filter-sep"></div>
 
-                @foreach($riskFilters as $key => $label)
+                @foreach($riskFilters as $key => $rf)
+                    @php $cnt = $filterCounts['risk'][$key] ?? 0; @endphp
                     <a class="filter-tab {{ ($activeRisk ?? '') === $key ? 'active' : '' }}"
                        href="{{ route('platform.alerts.index', array_filter(['status' => $activeStatus, 'risk' => $key], fn($v) => $v !== '' && $v !== null)) }}">
-                        {{ $label }}
+                        <i class="fa-solid {{ $rf['icon'] }}"></i>
+                        {{ $rf['label'] }}
+                        @if($cnt > 0)
+                            <span class="ft-count">{{ $cnt }}</span>
+                        @endif
                     </a>
                 @endforeach
             </div>
@@ -261,7 +445,7 @@
         {{-- Stats --}}
         <section class="smart-stats section-gap">
             <div class="smart-stat">
-                <div class="smart-stat-icon"><i class="fa-solid fa-bell"></i></div>
+                <div class="smart-stat-icon"><i class="fa-solid fa-bolt"></i></div>
                 <div class="smart-stat-label">Actives</div>
                 <div class="smart-stat-value" style="{{ $stats['active'] > 0 ? 'color:#ef4444' : '' }}">{{ $stats['active'] }}</div>
                 <div class="smart-stat-hint">À traiter maintenant.</div>
@@ -291,9 +475,20 @@
             <div class="alert-list section-gap">
                 @foreach($alerts as $alert)
                     @php
-                        $ic   = $riskIcon($alert->risk_level);
-                        $col  = $riskColor($alert->risk_level);
+                        $ic       = $riskIcon($alert->risk_level);
+                        $col      = $riskColor($alert->risk_level);
                         $isActive = !in_array($alert->status, ['resolved', 'false_positive'], true);
+
+                        // [Amélioration 3] Âge urgency
+                        $detectedAt = $alert->detected_at ?? $alert->created_at;
+                        $ageMinutes = $detectedAt ? $detectedAt->diffInMinutes(now()) : 0;
+                        $ageClass   = $ageMinutes >= 240 ? 'age-critical'
+                                    : ($ageMinutes >= 60  ? 'age-warning' : '');
+                        $ageLabel   = $ageMinutes >= 240 ? '⚠ ' . $detectedAt->diffForHumans()
+                                    : $detectedAt?->diffForHumans();
+
+                        // [Amélioration 2] Score mini-bar (max 200pts = 100%)
+                        $scoreBarWidth = min(100, round(($alert->score ?? 0) / 200 * 100));
                     @endphp
 
                     <article class="alert-card risk-{{ $alert->risk_level }}">
@@ -302,26 +497,59 @@
                         </div>
 
                         <div class="al-body">
+                            {{-- [Amélioration 5] Titre 2 lignes --}}
                             <h4 class="al-title">{{ $alert->title }}</h4>
+
+                            {{-- [Amélioration 4] Meta structurée + IP agent --}}
                             <div class="al-meta">
-                                <i class="fa-solid fa-microchip" style="margin-right:4px"></i>{{ $alert->agent?->agent_name ?? 'Agent inconnu' }}
-                                &nbsp;·&nbsp;
-                                <i class="fa-regular fa-clock" style="margin-right:4px"></i>{{ $alert->detected_at?->diffForHumans() ?? $alert->created_at?->diffForHumans() }}
+                                <span class="al-meta-item">
+                                    <i class="fa-solid fa-microchip"></i>
+                                    {{ $alert->agent?->agent_name ?? 'Agent inconnu' }}
+                                    @if($alert->agent?->ip_address)
+                                        <span class="al-agent-ip">({{ $alert->agent->ip_address }})</span>
+                                    @endif
+                                </span>
+                                <span class="al-meta-item {{ $isActive ? $ageClass : '' }}">
+                                    <i class="fa-regular fa-clock"></i>
+                                    {{ $ageLabel ?? '—' }}
+                                </span>
                                 @if($alert->event)
-                                    &nbsp;·&nbsp;<i class="fa-solid fa-bolt" style="margin-right:4px"></i>{{ $alert->event->event_type }}
+                                    <span class="al-meta-item">
+                                        <i class="fa-solid fa-bolt"></i>{{ $alert->event->event_type }}
+                                    </span>
                                 @endif
                             </div>
+
                             @if($alert->message)
                                 <div class="al-msg">{{ Str::limit($alert->message, 120) }}</div>
                             @endif
+
                             <div class="al-tags">
+                                {{-- Badge risque --}}
                                 <span class="badge badge-{{ $alert->risk_level === 'critical' ? 'critical' : ($alert->risk_level === 'high' ? 'high' : ($alert->risk_level === 'suspect' ? 'suspect' : 'normal')) }}">
-                                    {{ $alert->risk_level }}
+                                    <i class="fa-solid {{ $ic }}"></i> {{ $alert->risk_level }}
                                 </span>
-                                <span class="badge">{{ $statusLabel($alert->status) }}</span>
-                                <span class="badge">Score : {{ $alert->score }}</span>
+
+                                {{-- [Amélioration 1] Badge statut coloré --}}
+                                <span class="badge {{ $statusBadgeClass($alert->status) }}">
+                                    <i class="fa-solid {{ $statusIcon($alert->status) }}"></i>
+                                    {{ $statusLabel($alert->status) }}
+                                </span>
+
+                                {{-- [Amélioration 2] Score mini-bar --}}
+                                <div class="al-score-wrap" title="Score de risque : {{ $alert->score ?? 0 }} / 200">
+                                    <span class="al-score-num">{{ $alert->score ?? 0 }}</span>
+                                    <div class="al-score-track">
+                                        <div class="al-score-fill {{ $alert->risk_level }}" style="width:{{ $scoreBarWidth }}%"></div>
+                                    </div>
+                                </div>
+
+                                {{-- [Amélioration 6] Incident lié → lien cliquable --}}
                                 @if($alert->incident)
-                                    <span class="badge" style="color:var(--accent)">Incident lié</span>
+                                    <a href="{{ route('platform.incidents.show', $alert->incident) }}"
+                                       class="badge badge-incident-link">
+                                        <i class="fa-solid fa-link"></i> Incident #{{ $alert->incident->id }}
+                                    </a>
                                 @endif
                             </div>
                         </div>
