@@ -60,7 +60,19 @@ class AgentBootstrapController extends Controller
             abort(403, 'Token d\'enrôlement expiré. Régénère-en un depuis la console SOC.');
         }
 
-        $socUrl    = rtrim(config('app.soc_url'), '/');
+        // ── URL SOC auto-résolue ─────────────────────────────────────────────
+        // La machine qui télécharge ce script nous contacte déjà via une URL
+        // qui fonctionne sur son réseau. On l'utilise directement :
+        //   - VM virbr-soc (10.20.0.x)  → Host: 10.20.0.1:8081
+        //   - Machine WiFi (192.168.1.x) → Host: 192.168.1.194:8081
+        //   - Prod HTTPS / domaine       → Host: soc.company.com
+        // Fallback sur RANSHIELD_SOC_URL si le Host est 127.0.0.1 / localhost
+        // (accès depuis le navigateur de la même machine, pas depuis la cible).
+        $requestHost = $request->getSchemeAndHttpHost();
+        $parsedHost  = parse_url($requestHost, PHP_URL_HOST) ?? '';
+        $isLocalhost = in_array($parsedHost, ['127.0.0.1', 'localhost', '::1'], true);
+
+        $socUrl    = rtrim($isLocalhost ? config('app.soc_url', config('app.url')) : $requestHost, '/');
         $apiSecret = config('app.agent_api_secret', '');
         $os        = strtolower($request->query('os', 'linux'));
 
@@ -432,9 +444,7 @@ class AgentBootstrapController extends Controller
         $token   = $agent->enrollment_token;
         $name    = addslashes($agent->agent_name);
         $role    = $agent->host_role ?? 'client';
-        // Relire le soc_url directement depuis le fichier .env pour éviter
-        // qu'un process nohup en cache l'ancienne valeur
-        $socUrl  = rtrim(\Illuminate\Support\Facades\Config::get('app.soc_url'), '/');
+        // $socUrl est transmis par le caller (script()), déjà résolu pour ce réseau
         $apiUrl  = $socUrl.'/api';
         $expires = optional($agent->enrollment_token_expires_at)->toDateTimeString() ?? 'inconnue';
         $now     = now()->toDateTimeString();
