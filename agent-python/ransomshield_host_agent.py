@@ -52,8 +52,16 @@ ENABLE_PROCESS_MONITOR = os.getenv("RANSHIELD_ENABLE_PROCESS_MONITOR", "true").l
 ENABLE_NETWORK_CONTEXT = os.getenv("RANSHIELD_ENABLE_NETWORK_CONTEXT", "true").lower() == "true"
 
 # ── Chemins à surveiller (dépend de l'OS) ────────────────────────────────────
+#
+# Windows : on surveille uniquement C:\Users pour les dossiers utilisateur.
+#   C:\Program Files, C:\Program Files (x86) et C:\ProgramData sont exclus par
+#   défaut car ils génèrent des centaines d'événements légitimes par heure
+#   (mises à jour, antivirus, services système, apps en arrière-plan).
+#   Les fichiers ransomware cibles (Documents, Desktop, Downloads...) sont
+#   tous sous C:\Users — c'est suffisant pour la détection.
+#
 _DEFAULT_MONITOR_PATHS = (
-    r"C:\Users,C:\Program Files,C:\Program Files (x86),C:\ProgramData"
+    r"C:\Users"
     if IS_WINDOWS
     else "/Users,/Volumes"           # macOS — dossiers utilisateurs + volumes montés
     if IS_MACOS
@@ -69,27 +77,23 @@ MONITOR_PATHS = [
 
 # ── Chemins exclus (dépend de l'OS) ──────────────────────────────────────────
 _DEFAULT_EXCLUDED_PATHS = (
-    # Système Windows toujours exclus
+    # ── AppData entier exclu ──────────────────────────────────────────────────
+    # AppData (Local, Roaming, LocalLow) contient exclusivement des données
+    # applicatives : caches navigateurs, bases SQLite d'apps, journaux système,
+    # profils Teams/WhatsApp/Outlook... Ces chemins génèrent plusieurs centaines
+    # d'événements légitimes par heure et ne sont PAS les cibles primaires des
+    # ransomwares (qui visent Documents, Desktop, Downloads, OneDrive, partages).
+    # Seule exception : si un ransomware y dépose une note de rançon — mais la
+    # détection de ransom_note_detected fonctionne par nom de fichier (README,
+    # DECRYPT...) indépendamment du chemin.
+    r"AppData\Local,AppData\Roaming,AppData\LocalLow,"
+    # Système Windows / ProgramData — même raisonnement
     r"C:\Windows\System32,C:\Windows\SysWOW64,C:\Windows\WinSxS,"
-    r"C:\ProgramData\Microsoft\Windows\Caches,"
+    r"C:\ProgramData,"
     # Outils de développement et IDE
     r"node_modules,vendor,.git,venv,__pycache__,"
-    # Caches et temporaires Windows
-    r"AppData\Local\Temp,AppData\Local\Microsoft\Windows\Temporary Internet Files,"
-    r"\Temp,AppData\Roaming\npm-cache,"
-    # Navigateurs — génèrent de l'I/O intense et légitime en permanence
-    r"AppData\Local\Google\Chrome,AppData\Local\Chromium,"
-    r"AppData\Roaming\Mozilla\Firefox,AppData\Local\Mozilla,"
-    r"AppData\Roaming\Opera Software,AppData\Local\Opera Software,"
-    r"AppData\Local\Microsoft\Edge,AppData\Local\BraveSoftware,"
-    # Applications Store Windows (Teams, WhatsApp, Outlook...) — I/O système
-    r"AppData\Local\Packages,"
-    # Mise à jour Windows et Microsoft Office
-    r"AppData\Local\Microsoft\Office,AppData\Roaming\Microsoft\Office,"
-    r"C:\ProgramData\Microsoft\Search,C:\Windows\SoftwareDistribution,"
-    # Antivirus / EDR tiers — génèrent des I/O de scan
-    r"C:\ProgramData\Malwarebytes,C:\ProgramData\Avast,C:\ProgramData\ESET,"
-    r"C:\ProgramData\Kaspersky,C:\ProgramData\Symantec,C:\ProgramData\McAfee"
+    # Temporaires Windows
+    r"\Temp,\tmp"
     if IS_WINDOWS
     else
     # Système macOS toujours exclus
