@@ -446,9 +446,7 @@ class AgentBootstrapController extends Controller
 
 # ── Auto-élévation ────────────────────────────────────────────────────────────
 # Fonctionne que le script soit lancé via iex ou via un fichier .ps1
-if (-not ([Security.Principal.WindowsPrincipal]
-          [Security.Principal.WindowsIdentity]::GetCurrent()
-         ).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
 
     Write-Host "[INFO] Privileges insuffisants — re-lancement en Administrateur..."
 
