@@ -41,17 +41,20 @@ class AgentCommandController extends Controller
 
         $actions = ProtectionAction::where('agent_id', $agent->id)
             ->where('approval_status', 'approved')
-            ->where('execution_status', 'pending')
+            ->whereIn('execution_status', ['pending', 'waiting_approval'])
             ->whereIn('action_type', $eligibleTypes)
             ->limit(5)
             ->get();
 
         // Marquer comme "en cours" pour éviter double-exécution
-        $actions->each(fn ($a) => $a->update(['execution_status' => 'executing']));
+        $actions->each(fn ($a) => $a->update([
+            'execution_status' => 'executing',
+            'updated_at'       => now(),
+        ]));
 
         $commands = $actions->map(fn ($a) => [
             'action_id'   => $a->id,
-            'action_uuid' => $a->action_uuid,
+            'action_uuid' => $a->action_uuid ?? (string) $a->id,
             'action_type' => $a->action_type,
             'payload'     => $a->payload ?? [],
         ])->values();
@@ -75,7 +78,8 @@ class AgentCommandController extends Controller
 
         $action->update([
             'execution_status' => $validated['success'] ? 'executed' : 'failed',
-            'executed_at'      => $validated['success'] ? now() : null,
+            'approval_status'  => $validated['success'] ? 'approved' : $action->approval_status,
+            'executed_at'      => $validated['success'] ? now() : $action->executed_at,
             'payload'          => array_merge($action->payload ?? [], [
                 'agent_execution_result'  => $validated['success'] ? 'success' : 'failure',
                 'agent_execution_message' => $validated['message'] ?? null,

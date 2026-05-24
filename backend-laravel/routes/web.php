@@ -53,6 +53,7 @@ Route::prefix('console')->name('platform.')->middleware('auth')->group(function 
 
     Route::get('/agents', [AgentController::class, 'index'])->name('agents.index');
     Route::get('/agents/{agent}', [AgentController::class, 'show'])->name('agents.show');
+    Route::post('/agents/{agent}/command', [AgentController::class, 'sendCommand'])->name('agents.send-command');
 
     Route::get('/alerts', [AlertController::class, 'index'])->name('alerts.index');
     Route::get('/alerts/{alert}', [AlertController::class, 'show'])->name('alerts.show');
@@ -70,6 +71,7 @@ Route::prefix('console')->name('platform.')->middleware('auth')->group(function 
 
     Route::get('/protection-actions', [ProtectionActionController::class, 'index'])->name('protection-actions.index');
     Route::get('/protection-actions/{protectionAction}', [ProtectionActionController::class, 'show'])->name('protection-actions.show');
+    Route::get('/protection-actions/{protectionAction}/status', [ProtectionActionController::class, 'status'])->name('protection-actions.status');
     Route::patch('/protection-actions/{protectionAction}/approve', [ProtectionActionController::class, 'approve'])->name('protection-actions.approve');
     Route::patch('/protection-actions/{protectionAction}/reject', [ProtectionActionController::class, 'reject'])->name('protection-actions.reject');
     Route::patch('/protection-actions/{protectionAction}/execute', [ProtectionActionController::class, 'executeManually'])->name('protection-actions.execute');

@@ -4,8 +4,11 @@ namespace App\Http\Controllers\Platform;
 
 use App\Http\Controllers\Controller;
 use App\Models\Agent;
+use App\Models\ProtectionAction;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class AgentController extends Controller
 {
@@ -52,6 +55,56 @@ class AgentController extends Controller
             'agent'       => $agent,
             'installInfo' => $this->agentInstallInfo($agent),
         ]);
+    }
+
+    /**
+     * Crée et envoie une commande manuelle à un agent.
+     *
+     * Actions supportées :
+     *   isolate_host  — bloque tout le trafic sauf SOC (netsh / iptables)
+     *   kill_process  — tue un processus par PID (payload.pid requis)
+     *   rollback_isolation — retire l'isolation réseau
+     */
+    public function sendCommand(Request $request, Agent $agent): RedirectResponse
+    {
+        $validated = $request->validate([
+            'action_type' => ['required', 'string', 'in:isolate_host,kill_process,rollback_isolation'],
+            'pid'         => ['nullable', 'integer', 'min:1'],
+            'note'        => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $payload = [];
+        if ($validated['action_type'] === 'kill_process') {
+            if (empty($validated['pid'])) {
+                return back()->withErrors(['pid' => 'Le PID est requis pour kill_process.']);
+            }
+            $payload['pid'] = (int) $validated['pid'];
+        }
+
+        if ($validated['action_type'] === 'isolate_host') {
+            // Fournir l'IP du SOC pour que l'agent garde la communication ouverte
+            $socUrl = config('app.soc_url', config('app.url'));
+            $socIp  = gethostbyname(parse_url($socUrl, PHP_URL_HOST) ?? '127.0.0.1');
+            $payload['soc_ip'] = $socIp;
+        }
+
+        $action = ProtectionAction::create([
+            'agent_id'         => $agent->id,
+            'action_uuid'      => Str::uuid()->toString(),
+            'action_type'      => $validated['action_type'],
+            'decision_mode'    => 'manual',
+            'execution_status' => 'pending',
+            'approval_status'  => 'approved',  // manuel = déjà approuvé par l'opérateur
+            'is_reversible'    => $validated['action_type'] === 'isolate_host',
+            'rollback_available' => false,
+            'description'      => $validated['note'] ?? "Commande manuelle : {$validated['action_type']} (opérateur: ".auth()->user()->name.')',
+            'payload'          => $payload,
+            'proposed_at'      => now(),
+        ]);
+
+        return redirect()
+            ->route('platform.protection-actions.show', $action)
+            ->with('success', "Commande « {$validated['action_type']} » envoyée à l'agent. Elle sera exécutée lors du prochain poll (≤ 30 s).");
     }
 
     /**

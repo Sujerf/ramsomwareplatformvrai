@@ -970,6 +970,91 @@
                 </div>
             </div>
 
+            {{-- ═══ Commandes manuelles ═══ --}}
+            <div class="soc-card" id="manual-command-card">
+                <div class="soc-card-header">
+                    <div>
+                        <h3 class="soc-card-title">
+                            <i class="fa-solid fa-terminal" style="color:#6366f1; margin-right:8px;"></i>
+                            Envoyer une commande
+                        </h3>
+                        <p class="soc-card-subtitle">La commande sera exécutée par l'agent lors de son prochain poll (≤ 30 s).</p>
+                    </div>
+                </div>
+
+                @if($agent->enrollment_status !== 'enrolled')
+                    <div class="empty-state">
+                        <i class="fa-solid fa-circle-xmark" style="font-size:28px; color:#64748b; margin-bottom:8px;"></i>
+                        <div class="empty-state-title">Agent non enrôlé</div>
+                        <div class="empty-state-message">Les commandes ne peuvent être envoyées qu'à un agent actif.</div>
+                    </div>
+                @else
+                    <form method="POST" action="{{ route('platform.agents.send-command', $agent) }}" id="command-form">
+                        @csrf
+                        <div style="display:grid; gap:14px;">
+
+                            {{-- Type d'action --}}
+                            <div>
+                                <label style="font-size:12px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:.05em; display:block; margin-bottom:6px;">
+                                    Type d'action
+                                </label>
+                                <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:8px;">
+                                    @foreach([
+                                        ['isolate_host',      'fa-plug-circle-xmark', '#ef4444', 'Isoler l\'hôte',    'Coupe tout le trafic sauf SOC'],
+                                        ['kill_process',      'fa-ban',               '#f59e0b', 'Tuer un process',   'Nécessite un PID'],
+                                        ['rollback_isolation','fa-plug-circle-check', '#22c55e', 'Lever l\'isolation','Restaure le trafic réseau'],
+                                    ] as [$val, $icon, $color, $label, $desc])
+                                    <label style="cursor:pointer;">
+                                        <input type="radio" name="action_type" value="{{ $val }}" class="cmd-type-radio"
+                                               style="display:none;" {{ old('action_type') === $val ? 'checked' : '' }}>
+                                        <div class="cmd-type-btn" data-value="{{ $val }}"
+                                             style="border:2px solid var(--border); border-radius:10px; padding:12px 10px; text-align:center; transition:.15s; cursor:pointer; background:var(--card-bg);">
+                                            <i class="fa-solid {{ $icon }}" style="font-size:20px; color:{{ $color }}; display:block; margin-bottom:6px;"></i>
+                                            <div style="font-size:12px; font-weight:700; color:var(--text-main);">{{ $label }}</div>
+                                            <div style="font-size:10px; color:var(--text-muted); margin-top:2px;">{{ $desc }}</div>
+                                        </div>
+                                    </label>
+                                    @endforeach
+                                </div>
+                                @error('action_type')
+                                    <p style="color:#ef4444; font-size:12px; margin-top:4px;">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            {{-- PID (affiché seulement pour kill_process) --}}
+                            <div id="pid-field" style="display:none;">
+                                <label style="font-size:12px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:.05em; display:block; margin-bottom:6px;">
+                                    PID du processus
+                                </label>
+                                <input type="number" name="pid" id="pid-input" min="1"
+                                       value="{{ old('pid') }}"
+                                       placeholder="ex : 4721"
+                                       style="width:100%; padding:9px 12px; border-radius:8px; border:1.5px solid var(--border); background:var(--card-bg); color:var(--text-main); font-size:14px; box-sizing:border-box;">
+                                @error('pid')
+                                    <p style="color:#ef4444; font-size:12px; margin-top:4px;">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            {{-- Note optionnelle --}}
+                            <div>
+                                <label style="font-size:12px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:.05em; display:block; margin-bottom:6px;">
+                                    Note (optionnelle)
+                                </label>
+                                <input type="text" name="note" value="{{ old('note') }}"
+                                       placeholder="ex : Ransomware détecté sur ce poste"
+                                       style="width:100%; padding:9px 12px; border-radius:8px; border:1.5px solid var(--border); background:var(--card-bg); color:var(--text-main); font-size:14px; box-sizing:border-box;">
+                            </div>
+
+                            <button type="submit" id="send-cmd-btn"
+                                    style="padding:10px 18px; border-radius:9px; border:none; background:#6366f1; color:#fff; font-weight:700; font-size:14px; cursor:pointer; display:flex; align-items:center; gap:8px; justify-content:center; opacity:.5; pointer-events:none; transition:.15s;"
+                                    disabled>
+                                <i class="fa-solid fa-paper-plane"></i> Envoyer la commande
+                            </button>
+                        </div>
+                    </form>
+                @endif
+            </div>
+
             {{-- Actions --}}
             <div class="soc-card">
                 <div class="soc-card-header">
@@ -1031,6 +1116,48 @@
     </div>
 
     <script>
+    // ── Sélecteur de commande manuelle ──────────────────────────────────────
+    (function () {
+        const radios   = document.querySelectorAll('.cmd-type-radio');
+        const btns     = document.querySelectorAll('.cmd-type-btn');
+        const pidField = document.getElementById('pid-field');
+        const sendBtn  = document.getElementById('send-cmd-btn');
+
+        function selectAction(value) {
+            // Visual state
+            btns.forEach(function (b) {
+                const isActive = b.dataset.value === value;
+                b.style.borderColor  = isActive ? '#6366f1' : 'var(--border)';
+                b.style.background   = isActive ? 'color-mix(in srgb, #6366f1 10%, var(--card-bg))' : 'var(--card-bg)';
+            });
+
+            // Show/hide PID field
+            if (pidField) pidField.style.display = (value === 'kill_process') ? 'block' : 'none';
+
+            // Enable send button
+            if (sendBtn) {
+                sendBtn.disabled = false;
+                sendBtn.style.opacity = '1';
+                sendBtn.style.pointerEvents = 'auto';
+            }
+        }
+
+        // Click on card → check radio
+        btns.forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                const val    = this.dataset.value;
+                const radio  = document.querySelector('.cmd-type-radio[value="' + val + '"]');
+                if (radio) radio.checked = true;
+                selectAction(val);
+            });
+        });
+
+        // In case page is reloaded with old() value
+        radios.forEach(function (r) {
+            if (r.checked) selectAction(r.value);
+        });
+    })();
+
     // ── Copie dans le presse-papier ─────────────────────────────────────────
     document.querySelectorAll('.copy-btn[data-copy]').forEach(function (btn) {
         btn.addEventListener('click', function () {

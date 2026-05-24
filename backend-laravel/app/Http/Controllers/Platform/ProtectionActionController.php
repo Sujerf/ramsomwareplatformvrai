@@ -24,9 +24,12 @@ class ProtectionActionController extends Controller
 
         if ($status === 'active') {
             $query->where('approval_status', 'pending')
-                ->whereIn('execution_status', ['waiting_approval', 'pending']);
+                ->whereIn('execution_status', ['waiting_approval', 'pending', 'executing']);
+        } elseif ($status === 'approved') {
+            $query->where('approval_status', 'approved')
+                ->whereIn('execution_status', ['pending', 'executing']);
         } elseif ($status === 'executed') {
-            $query->where('execution_status', 'success');
+            $query->whereIn('execution_status', ['executed', 'success']);
         } elseif ($status === 'rejected') {
             $query->whereIn('approval_status', ['rejected', 'cancelled']);
         } elseif ($status === 'rollback') {
@@ -39,7 +42,9 @@ class ProtectionActionController extends Controller
             'stats'        => [
                 'total'    => ProtectionAction::count(),
                 'pending'  => ProtectionAction::where('approval_status', 'pending')->count(),
-                'executed' => ProtectionAction::where('execution_status', 'success')->count(),
+                'approved' => ProtectionAction::where('approval_status', 'approved')
+                                ->whereIn('execution_status', ['pending', 'executing'])->count(),
+                'executed' => ProtectionAction::whereIn('execution_status', ['executed', 'success'])->count(),
                 'rejected' => ProtectionAction::whereIn('approval_status', ['rejected', 'cancelled'])->count(),
             ],
         ]);
@@ -57,6 +62,21 @@ class ProtectionActionController extends Controller
         return view('platform.protection-actions.show', [
             'protectionAction' => $protectionAction,
             'action' => $protectionAction,
+        ]);
+    }
+
+    /**
+     * Endpoint JSON léger pour le polling AJAX du statut.
+     * Utilisé par la vue show pour rafraîchir le badge sans recharger la page.
+     */
+    public function status(ProtectionAction $protectionAction): JsonResponse
+    {
+        return response()->json([
+            'id'               => $protectionAction->id,
+            'execution_status' => $protectionAction->execution_status,
+            'approval_status'  => $protectionAction->approval_status,
+            'executed_at'      => $protectionAction->executed_at?->toDateTimeString(),
+            'payload'          => $protectionAction->payload,
         ]);
     }
 
@@ -87,7 +107,7 @@ class ProtectionActionController extends Controller
         DB::transaction(function () use ($protectionAction) {
             $protectionAction->update([
                 'approval_status'  => 'rejected',
-                'execution_status' => 'cancelled',
+                'execution_status' => 'failed',
             ]);
 
             $this->recordDecision($protectionAction, 'rejected', "Action rejetée depuis la console SOC.");
@@ -109,7 +129,7 @@ class ProtectionActionController extends Controller
                 'approval_status' => $protectionAction->approval_status === 'pending'
                     ? 'approved'
                     : $protectionAction->approval_status,
-                'execution_status' => 'success',
+                'execution_status' => 'executed',
                 'executed_at' => now(),
                 'rollback_available' => (bool) $protectionAction->is_reversible,
             ]);

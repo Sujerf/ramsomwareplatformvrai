@@ -647,5 +647,66 @@
         this.classList.toggle('open');
         document.getElementById('payloadBody').classList.toggle('open');
     });
+
+    // ── Polling AJAX du statut (actif seulement si l'action est en cours) ──
+    (function () {
+        const POLL_INTERVAL = 5000; // 5 secondes
+        const TERMINAL_STATUSES = ['executed', 'failed', 'rolled_back', 'success'];
+
+        const initialStatus = @json($protectionAction->execution_status);
+        if (TERMINAL_STATUSES.includes(initialStatus)) return; // déjà terminé, pas besoin de poller
+
+        const statusUrl = @json(route('platform.protection-actions.status', $protectionAction));
+
+        // Labels et classes (miroir PHP)
+        function execLabel(s) {
+            const map = {
+                waiting_approval: '⏳ En attente d\'approbation',
+                pending:          '🕐 En attente d\'exécution',
+                executing:        '⚙️ En cours…',
+                executed:         '✅ Exécutée',
+                success:          '✅ Exécutée',
+                failed:           '❌ Échouée',
+                rolled_back:      '↩️ Annulée',
+            };
+            return map[s] || s;
+        }
+        function execClass(s) {
+            if (['executed','success'].includes(s))  return 'badge-normal';
+            if (s === 'failed')                       return 'badge-critical';
+            if (s === 'executing')                    return 'badge-medium';
+            return 'badge-high';
+        }
+
+        const execBadge = document.querySelector('.status-bar .status-block:nth-child(2) .badge');
+
+        let timer = setInterval(function () {
+            fetch(statusUrl, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } })
+                .then(function (r) { return r.ok ? r.json() : null; })
+                .then(function (data) {
+                    if (!data) return;
+
+                    const s = data.execution_status;
+
+                    // Mettre à jour le badge
+                    if (execBadge) {
+                        execBadge.textContent = execLabel(s);
+                        execBadge.className   = 'badge ' + execClass(s);
+                    }
+
+                    // Animer si "en cours"
+                    if (s === 'executing' && execBadge) {
+                        execBadge.style.animation = 'pulse 1s infinite';
+                    }
+
+                    // Statut terminal → arrêt du poll + rechargement de la page pour afficher les détails complets
+                    if (TERMINAL_STATUSES.includes(s)) {
+                        clearInterval(timer);
+                        setTimeout(function () { window.location.reload(); }, 800);
+                    }
+                })
+                .catch(function () {}); // réseau coupé → silencieux
+        }, POLL_INTERVAL);
+    })();
     </script>
 @endsection
