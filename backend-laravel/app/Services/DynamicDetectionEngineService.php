@@ -111,7 +111,18 @@ class DynamicDetectionEngineService
             // Un case hardcodé ici provoquerait un double comptage sur chaque
             // événement portant une extension sensible.
 
-            'rule_mass_rename'        => in_array($eventType, ['file_moved', 'file_renamed', 'moved', 'renamed'], true),
+            // Bug G : 'mass_rename_detected' ajouté — l'agent l'envoie après ≥10
+            // renommages en 30 s (track_rename). C'est le signal de dernier recours
+            // quand les événements individuels sont étouffés par le rate-limiter.
+            //
+            // Bug J : 'file_encrypted_extension' ajouté — l'agent envoie ce type
+            // quand un fichier est renommé vers une extension sensible (.locked,
+            // .encrypted…). C'est bien un renommage → rule_mass_rename doit s'appliquer.
+            'rule_mass_rename'        => in_array($eventType, [
+                'file_moved', 'file_renamed', 'moved', 'renamed',
+                'file_encrypted_extension',  // Bug J — rename vers ext sensible
+                'mass_rename_detected',      // Bug G — burst ≥10 renames/30s
+            ], true),
             'rule_ransom_note'        => $this->looksLikeRansomNote($path),
             'rule_fast_write_activity'=> in_array($eventType, ['file_modified', 'modified', 'file_created', 'created'], true),
             'rule_simulation_marker'  => (bool) ($payload['is_simulation'] ?? false),

@@ -20,12 +20,19 @@ class AgentHeartbeatController extends Controller
 
         $agent = Agent::where('agent_uuid', $validated['agent_uuid'])->firstOrFail();
 
+        // Bug F — ne pas écraser un statut opérationnel fort (compromised)
+        // par un simple heartbeat. Le statut 'compromised' est positionné par
+        // AgentRiskService::updateAgentRisk() et reflète un risk_level=critical.
+        // Un heartbeat signifie uniquement "je suis vivant", pas "je suis sain".
+        // On maintient 'compromised' ; les autres statuts passent à 'active'.
+        $newStatus = $agent->status === 'compromised' ? 'compromised' : 'active';
+
         $agent->update([
-            'hostname' => $validated['hostname'] ?? $agent->hostname,
-            'ip_address' => $validated['ip_address'] ?? $request->ip(),
-            'status' => 'active',
+            'hostname'     => $validated['hostname'] ?? $agent->hostname,
+            'ip_address'   => $validated['ip_address'] ?? $request->ip(),
+            'status'       => $newStatus,
             'last_seen_at' => now(),
-            'metadata' => $validated['metadata'] ?? $agent->metadata,
+            'metadata'     => $validated['metadata'] ?? $agent->metadata,
         ]);
 
         return response()->json([
