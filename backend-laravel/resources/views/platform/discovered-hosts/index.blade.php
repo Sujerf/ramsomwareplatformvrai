@@ -15,6 +15,7 @@
                 'gateway'       => 'fa-network-wired',
                 'file_server'   => 'fa-hard-drive',
                 'attacker_demo' => 'fa-skull-crossbones',
+                'mobile_device' => 'fa-mobile-screen',
                 default         => 'fa-desktop',
             };
         };
@@ -25,6 +26,7 @@
                 'gateway'       => '#22c55e',
                 'file_server'   => '#f97316',
                 'attacker_demo' => '#ef4444',
+                'mobile_device' => '#ec4899',
                 default         => '#64748b',
             };
         };
@@ -341,7 +343,12 @@
                         </div>
 
                         <div class="host-body">
-                            <h4 class="host-title">{{ $host->hostname ?: $host->ip_address }}</h4>
+                            <h4 class="host-title">
+                                @if($host->device_category && $host->device_category !== 'unknown')
+                                    <span style="font-size:.85em; margin-right:4px;">{{ $host->device_icon }}</span>
+                                @endif
+                                {{ $host->hostname ?: $host->ip_address }}
+                            </h4>
                             <div class="host-meta">
                                 <i class="fa-solid fa-network-wired" style="margin-right:4px"></i>{{ $host->managedNetwork?->cidr ?? '—' }}
                                 &nbsp;·&nbsp;
@@ -358,6 +365,25 @@
                                     {{ $host->is_monitored ? ($host->discovery_status ?? 'detected') : 'retiré' }}
                                 </span>
                                 <span class="badge">{{ $host->host_role ?? 'client' }}</span>
+
+                                {{-- Badge fabricant --}}
+                                @if($host->device_vendor)
+                                    @php
+                                        $catColor = match($host->device_category) {
+                                            'mobile'       => '#ec4899',
+                                            'apple_device' => '#6366f1',
+                                            'router'       => '#22c55e',
+                                            'iot'          => '#f59e0b',
+                                            'printer'      => '#64748b',
+                                            'computer'     => '#3b82f6',
+                                            default        => '#64748b',
+                                        };
+                                    @endphp
+                                    <span class="badge" style="color:{{ $catColor }}; border-color:color-mix(in srgb, {{ $catColor }} 30%, transparent)">
+                                        {{ $host->device_icon }} {{ $host->device_vendor }}
+                                    </span>
+                                @endif
+
                                 <span class="badge" style="color:{{ $ec }}; border-color:color-mix(in srgb, {{ $ec }} 30%, transparent)">
                                     {{ $host->enrollment_status ?? 'not_enrolled' }}
                                 </span>
@@ -373,10 +399,11 @@
                                 <div class="role-picker">
                                     <div class="role-picker-label"><i class="fa-solid fa-tag" style="margin-right:4px"></i>Rôle machine</div>
                                     @foreach([
-                                        'client'        => ['fa-desktop',           'Client',          route('platform.discovered-hosts.mark-client',       $host)],
-                                        'file_server'   => ['fa-hard-drive',        'Serveur fichiers', route('platform.discovered-hosts.mark-file-server',  $host)],
-                                        'soc_server'    => ['fa-server',            'Serveur SOC',     route('platform.discovered-hosts.mark-soc-server',    $host)],
-                                        'attacker_demo' => ['fa-skull-crossbones',  'Attaquant démo',  route('platform.discovered-hosts.mark-attacker-demo', $host)],
+                                        'client'        => ['fa-desktop',           'Client',            route('platform.discovered-hosts.mark-client',       $host)],
+                                        'mobile_device' => ['fa-mobile-screen',     'Mobile / Tablette', route('platform.discovered-hosts.mark-mobile',       $host)],
+                                        'file_server'   => ['fa-hard-drive',        'Serveur fichiers',  route('platform.discovered-hosts.mark-file-server',  $host)],
+                                        'soc_server'    => ['fa-server',            'Serveur SOC',       route('platform.discovered-hosts.mark-soc-server',    $host)],
+                                        'attacker_demo' => ['fa-skull-crossbones',  'Attaquant démo',    route('platform.discovered-hosts.mark-attacker-demo', $host)],
                                     ] as $roleKey => [$icon, $label, $action])
                                         <form method="POST" action="{{ $action }}" style="display:contents">
                                             @csrf @method('PATCH')

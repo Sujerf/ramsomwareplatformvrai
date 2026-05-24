@@ -46,6 +46,7 @@ Route::prefix('console')->name('platform.')->middleware('auth')->group(function 
     Route::patch('/discovered-hosts/{discoveredHost}/validate', [DiscoveredHostController::class, 'validateHost'])->name('discovered-hosts.validate');
     Route::patch('/discovered-hosts/{discoveredHost}/reset', [DiscoveredHostController::class, 'reset'])->name('discovered-hosts.reset');
     Route::patch('/discovered-hosts/{discoveredHost}/mark-client', [DiscoveredHostController::class, 'markClient'])->name('discovered-hosts.mark-client');
+    Route::patch('/discovered-hosts/{discoveredHost}/mark-mobile', [DiscoveredHostController::class, 'markMobile'])->name('discovered-hosts.mark-mobile');
     Route::patch('/discovered-hosts/{discoveredHost}/mark-file-server', [DiscoveredHostController::class, 'markFileServer'])->name('discovered-hosts.mark-file-server');
     Route::patch('/discovered-hosts/{discoveredHost}/mark-soc-server', [DiscoveredHostController::class, 'markSocServer'])->name('discovered-hosts.mark-soc-server');
     Route::patch('/discovered-hosts/{discoveredHost}/mark-attacker-demo', [DiscoveredHostController::class, 'markAttackerDemo'])->name('discovered-hosts.mark-attacker-demo');

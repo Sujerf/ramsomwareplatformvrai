@@ -94,6 +94,15 @@ class DiscoveredHostController extends Controller
         return back()->with('success', 'Hôte marqué comme attaquant démo.');
     }
 
+    public function markMobile(DiscoveredHost $discoveredHost): RedirectResponse
+    {
+        DB::table('discovered_hosts')
+            ->where('id', $discoveredHost->id)
+            ->update(['host_role' => 'mobile_device', 'updated_at' => now()]);
+
+        return back()->with('success', 'Hôte marqué comme mobile / tablette.');
+    }
+
     public function enroll(DiscoveredHost $discoveredHost, HostEnrollmentService $enrollment): RedirectResponse
     {
         DB::table('discovered_hosts')

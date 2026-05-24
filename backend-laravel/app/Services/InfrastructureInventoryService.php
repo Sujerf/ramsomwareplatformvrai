@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Process;
 
 class InfrastructureInventoryService
 {
+    public function __construct(private readonly MacVendorService $macVendor) {}
     // ──────────────────────────────────────────────────────────────────────────
     //  DÉTECTION RÉSEAUX LOCAUX
     // ──────────────────────────────────────────────────────────────────────────
@@ -241,12 +242,28 @@ class InfrastructureInventoryService
 
         $role = $host['host_role'] ?? $this->guessHostRole($network, $ip, $host['hostname'] ?? null);
 
+        // ── Identification du fabricant par OUI ─────────────────────────────────
+        $mac    = $host['mac_address'] ?? null;
+        $vendor = $this->macVendor->lookup($mac);
+
+        // Si le rôle est générique ET que le fabricant indique un mobile → mobile_device
+        $genericRoles = ['client', null, 'unknown'];
+        if (in_array($role, $genericRoles, true) && in_array($vendor['category'], ['mobile', 'apple_device'], true)) {
+            $role = 'mobile_device';
+        }
+        // Ne pas écraser un rôle manuellement défini (enrolled / file_server / soc_server…)
+        if ($existing && ! in_array($existing->host_role, $genericRoles, true) && $existing->host_role !== 'mobile_device') {
+            $role = $existing->host_role;
+        }
+
         $payload = [
             'managed_network_id' => $network->id,
             'ip_address'         => $ip,
-            'mac_address'        => $host['mac_address'] ?? null,
+            'mac_address'        => $mac,
             'hostname'           => $host['hostname'] ?? null,
             'host_role'          => $role,
+            'device_vendor'      => $vendor['vendor'],
+            'device_category'    => $vendor['category'],
             'discovery_status'   => 'detected',
             'enrollment_status'  => $existing?->enrollment_status ?? 'not_enrolled',
             'is_monitored'       => true,
