@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ProtectionAction extends Model
 {
-    // execution_status : waiting_approval | pending | executing | executed | failed | rolled_back
+    // execution_status : waiting_approval | pending | executing | executed | failed | rolled_back | cancelled
     // approval_status  : pending | approved | rejected | cancelled
 
     protected $fillable = [
