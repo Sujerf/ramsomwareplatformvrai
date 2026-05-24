@@ -538,6 +538,15 @@
                                         <span id="scan-label-{{ $network->id }}">Scanner</span>
                                     </button>
 
+                                    @if($network->status !== 'approved')
+                                        <form method="POST" action="{{ route('platform.networks.approve', $network) }}" style="display:contents;">
+                                            @csrf @method('PATCH')
+                                            <button type="submit" class="action-btn success" style="white-space:nowrap;">
+                                                <i class="fa-solid fa-circle-check"></i> Approuver
+                                            </button>
+                                        </form>
+                                    @endif
+
                                     <a href="{{ route('platform.discovered-hosts.index', ['status' => 'monitored', 'search' => explode('/', $network->cidr)[0]]) }}"
                                        class="action-btn" style="white-space:nowrap;">
                                         <i class="fa-solid fa-desktop"></i> Hôtes

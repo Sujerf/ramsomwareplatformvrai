@@ -570,6 +570,17 @@
                                             {{ $host->device_icon }} {{ $host->device_vendor }}
                                         </span>
                                     @endif
+                                    {{-- Statut découverte (discovery_status) --}}
+                                    @php $ds = $host->discovery_status ?? 'detected'; @endphp
+                                    @if($ds === 'approved')
+                                        <span class="badge" style="color:#22c55e; border-color:color-mix(in srgb,#22c55e 28%,transparent);">
+                                            <i class="fa-solid fa-circle-check" style="font-size:9px;"></i> Validé
+                                        </span>
+                                    @elseif($ds === 'detected')
+                                        <span class="badge" style="color:#f59e0b; border-color:color-mix(in srgb,#f59e0b 28%,transparent);">
+                                            <i class="fa-solid fa-magnifying-glass" style="font-size:9px;"></i> Détecté
+                                        </span>
+                                    @endif
                                     {{-- Agent lien (si enrôlé) --}}
                                     @if($isEnrolled && $agent)
                                         <a href="{{ route('platform.agents.show', $agent) }}"
@@ -772,6 +783,32 @@
                                     @endif
                                 </span>
                             @endif
+
+                            {{-- Boutons Valider / Réinitialiser (discovery_status) --}}
+                            @if($host->is_monitored)
+                                @if($ds === 'detected')
+                                    <form method="POST" action="{{ route('platform.discovered-hosts.validate', $host) }}" style="display:contents">
+                                        @csrf @method('PATCH')
+                                        <button type="submit"
+                                                class="action-btn success"
+                                                style="font-size:11px; padding:3px 10px; border-radius:8px; white-space:nowrap; height:auto; line-height:1.6;"
+                                                title="Marquer cet hôte comme validé par l'opérateur">
+                                            <i class="fa-solid fa-circle-check"></i> Valider
+                                        </button>
+                                    </form>
+                                @elseif($ds === 'approved')
+                                    <form method="POST" action="{{ route('platform.discovered-hosts.reset', $host) }}" style="display:contents">
+                                        @csrf @method('PATCH')
+                                        <button type="submit"
+                                                class="action-btn"
+                                                style="font-size:11px; padding:3px 10px; border-radius:8px; white-space:nowrap; height:auto; line-height:1.6; color:var(--text-muted);"
+                                                title="Remettre en statut détecté">
+                                            <i class="fa-solid fa-rotate-left"></i> Réinitialiser
+                                        </button>
+                                    </form>
+                                @endif
+                            @endif
+
                             <div class="spacer"></div>
                             <span style="font-size:11px; color:var(--text-muted); font-family:monospace;">
                                 #{{ $host->id }}
