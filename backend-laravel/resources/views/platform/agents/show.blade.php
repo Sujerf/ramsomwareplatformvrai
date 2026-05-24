@@ -929,6 +929,95 @@
             </section>
         @endif
 
+        {{-- ── MISE À JOUR DE L'AGENT ──────────────────────────────────── --}}
+        @if($agent->enrollment_status === 'enrolled')
+        <section class="soc-card section-gap" style="border-color:rgba(56,189,248,.2);">
+            <div class="soc-card-header" style="border-bottom-color:rgba(56,189,248,.15);">
+                <div>
+                    <h3 class="soc-card-title">
+                        <i class="fa-solid fa-cloud-arrow-down" style="color:#38bdf8; margin-right:8px;"></i>
+                        Mettre à jour l'agent
+                    </h3>
+                    <p class="soc-card-subtitle">Déploie la dernière version depuis le SOC.</p>
+                </div>
+                {{-- Bouton "Envoyer la commande" via le système de commandes --}}
+                <form method="POST" action="{{ route('platform.agents.send-command', $agent) }}" style="margin-left:auto;">
+                    @csrf
+                    <input type="hidden" name="action_type" value="update_agent">
+                    <input type="hidden" name="note" value="Mise à jour déclenchée depuis la console SOC">
+                    <button type="submit"
+                            style="padding:8px 16px; border-radius:8px; border:none;
+                                   background:#38bdf8; color:#071d2e; font-size:.8rem;
+                                   font-weight:700; cursor:pointer;
+                                   display:inline-flex; align-items:center; gap:6px;">
+                        <i class="fa-solid fa-cloud-arrow-down"></i> Envoyer la commande (auto)
+                    </button>
+                </form>
+            </div>
+            <div style="padding:1.25rem; display:flex; flex-direction:column; gap:1rem;">
+
+                {{-- Info processus --}}
+                <div style="font-size:.82rem; color:var(--text-muted); line-height:1.6;">
+                    <strong style="color:var(--text-primary);">Comment ça marche (auto) :</strong>
+                    La commande est envoyée à l'agent via le système de poll (≤&nbsp;30&nbsp;s).
+                    L'agent télécharge la nouvelle version, se remplace et redémarre automatiquement.
+                    <br>
+                    <strong style="color:#f97316;">⚠ Prérequis :</strong> L'agent doit avoir la version ≥ 1.1 (commande <code>update_agent</code> supportée).
+                    Pour les versions antérieures, utilise la commande manuelle ci-dessous.
+                </div>
+
+                {{-- Commande manuelle PowerShell --}}
+                @php
+                    $socUrl    = $installInfo['soc_url'];
+                    $updateCmd = "Stop-ScheduledTask -TaskName RansomShieldAgent\n" .
+                                 "iwr '{$socUrl}/api/agent/download/ransomshield_host_agent.py' -UseBasicParsing -OutFile C:\\RansomShieldAgent\\ransomshield_host_agent.py\n" .
+                                 "Start-ScheduledTask -TaskName RansomShieldAgent\n" .
+                                 "Write-Host 'Agent mis a jour et redémarre.'";
+                @endphp
+                <div>
+                    <div style="font-size:.75rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;
+                                letter-spacing:.06em; margin-bottom:.5rem; display:flex; align-items:center; gap:.5rem;">
+                        <i class="fa-brands fa-windows" style="color:#38bdf8;"></i>
+                        Mise à jour manuelle — PowerShell (Windows)
+                        <button onclick="navigator.clipboard.writeText(document.getElementById('updateCmd').innerText)"
+                                style="margin-left:auto; padding:3px 10px; border-radius:5px; border:1px solid var(--border);
+                                       background:transparent; color:var(--text-muted); font-size:.7rem; cursor:pointer;">
+                            <i class="fa-solid fa-copy"></i> Copier
+                        </button>
+                    </div>
+                    <pre id="updateCmd" style="margin:0; padding:10px 14px; border-radius:8px;
+                                               background:var(--bg-deep,#030810); border:1px solid rgba(56,189,248,.15);
+                                               font-size:.75rem; color:#7dd3fc; line-height:1.6;
+                                               white-space:pre-wrap; word-break:break-all;">{{ $updateCmd }}</pre>
+                </div>
+
+                {{-- Linux / macOS --}}
+                @php
+                    $updateCmdLinux = "sudo systemctl stop ransomshield-agent\n" .
+                                      "sudo curl -fsSL '{$socUrl}/api/agent/download/ransomshield_host_agent.py' -o /opt/ransomshield-agent/ransomshield_host_agent.py\n" .
+                                      "sudo systemctl start ransomshield-agent";
+                @endphp
+                <div>
+                    <div style="font-size:.75rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;
+                                letter-spacing:.06em; margin-bottom:.5rem; display:flex; align-items:center; gap:.5rem;">
+                        <i class="fa-brands fa-linux" style="color:#22c55e;"></i>
+                        Mise à jour manuelle — Linux
+                        <button onclick="navigator.clipboard.writeText(document.getElementById('updateCmdLinux').innerText)"
+                                style="margin-left:auto; padding:3px 10px; border-radius:5px; border:1px solid var(--border);
+                                       background:transparent; color:var(--text-muted); font-size:.7rem; cursor:pointer;">
+                            <i class="fa-solid fa-copy"></i> Copier
+                        </button>
+                    </div>
+                    <pre id="updateCmdLinux" style="margin:0; padding:10px 14px; border-radius:8px;
+                                                    background:var(--bg-deep,#030810); border:1px solid rgba(34,197,94,.15);
+                                                    font-size:.75rem; color:#86efac; line-height:1.6;
+                                                    white-space:pre-wrap; word-break:break-all;">{{ $updateCmdLinux }}</pre>
+                </div>
+
+            </div>
+        </section>
+        @endif
+
         {{-- ── RÉSEAU / IDENTITÉ ────────────────────────────────────────── --}}
         <section class="agent-detail-grid section-gap">
 
@@ -1175,11 +1264,12 @@
                                 <label style="font-size:12px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:.05em; display:block; margin-bottom:6px;">
                                     Type d'action
                                 </label>
-                                <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:8px;">
+                                <div style="display:grid; grid-template-columns:repeat(2,1fr); gap:8px;">
                                     @foreach([
-                                        ['isolate_host',      'fa-plug-circle-xmark', '#ef4444', 'Isoler l\'hôte',    'Coupe tout le trafic sauf SOC'],
-                                        ['kill_process',      'fa-ban',               '#f59e0b', 'Tuer un process',   'Nécessite un PID'],
-                                        ['rollback_isolation','fa-plug-circle-check', '#22c55e', 'Lever l\'isolation','Restaure le trafic réseau'],
+                                        ['isolate_host',      'fa-plug-circle-xmark', '#ef4444', 'Isoler l\'hôte',       'Coupe tout le trafic sauf SOC'],
+                                        ['kill_process',      'fa-ban',               '#f59e0b', 'Tuer un process',      'Nécessite un PID'],
+                                        ['rollback_isolation','fa-plug-circle-check', '#22c55e', 'Lever l\'isolation',   'Restaure le trafic réseau'],
+                                        ['update_agent',      'fa-cloud-arrow-down',  '#38bdf8', 'Mettre à jour',        'Télécharge et redémarre avec la dernière version'],
                                     ] as [$val, $icon, $color, $label, $desc])
                                     <label style="cursor:pointer;">
                                         <input type="radio" name="action_type" value="{{ $val }}" class="cmd-type-radio"

@@ -801,6 +801,85 @@ def report_command_result(
         print(f"[CMD] Erreur rapport résultat : {exc}")
 
 
+def execute_self_update(agent_uuid: str, action_id: int) -> tuple[bool, str]:
+    """
+    Télécharge la dernière version de l'agent depuis le SOC, remplace le fichier
+    courant et redémarre le service.  Rapporte le résultat AVANT le redémarrage
+    pour ne pas perdre la trace de l'action.
+
+    Flux :
+      1. GET /api/agent/download/ransomshield_host_agent.py  → nouveau source
+      2. Écriture atomique (.tmp puis rename)
+      3. Rapport du résultat au SOC (success=True)
+      4. Lancement d'un subprocess détaché qui redémarre le service dans 3 s
+      5. sys.exit(0) — le service redémarre avec la nouvelle version
+    """
+    import shutil
+    import sys
+
+    script_path = Path(__file__).resolve()
+    tmp_path = script_path.with_suffix(".py.updating")
+
+    download_url = f"{API_URL}/agent/download/ransomshield_host_agent.py"
+    print(f"[UPDATE] Téléchargement depuis {download_url}")
+
+    try:
+        resp = requests.get(download_url, headers=API_HEADERS, timeout=30)
+        resp.raise_for_status()
+    except Exception as exc:
+        return False, f"Échec du téléchargement : {exc}"
+
+    if len(resp.content) < 1000:
+        return False, f"Fichier téléchargé trop petit ({len(resp.content)} octets) — annulé."
+
+    try:
+        tmp_path.write_bytes(resp.content)
+        shutil.move(str(tmp_path), str(script_path))
+    except Exception as exc:
+        return False, f"Échec remplacement du fichier : {exc}"
+
+    print(f"[UPDATE] Fichier remplacé ({len(resp.content)} octets). Redémarrage dans 3 s...")
+
+    # Rapporter le succès AVANT de redémarrer
+    report_command_result(agent_uuid, action_id, True,
+                          f"Agent mis à jour ({len(resp.content)} octets). Redémarrage en cours.")
+
+    # Lancer le redémarrage en subprocess détaché
+    try:
+        if IS_WINDOWS:
+            subprocess.Popen(
+                [
+                    "powershell", "-Command",
+                    "Start-Sleep 3; "
+                    "Stop-ScheduledTask  -TaskName RansomShieldAgent -ErrorAction SilentlyContinue; "
+                    "Start-Sleep 1; "
+                    "Start-ScheduledTask -TaskName RansomShieldAgent",
+                ],
+                creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP,
+                close_fds=True,
+            )
+        elif IS_MACOS:
+            subprocess.Popen(
+                ["bash", "-c",
+                 "sleep 3 && launchctl stop com.ransomshield.agent "
+                 "&& launchctl start com.ransomshield.agent"],
+                start_new_session=True,
+                close_fds=True,
+            )
+        else:
+            subprocess.Popen(
+                ["bash", "-c", "sleep 3 && systemctl restart ransomshield-agent"],
+                start_new_session=True,
+                close_fds=True,
+            )
+    except Exception as exc:
+        print(f"[UPDATE] Avertissement : impossible de lancer le redémarrage automatique : {exc}")
+        print("[UPDATE] Redémarrez le service manuellement.")
+
+    # Sortie propre — le subprocess ci-dessus prend le relais
+    sys.exit(0)
+
+
 def poll_commands(agent_uuid: str) -> None:
     try:
         response = requests.get(
@@ -843,6 +922,11 @@ def poll_commands(agent_uuid: str) -> None:
                 execute_rollback_isolation()
                 success = True
                 message = "Isolation réseau levée — trafic normal restauré."
+            elif action_type == "update_agent":
+                success, message = execute_self_update(agent_uuid, action_id)
+                # execute_self_update rapporte lui-même le résultat AVANT de
+                # redémarrer — on sort du loop après pour ne pas double-reporter.
+                break
             else:
                 message = f"Type d'action non supporté localement : {action_type}"
         except Exception as exc:

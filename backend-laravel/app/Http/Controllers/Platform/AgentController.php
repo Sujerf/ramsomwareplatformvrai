@@ -96,7 +96,7 @@ class AgentController extends Controller
     public function sendCommand(Request $request, Agent $agent): RedirectResponse
     {
         $validated = $request->validate([
-            'action_type' => ['required', 'string', 'in:isolate_host,kill_process,rollback_isolation'],
+            'action_type' => ['required', 'string', 'in:isolate_host,kill_process,rollback_isolation,update_agent'],
             'pid'         => ['nullable', 'integer', 'min:1'],
             'note'        => ['nullable', 'string', 'max:255'],
         ]);

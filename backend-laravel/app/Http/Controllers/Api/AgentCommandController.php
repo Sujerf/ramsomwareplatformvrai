@@ -33,7 +33,9 @@ class AgentCommandController extends Controller
         // L'ancien early-return (empty($eligibleTypes)) bloquait TOUTES les
         // commandes quand les deux settings étaient à 0, empêchant définitivement
         // le rollback.
-        $eligibleTypes = ['rollback_isolation'];
+        // update_agent : toujours autorisé — mise à jour de maintenance, pas de
+        // sécurité, aucun setting requis.
+        $eligibleTypes = ['rollback_isolation', 'update_agent'];
         if ($allowIsolation) {
             $eligibleTypes[] = 'isolate_host';
         }
