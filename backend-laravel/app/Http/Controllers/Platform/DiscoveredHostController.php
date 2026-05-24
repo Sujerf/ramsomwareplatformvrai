@@ -70,7 +70,7 @@ class DiscoveredHostController extends Controller
                 'total'    => DiscoveredHost::count(),
                 'monitored'=> DiscoveredHost::where('is_monitored', true)->count(),
                 'enrolled' => DiscoveredHost::where('enrollment_status', 'enrolled')->count(),
-                'pending'  => DiscoveredHost::where('enrollment_status', 'pre_enrolled')->count(),
+                'pending'  => DiscoveredHost::where('enrollment_status', 'pending')->count(),
                 'retired'  => DiscoveredHost::where('is_monitored', false)->count(),
             ],
         ]);

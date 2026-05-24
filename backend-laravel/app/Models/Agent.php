@@ -11,6 +11,7 @@ class Agent extends Model
         'discovered_host_id',
         'agent_uuid',
         'enrollment_token',
+        'enrollment_token_expires_at',
         'agent_name',
         'hostname',
         'ip_address',
