@@ -62,7 +62,7 @@ class AgentEventController extends Controller
     public function store(Request $request, AgentRiskService $riskService): JsonResponse
     {
         $validated = $request->validate([
-            'agent_uuid'     => ['required', 'uuid'],
+            'agent_uuid'     => ['required', 'uuid', 'exists:agents,agent_uuid'],
             'event_type'     => ['required', 'string', 'max:120'],
             'path'           => ['nullable', 'string', 'max:2000'],
             'file_extension' => ['nullable', 'string', 'max:50'],

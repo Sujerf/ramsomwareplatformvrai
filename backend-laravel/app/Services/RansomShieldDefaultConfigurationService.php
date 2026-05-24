@@ -202,6 +202,9 @@ class RansomShieldDefaultConfigurationService
             );
         }
 
+        // Invalider le cache SystemSetting — DB::table() contourne l'observer Eloquent
+        \App\Models\SystemSetting::clearCache();
+
         return count($items);
     }
 

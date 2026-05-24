@@ -37,13 +37,14 @@
         };
 
         $execLabel = fn($s) => match($s) {
-            'success'          => 'Exécutée',
-            'pending'          => 'En attente',
-            'waiting_approval' => 'Attente appro.',
-            'cancelled'        => 'Annulée',
-            'failed'           => 'Échec',
-            'rolled_back'      => 'Rollback',
-            default            => $s,
+            'executed', 'success' => 'Exécutée',
+            'executing'           => 'En cours…',
+            'pending'             => 'En attente',
+            'waiting_approval'    => 'Attente appro.',
+            'cancelled'           => 'Annulée',
+            'failed'              => 'Échec',
+            'rolled_back'         => 'Rollback',
+            default               => $s,
         };
 
         $risk       = $agent->risk_level ?? 'normal';

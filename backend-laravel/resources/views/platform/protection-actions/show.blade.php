@@ -32,7 +32,7 @@
         };
 
         $execClass = fn($s) => match($s) {
-            'success'                     => 'badge-normal',
+            'executed', 'success'         => 'badge-normal',
             'rolled_back'                 => 'badge-suspect',
             'cancelled', 'failed'         => 'badge-critical',
             default                       => 'badge-high',
@@ -46,13 +46,14 @@
         };
 
         $execLabel = fn($s) => match($s) {
-            'success'          => 'Exécutée',
-            'pending'          => 'En attente',
-            'waiting_approval' => 'Attente approbation',
-            'cancelled'        => 'Annulée',
-            'failed'           => 'Échec',
-            'rolled_back'      => 'Rollback effectué',
-            default            => $s,
+            'executed', 'success' => 'Exécutée',
+            'executing'           => 'En cours…',
+            'pending'             => 'En attente',
+            'waiting_approval'    => 'Attente approbation',
+            'cancelled'           => 'Annulée',
+            'failed'              => 'Échec',
+            'rolled_back'         => 'Rollback effectué',
+            default               => $s,
         };
 
         $decisionClass = fn($d) => match($d) {
