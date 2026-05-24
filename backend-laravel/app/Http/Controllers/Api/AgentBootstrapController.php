@@ -134,11 +134,20 @@ class AgentBootstrapController extends Controller
         fi
 
         if ! command -v python3 &>/dev/null; then
-            echo "[INFO] Installation de Python 3..."
-            apt-get update -qq && apt-get install -y -qq python3 python3-pip python3-venv curl
+            echo "[INFO] Python 3 absent — installation complète..."
+            apt-get update -qq
+            apt-get install -y -qq python3 python3-pip python3-venv curl
+        else
+            # python3 présent mais python3-venv peut être absent (Ubuntu minimal)
+            echo "[INFO] Vérification de python3-venv et python3-pip..."
+            apt-get install -y -qq python3-venv python3-pip 2>/dev/null || true
         fi
 
         PYTHON_BIN="\$(command -v python3)"
+        if [ -z "\$PYTHON_BIN" ]; then
+            echo "[ERREUR] python3 introuvable après installation. Installe-le manuellement."
+            exit 1
+        fi
         PY_VERSION="\$("\$PYTHON_BIN" -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
         echo "[OK] Python \$PY_VERSION"
 
@@ -212,6 +221,14 @@ class AgentBootstrapController extends Controller
         WantedBy=multi-user.target
         SVCEOF
 
+        # ── 7. Nettoyage de l'état précédent (force ré-enrôlement) ────────────────
+        # Si l'agent était déjà installé, l'ancien state contient un agent_uuid
+        # qui ferait sauter l'appel /enroll au démarrage. On le supprime pour
+        # garantir que le nouveau token est bien consommé.
+        echo "[INFO] Nettoyage de l'état précédent..."
+        rm -f "\${INSTALL_DIR}/.ransomshield_host_agent_state.json"
+        echo "[OK] État précédent effacé"
+
         systemctl daemon-reload
         systemctl enable "\$SERVICE_NAME"
         systemctl restart "\$SERVICE_NAME"
@@ -222,6 +239,7 @@ class AgentBootstrapController extends Controller
         echo "╚══════════════════════════════════════════════════╝"
         echo ""
         echo "  L'agent va maintenant contacter le SOC et s'enrôler."
+        echo "  Surveille les logs : journalctl -u \$SERVICE_NAME -f"
         echo ""
         echo "  Statut : systemctl status \$SERVICE_NAME"
         echo "  Logs   : journalctl -u \$SERVICE_NAME -f"
@@ -379,6 +397,12 @@ class AgentBootstrapController extends Controller
         PLISTEOF
 
         chmod 644 "\$PLIST_PATH"
+
+        # ── 7. Nettoyage de l'état précédent (force ré-enrôlement) ────────────────
+        echo "[INFO] Nettoyage de l'état précédent..."
+        rm -f "\${INSTALL_DIR}/.ransomshield_host_agent_state.json"
+        echo "[OK] État précédent effacé"
+
         launchctl load -w "\$PLIST_PATH"
 
         echo ""
