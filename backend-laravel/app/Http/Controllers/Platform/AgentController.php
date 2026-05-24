@@ -202,14 +202,17 @@ class AgentController extends Controller
     /**
      * Retourne les informations d'installation de l'agent.
      *
-     * RANSHIELD_SOC_URL (dans .env) = URL du SOC accessible depuis les VMs.
-     * Différente de APP_URL (localhost dev) → l'opérateur la configure une fois.
+     * L'URL SOC est calculée automatiquement depuis le réseau de l'agent
+     * (managed_networks.metadata.ip) — le port provient de RANSHIELD_SOC_URL.
+     * Ainsi chaque agent obtient l'IP SOC joignable depuis SON réseau, sans
+     * configuration manuelle : VMs sur 10.20.0.x → 10.20.0.1, WiFi → 192.168.1.194,
+     * prod sur un seul réseau → l'IP de l'interface de ce réseau.
      */
     private function agentInstallInfo(Agent $agent): array
     {
         // URL externe du SOC, accessible depuis les machines cibles
-        $socUrl    = rtrim(config('app.soc_url', config('app.url')), '/');
-        $apiUrl    = $socUrl.'/api';
+        $socUrl = $this->resolveSocUrlForAgent($agent);
+        $apiUrl = $socUrl.'/api';
         $apiSecret = config('app.agent_api_secret', '');
 
         $enrollmentToken   = $agent->enrollment_token;
@@ -253,6 +256,11 @@ class AgentController extends Controller
         // Chemin réel vers les fichiers agent pour rsync
         $agentSourcePath = base_path('../agent-python/');
 
+        // Réseau associé (pour affichage dans la vue)
+        $network     = $agent->discoveredHost?->managedNetwork;
+        $networkName = $network?->name ?? null;
+        $networkCidr = $network?->cidr ?? null;
+
         return [
             'soc_url'              => $socUrl,
             'api_url'              => $apiUrl,
@@ -271,6 +279,94 @@ class AgentController extends Controller
             'short_code'           => $shortCode,
             'agent_source_path'    => $agentSourcePath,
             'service_name'         => 'ransomshield-agent',
+            'network_name'         => $networkName,
+            'network_cidr'         => $networkCidr,
         ];
+    }
+
+    /**
+     * Calcule l'URL SOC joignable depuis le réseau de l'agent.
+     *
+     * Stratégie :
+     *   1. Lit managed_networks.metadata.ip → IP du SOC sur l'interface de ce réseau
+     *   2. Conserve le port extrait de RANSHIELD_SOC_URL (configuré une fois dans .env)
+     *   3. Fallback sur RANSHIELD_SOC_URL complet si pas de réseau associé
+     *
+     * Exemples :
+     *   agent sur 10.20.0.x  → http://10.20.0.1:8081   (virbr-soc)
+     *   agent sur 192.168.1.x → http://192.168.1.194:8081 (wlp58s0)
+     *   prod réseau unique    → IP de l'interface unique du SOC
+     *   RANSHIELD_SOC_URL = https://soc.company.com → utilisé tel quel (pas d'IP)
+     */
+    private function resolveSocUrlForAgent(Agent $agent): string
+    {
+        $configuredUrl = rtrim(config('app.soc_url', config('app.url')), '/');
+
+        // Si la SOC_URL est configurée avec un nom de domaine (non IP),
+        // on la respecte telle quelle — l'admin a fait un choix explicite.
+        $configuredHost = parse_url($configuredUrl, PHP_URL_HOST) ?? '';
+        $isIpUrl        = filter_var($configuredHost, FILTER_VALIDATE_IP) !== false;
+
+        if (! $isIpUrl) {
+            return $configuredUrl;
+        }
+
+        // ── Étape 1 : réseau via la relation discovered_host → managedNetwork ─
+        $network = $agent->discoveredHost?->managedNetwork;
+
+        // ── Étape 2 : fallback — chercher le réseau par CIDR contenant l'IP ──
+        // Utile quand managed_network_id est NULL sur le discovered_host
+        // (agents enrôlés avant le scan ou sans découverte préalable).
+        if (! $network && $agent->ip_address) {
+            $agentIp   = $agent->ip_address;
+            $networks  = \App\Models\ManagedNetwork::all();
+            foreach ($networks as $candidate) {
+                if ($this->ipInCidr($agentIp, $candidate->cidr)) {
+                    $network = $candidate;
+                    break;
+                }
+            }
+        }
+
+        $socIpOnNetwork = data_get($network?->metadata, 'ip');
+
+        if (! $socIpOnNetwork) {
+            // Aucun réseau correspondant → SOC_URL configuré dans .env
+            return $configuredUrl;
+        }
+
+        // Conserver le schéma et le port de la SOC_URL configurée
+        $scheme  = parse_url($configuredUrl, PHP_URL_SCHEME) ?? 'http';
+        $port    = parse_url($configuredUrl, PHP_URL_PORT);
+
+        $baseUrl = $scheme.'://'.$socIpOnNetwork;
+        if ($port) {
+            $baseUrl .= ':'.$port;
+        }
+
+        return $baseUrl;
+    }
+
+    /**
+     * Vérifie si une IP est dans un CIDR donné (ex: 10.20.0.72 dans 10.20.0.0/24).
+     */
+    private function ipInCidr(string $ip, string $cidr): bool
+    {
+        if (! str_contains($cidr, '/')) {
+            return $ip === $cidr;
+        }
+
+        [$subnet, $bits] = explode('/', $cidr, 2);
+
+        $ipLong     = ip2long($ip);
+        $subnetLong = ip2long($subnet);
+
+        if ($ipLong === false || $subnetLong === false) {
+            return false;
+        }
+
+        $mask = $bits >= 32 ? -1 : ~((1 << (32 - (int) $bits)) - 1);
+
+        return ($ipLong & $mask) === ($subnetLong & $mask);
     }
 }

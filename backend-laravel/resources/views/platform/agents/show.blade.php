@@ -547,6 +547,33 @@
                     </div>
                 </div>
 
+                {{-- ── BANNER : URL SOC AUTO-DÉTECTÉE ─────────────────────────── --}}
+                <div style="
+                    display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+                    padding:10px 16px; margin-bottom:18px;
+                    border-radius:12px;
+                    background: color-mix(in srgb, #6366f1 8%, transparent);
+                    border: 1px solid color-mix(in srgb, #6366f1 25%, transparent);
+                    font-size:12px;
+                ">
+                    <i class="fa-solid fa-satellite-dish" style="color:#818cf8; font-size:14px; flex-shrink:0;"></i>
+                    <span style="color:var(--text-muted);">URL SOC auto-détectée pour ce réseau :</span>
+                    <code style="
+                        background:color-mix(in srgb,#6366f1 18%,transparent);
+                        color:#a5b4fc; padding:2px 8px; border-radius:6px; font-size:12px;
+                    ">{{ $installInfo['soc_url'] }}</code>
+                    @if($installInfo['network_name'])
+                        <span style="color:var(--text-muted);">—</span>
+                        <span style="color:var(--text-muted);">
+                            <i class="fa-solid fa-network-wired" style="margin-right:3px;"></i>
+                            {{ $installInfo['network_name'] }}
+                            @if($installInfo['network_cidr'])
+                                <span style="opacity:.6;">({{ $installInfo['network_cidr'] }})</span>
+                            @endif
+                        </span>
+                    @endif
+                </div>
+
                 {{-- ── COMMANDE COURTE KVM ─────────────────────────────────────── --}}
                 @if($installInfo['has_valid_token'] && $installInfo['short_enroll_url'])
                 <div style="border-radius:16px; border:2px solid color-mix(in srgb, #6366f1 50%, transparent);
