@@ -421,6 +421,10 @@ class AgentBootstrapController extends Controller
 
     // ─────────────────────────────────────────────────────────────────────────
     //  POWERSHELL — Windows
+    //  Fixes :
+    //    - Détection robuste Python : ignore le stub Windows Store
+    //    - Tâche planifiée (Task Scheduler) au lieu de sc.exe
+    //      → Python n'implémente pas le protocole SCM ; sc.exe causait l'erreur 1053
     // ─────────────────────────────────────────────────────────────────────────
     private function buildPowerShellScript(Agent $agent, string $socUrl, string $apiSecret): string
     {
@@ -433,133 +437,198 @@ class AgentBootstrapController extends Controller
         $now     = now()->toDateTimeString();
 
         return <<<PS1
-        # ─────────────────────────────────────────────────────────────────────────────
-        #  RansomShield Host Agent — Script d'installation Windows auto-généré
-        #  Généré le : {$now}
-        #  Agent     : {$name} ({$uuid})
-        #  Token     : usage unique, expire le {$expires}
-        #
-        #  Exécution : powershell -ExecutionPolicy Bypass -File ransomshield-install.ps1
-        # ─────────────────────────────────────────────────────────────────────────────
-        #Requires -RunAsAdministrator
+# =============================================================================
+#  RansomShield Host Agent — Script d'installation Windows
+#  Généré le : {$now}
+#  Agent     : {$name} ({$uuid})
+#  Token     : usage unique, expire le {$expires}
+#
+#  Exécution : powershell -ExecutionPolicy Bypass -File ransomshield-install.ps1
+# =============================================================================
+#Requires -RunAsAdministrator
 
-        \$ErrorActionPreference = "Stop"
+\$ErrorActionPreference = "Stop"
 
-        \$AGENT_UUID        = "{$uuid}"
-        \$AGENT_NAME        = "{$name}"
-        \$HOST_ROLE         = "{$role}"
-        \$API_URL           = "{$apiUrl}"
-        \$API_SECRET        = "{$apiSecret}"
-        \$ENROLLMENT_TOKEN  = "{$token}"
-        \$SOC_BASE          = "{$socUrl}"
-        \$INSTALL_DIR       = "C:\RansomShieldAgent"
-        \$SERVICE_NAME      = "RansomShieldAgent"
-        \$PYTHON_MIN_VER    = [version]"3.10"
+\$AGENT_UUID       = "{$uuid}"
+\$AGENT_NAME       = "{$name}"
+\$HOST_ROLE        = "{$role}"
+\$API_URL          = "{$apiUrl}"
+\$API_SECRET       = "{$apiSecret}"
+\$ENROLLMENT_TOKEN = "{$token}"
+\$SOC_BASE         = "{$socUrl}"
+\$INSTALL_DIR      = "C:\RansomShieldAgent"
+\$TASK_NAME        = "RansomShieldAgent"
+\$LOG_FILE         = "C:\RansomShieldAgent\agent.log"
 
-        Write-Host ""
-        Write-Host "╔══════════════════════════════════════════════════╗"
-        Write-Host "║    RansomShield — Installation de l'agent        ║"
-        Write-Host "╚══════════════════════════════════════════════════╝"
-        Write-Host ""
-        Write-Host ("  Machine cible : " + \$env:COMPUTERNAME + " (" + (Get-NetIPAddress -AddressFamily IPv4 | Where-Object { \$_.IPAddress -notlike "127.*" } | Select-Object -First 1 -ExpandProperty IPAddress) + ")")
-        Write-Host ("  Agent UUID    : " + \$AGENT_UUID)
-        Write-Host ("  SOC API       : " + \$API_URL)
-        Write-Host ""
+Write-Host ""
+Write-Host "==================================================="
+Write-Host "   RansomShield -- Installation de l'agent"
+Write-Host "==================================================="
+Write-Host ""
+\$localIp = (Get-NetIPAddress -AddressFamily IPv4 |
+    Where-Object { \$_.IPAddress -notlike "127.*" -and \$_.IPAddress -notlike "169.254.*" } |
+    Select-Object -First 1 -ExpandProperty IPAddress)
+Write-Host ("  Machine : " + \$env:COMPUTERNAME + " (" + \$localIp + ")")
+Write-Host ("  UUID    : " + \$AGENT_UUID)
+Write-Host ("  SOC API : " + \$API_URL)
+Write-Host ""
 
-        # ── 1. Python 3.10+ ───────────────────────────────────────────────────────
-        \$pythonCmd = Get-Command python -ErrorAction SilentlyContinue
-        if (-not \$pythonCmd) {
-            Write-Host "[INFO] Python introuvable. Téléchargement de Python 3.12..."
-            \$pyInstaller = "\$env:TEMP\python-installer.exe"
-            Invoke-WebRequest -Uri "https://www.python.org/ftp/python/3.12.0/python-3.12.0-amd64.exe" -OutFile \$pyInstaller
-            Start-Process -FilePath \$pyInstaller -ArgumentList "/quiet InstallAllUsers=1 PrependPath=1" -Wait
-            \$env:PATH += ";\$env:ProgramFiles\Python312"
-            \$pythonCmd = Get-Command python -ErrorAction SilentlyContinue
+# ── 1. Python 3.10+ — détection robuste, ignore le stub Windows Store ────────
+#
+#  Windows 10/11 installe un "app execution alias" python.exe qui ouvre le
+#  Microsoft Store au lieu de lancer Python. Get-Command le trouve mais il
+#  ne fonctionne pas. On le détecte en testant l'exécution réelle.
+#
+Write-Host "[1/6] Recherche de Python 3.10+..."
+
+\$PYTHON_EXE = \$null
+
+# Chercher parmi les candidats courants (py launcher, python3, python)
+foreach (\$candidate in @("py", "python3", "python")) {
+    \$cmd = Get-Command \$candidate -ErrorAction SilentlyContinue
+    if (-not \$cmd) { continue }
+    try {
+        \$out = & \$cmd -c "import sys; print(sys.version_info.major)" 2>&1
+        if (\$out -match '^\d+$' -and [int]\$out -ge 3) {
+            \$PYTHON_EXE = \$cmd.Source
+            break
         }
+    } catch {}
+}
 
-        if (-not \$pythonCmd) {
-            Write-Error "[ERREUR] Python n'a pas pu être installé. Installez Python 3.10+ manuellement depuis https://python.org"
-            exit 1
-        }
+if (-not \$PYTHON_EXE) {
+    Write-Host "[INFO] Python introuvable ou stub Store detecte. Telechargement de Python 3.12..."
+    \$pyInstaller = "\$env:TEMP\python-3.12-setup.exe"
+    Invoke-WebRequest -Uri "https://www.python.org/ftp/python/3.12.4/python-3.12.4-amd64.exe" `
+                      -OutFile \$pyInstaller -UseBasicParsing
+    Write-Host "[INFO] Installation en cours (silencieuse, ~30s)..."
+    Start-Process -FilePath \$pyInstaller `
+                  -ArgumentList "/quiet InstallAllUsers=1 PrependPath=1 Include_pip=1 Include_launcher=1" `
+                  -Wait
+    Remove-Item \$pyInstaller -ErrorAction SilentlyContinue
 
-        \$pyVer = & python -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}')"
-        Write-Host ("[OK] Python \$pyVer")
+    # Rafraichir PATH depuis le registre (la session en cours ne l'a pas encore)
+    \$machinePath = [System.Environment]::GetEnvironmentVariable("PATH", "Machine")
+    \$userPath    = [System.Environment]::GetEnvironmentVariable("PATH", "User")
+    \$env:PATH    = "\$machinePath;\$userPath"
 
-        # ── 2. Dossier d'installation ─────────────────────────────────────────────
-        Write-Host ("[INFO] Création du dossier \$INSTALL_DIR...")
-        if (-not (Test-Path \$INSTALL_DIR)) { New-Item -ItemType Directory -Path \$INSTALL_DIR | Out-Null }
-        Set-Location \$INSTALL_DIR
+    # Chercher à nouveau après installation
+    foreach (\$candidate in @("py", "python")) {
+        \$cmd = Get-Command \$candidate -ErrorAction SilentlyContinue
+        if (-not \$cmd) { continue }
+        try {
+            \$out = & \$cmd -c "import sys; print(sys.version_info.major)" 2>&1
+            if (\$out -match '^\d+$' -and [int]\$out -ge 3) {
+                \$PYTHON_EXE = \$cmd.Source
+                break
+            }
+        } catch {}
+    }
+}
 
-        # ── 3. Téléchargement des fichiers agent ──────────────────────────────────
-        Write-Host "[INFO] Téléchargement des fichiers depuis le SOC..."
+if (-not \$PYTHON_EXE) {
+    Write-Error "[ERREUR] Python 3.10+ non disponible. Installez-le manuellement depuis https://python.org puis relancez ce script."
+    exit 1
+}
 
-        Invoke-WebRequest -Uri "\$SOC_BASE/api/agent/download/ransomshield_host_agent.py" `
-                          -OutFile "ransomshield_host_agent.py" -UseBasicParsing
-        Invoke-WebRequest -Uri "\$SOC_BASE/api/agent/download/requirements.txt" `
-                          -OutFile "requirements.txt" -UseBasicParsing
+\$pyVer = & "\$PYTHON_EXE" -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}')"
+Write-Host ("[OK] Python \$pyVer -> \$PYTHON_EXE")
 
-        Write-Host "[OK] Fichiers téléchargés"
+# ── 2. Dossier d'installation ─────────────────────────────────────────────────
+Write-Host "[2/6] Preparation du dossier \$INSTALL_DIR..."
+if (-not (Test-Path \$INSTALL_DIR)) { New-Item -ItemType Directory -Path \$INSTALL_DIR | Out-Null }
+Set-Location \$INSTALL_DIR
 
-        # ── 4. Fichier .env ───────────────────────────────────────────────────────
-        Write-Host "[INFO] Écriture du fichier .env..."
-        \$envContent = @"
-        RANSHIELD_API_URL={$apiUrl}
-        # RANSHIELD_API_SECRET est vide intentionnellement.
-        # L'agent reçoit sa clé API unique lors du premier enrôlement.
-        RANSHIELD_API_SECRET=
-        RANSHIELD_AGENT_UUID={$uuid}
-        RANSHIELD_ENROLLMENT_TOKEN={$token}
-        RANSHIELD_AGENT_NAME={$name}
-        RANSHIELD_HOST_ROLE={$role}
-        RANSHIELD_MONITOR_MODE=host
-        RANSHIELD_HEARTBEAT_INTERVAL=30
-        RANSHIELD_SCAN_INTERVAL=5
-        RANSHIELD_ENABLE_FILE_MONITOR=true
-        RANSHIELD_ENABLE_PROCESS_MONITOR=true
-        "@
-        \$envContent | Set-Content -Path ".env" -Encoding UTF8
-        Write-Host "[OK] .env configuré"
+# ── 3. Téléchargement des fichiers agent ──────────────────────────────────────
+Write-Host "[3/6] Telechargement des fichiers depuis le SOC..."
+Invoke-WebRequest -Uri "\$SOC_BASE/api/agent/download/ransomshield_host_agent.py" `
+                  -OutFile "ransomshield_host_agent.py" -UseBasicParsing
+Invoke-WebRequest -Uri "\$SOC_BASE/api/agent/download/requirements.txt" `
+                  -OutFile "requirements.txt" -UseBasicParsing
+Write-Host "[OK] Fichiers telecharges"
 
-        # ── 5. Environnement virtuel et dépendances ───────────────────────────────
-        Write-Host "[INFO] Création du venv Python..."
-        if (-not (Test-Path "venv")) { python -m venv venv }
-        & "venv\Scripts\pip.exe" install --quiet --upgrade pip
-        & "venv\Scripts\pip.exe" install --quiet -r requirements.txt
-        Write-Host "[OK] Dépendances installées"
+# ── 4. Fichier .env ───────────────────────────────────────────────────────────
+Write-Host "[4/6] Ecriture du fichier .env..."
+\$envContent = @"
+RANSHIELD_API_URL={$apiUrl}
+RANSHIELD_API_SECRET=
+RANSHIELD_AGENT_UUID={$uuid}
+RANSHIELD_ENROLLMENT_TOKEN={$token}
+RANSHIELD_AGENT_NAME={$name}
+RANSHIELD_HOST_ROLE={$role}
+RANSHIELD_MONITOR_MODE=host
+RANSHIELD_HEARTBEAT_INTERVAL=30
+RANSHIELD_SCAN_INTERVAL=5
+RANSHIELD_ENABLE_FILE_MONITOR=true
+RANSHIELD_ENABLE_PROCESS_MONITOR=true
+"@
+\$envContent | Set-Content -Path ".env" -Encoding UTF8
+Write-Host "[OK] .env configure"
 
-        # ── 6. Service Windows (NSSM ou sc.exe) ──────────────────────────────────
-        Write-Host "[INFO] Installation du service Windows..."
+# ── 5. Environnement virtuel Python et dépendances ────────────────────────────
+Write-Host "[5/6] Creation du venv et installation des dependances..."
+if (-not (Test-Path "venv")) {
+    & "\$PYTHON_EXE" -m venv venv
+}
+& "venv\Scripts\python.exe" -m pip install --quiet --upgrade pip
+& "venv\Scripts\pip.exe" install --quiet -r requirements.txt
+Write-Host "[OK] Dependances installees"
 
-        \$pythonExe = Resolve-Path "venv\Scripts\python.exe"
-        \$agentPy   = Resolve-Path "ransomshield_host_agent.py"
+# ── 6. Tâche planifiée Windows (remplace sc.exe) ─────────────────────────────
+#
+#  Python n'implémente pas le protocole Windows SCM → sc.exe cause l'erreur 1053.
+#  Une tâche planifiée démarrée au boot sous SYSTEM est plus fiable et ne requiert
+#  pas NSSM ni de wrapper de service.
+#
+Write-Host "[6/6] Installation de la tache planifiee..."
 
-        # Arrête et supprime le service existant si présent
-        \$existingSvc = Get-Service -Name \$SERVICE_NAME -ErrorAction SilentlyContinue
-        if (\$existingSvc) {
-            Stop-Service -Name \$SERVICE_NAME -Force -ErrorAction SilentlyContinue
-            sc.exe delete \$SERVICE_NAME | Out-Null
-            Start-Sleep -Seconds 2
-        }
+\$pythonExe = (Resolve-Path "venv\Scripts\python.exe").Path
+\$agentPy   = (Resolve-Path "ransomshield_host_agent.py").Path
 
-        # Crée le service via sc.exe
-        \$binPath = "`"\$pythonExe`" `"\$agentPy`""
-        sc.exe create \$SERVICE_NAME binPath= \$binPath start= auto obj= LocalSystem DisplayName= "RansomShield Host Agent" | Out-Null
-        sc.exe description \$SERVICE_NAME "Agent de surveillance RansomShield — protection anti-ransomware en temps réel." | Out-Null
-        sc.exe failure \$SERVICE_NAME reset= 60 actions= restart/10000/restart/10000/restart/30000 | Out-Null
+# Supprimer tâche existante
+Unregister-ScheduledTask -TaskName \$TASK_NAME -Confirm:\$false -ErrorAction SilentlyContinue
 
-        # Démarre le service
-        Start-Service -Name \$SERVICE_NAME
+\$action    = New-ScheduledTaskAction `
+                -Execute "\$pythonExe" `
+                -Argument "\$agentPy" `
+                -WorkingDirectory \$INSTALL_DIR
 
-        Write-Host ""
-        Write-Host "╔══════════════════════════════════════════════════╗"
-        Write-Host "║          Installation terminée avec succès !     ║"
-        Write-Host "╚══════════════════════════════════════════════════╝"
-        Write-Host ""
-        Write-Host "  L'agent va maintenant contacter le SOC et s'enrôler."
-        Write-Host ""
-        Write-Host "  Statut : Get-Service -Name \$SERVICE_NAME"
-        Write-Host "  Logs   : Get-EventLog -LogName Application -Source \$SERVICE_NAME -Newest 50"
-        Write-Host ""
-        PS1;
+\$trigger   = New-ScheduledTaskTrigger -AtStartup
+
+\$settings  = New-ScheduledTaskSettingsSet `
+                -ExecutionTimeLimit ([TimeSpan]::Zero) `
+                -RestartCount 5 `
+                -RestartInterval (New-TimeSpan -Minutes 1) `
+                -StartWhenAvailable
+
+\$principal = New-ScheduledTaskPrincipal `
+                -UserID "SYSTEM" `
+                -LogonType ServiceAccount `
+                -RunLevel Highest
+
+Register-ScheduledTask `
+    -TaskName   \$TASK_NAME `
+    -Action     \$action `
+    -Trigger    \$trigger `
+    -Settings   \$settings `
+    -Principal  \$principal `
+    -Description "RansomShield Host Agent — surveillance anti-ransomware" | Out-Null
+
+# Démarrer immédiatement
+Start-ScheduledTask -TaskName \$TASK_NAME
+
+Write-Host ""
+Write-Host "==================================================="
+Write-Host "   Installation terminee avec succes !"
+Write-Host "==================================================="
+Write-Host ""
+Write-Host "  L'agent demarre et va s'enroler dans les 30 secondes."
+Write-Host ""
+Write-Host "  Statut   : Get-ScheduledTask -TaskName \$TASK_NAME"
+Write-Host "  Logs     : Get-Content C:\RansomShieldAgent\agent.log -Wait"
+Write-Host "  Arreter  : Stop-ScheduledTask -TaskName \$TASK_NAME"
+Write-Host "  Supprimer: Unregister-ScheduledTask -TaskName \$TASK_NAME -Confirm:\$false"
+Write-Host ""
+PS1;
     }
 }
