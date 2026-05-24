@@ -13,11 +13,15 @@ class DetectionRuleController extends Controller
 {
     public function index(): View
     {
+        $all = DetectionRule::query()
+            ->orderByDesc('score_weight')
+            ->orderBy('code')
+            ->get();
+
         return view('platform.detection-rules.index', [
-            'rules' => DetectionRule::query()
-                ->orderByDesc('score_weight')
-                ->orderBy('code')
-                ->paginate(25),
+            'active'   => $all->where('is_enabled', true)->values(),
+            'inactive' => $all->where('is_enabled', false)->values(),
+            'maxScore' => max(1, (int) $all->max('score_weight')),
         ]);
     }
 
