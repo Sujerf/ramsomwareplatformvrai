@@ -13,7 +13,13 @@ return new class extends Migration
          * Le moteur dynamique utilise des valeurs comme :
          * file_moved, file_created, critical, waiting_approval, approval_required, etc.
          * On transforme donc les colonnes sensibles en VARCHAR.
+         *
+         * ALTER TABLE ... MODIFY est spécifique à MySQL.
+         * Sur SQLite (tests), les colonnes sont déjà TEXT/VARCHAR — migration sans effet.
          */
+        if (DB::getDriverName() !== 'mysql') {
+            return;
+        }
 
         if (Schema::hasTable('events')) {
             if (Schema::hasColumn('events', 'event_type')) {

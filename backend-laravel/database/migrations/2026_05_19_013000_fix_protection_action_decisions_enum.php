@@ -12,6 +12,11 @@ return new class extends Migration
             return;
         }
 
+        // ALTER TABLE ... MODIFY est spécifique à MySQL — sans effet sur SQLite (tests).
+        if (DB::getDriverName() !== 'mysql') {
+            return;
+        }
+
         /*
          * Certaines colonnes peuvent avoir été créées en ENUM.
          * On les transforme en VARCHAR pour accepter toutes les décisions SOC :

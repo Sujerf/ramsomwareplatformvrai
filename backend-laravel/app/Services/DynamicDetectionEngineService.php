@@ -262,12 +262,7 @@ class DynamicDetectionEngineService
 
     private function settingValue(string $key, string $default): string
     {
-        return (string) (
-            SystemSetting::query()
-                ->where('key', $key)
-                ->value('value')
-            ?? $default
-        );
+        return (string) (SystemSetting::getCached($key) ?? $default);
     }
 
     private function levelIsAtLeast(string $actual, string $minimum): bool

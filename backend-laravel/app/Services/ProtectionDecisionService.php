@@ -215,7 +215,7 @@ class ProtectionDecisionService
 
     private function settingBool(string $key, bool $default = false): bool
     {
-        $value = SystemSetting::where('key', $key)->value('value') ?? ($default ? '1' : '0');
+        $value = SystemSetting::getCached($key) ?? ($default ? '1' : '0');
 
         return in_array((string) $value, ['1', 'true', 'yes', 'on'], true);
     }

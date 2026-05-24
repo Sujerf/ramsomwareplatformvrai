@@ -24,7 +24,8 @@ return new class extends Migration
                 }
             });
 
-            if (Schema::hasColumn('managed_networks', 'status')) {
+            // ALTER TABLE ... MODIFY est spécifique à MySQL — ignoré sur SQLite (tests).
+            if (DB::getDriverName() === 'mysql' && Schema::hasColumn('managed_networks', 'status')) {
                 DB::statement("ALTER TABLE managed_networks MODIFY status VARCHAR(80) NOT NULL DEFAULT 'detected'");
             }
         }
@@ -52,16 +53,19 @@ return new class extends Migration
                 }
             });
 
-            if (Schema::hasColumn('discovered_hosts', 'discovery_status')) {
-                DB::statement("ALTER TABLE discovered_hosts MODIFY discovery_status VARCHAR(80) NOT NULL DEFAULT 'detected'");
-            }
+            // ALTER TABLE ... MODIFY est spécifique à MySQL — ignoré sur SQLite (tests).
+            if (DB::getDriverName() === 'mysql') {
+                if (Schema::hasColumn('discovered_hosts', 'discovery_status')) {
+                    DB::statement("ALTER TABLE discovered_hosts MODIFY discovery_status VARCHAR(80) NOT NULL DEFAULT 'detected'");
+                }
 
-            if (Schema::hasColumn('discovered_hosts', 'host_role')) {
-                DB::statement("ALTER TABLE discovered_hosts MODIFY host_role VARCHAR(80) NULL DEFAULT 'client'");
-            }
+                if (Schema::hasColumn('discovered_hosts', 'host_role')) {
+                    DB::statement("ALTER TABLE discovered_hosts MODIFY host_role VARCHAR(80) NULL DEFAULT 'client'");
+                }
 
-            if (Schema::hasColumn('discovered_hosts', 'enrollment_status')) {
-                DB::statement("ALTER TABLE discovered_hosts MODIFY enrollment_status VARCHAR(80) NOT NULL DEFAULT 'not_enrolled'");
+                if (Schema::hasColumn('discovered_hosts', 'enrollment_status')) {
+                    DB::statement("ALTER TABLE discovered_hosts MODIFY enrollment_status VARCHAR(80) NOT NULL DEFAULT 'not_enrolled'");
+                }
             }
         }
     }

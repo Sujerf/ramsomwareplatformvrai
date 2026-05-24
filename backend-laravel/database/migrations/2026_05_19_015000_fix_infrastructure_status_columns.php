@@ -8,6 +8,11 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // ALTER TABLE ... MODIFY est spécifique à MySQL — sans effet sur SQLite (tests).
+        if (DB::getDriverName() !== 'mysql') {
+            return;
+        }
+
         if (Schema::hasTable('managed_networks')) {
             if (Schema::hasColumn('managed_networks', 'status')) {
                 DB::statement("ALTER TABLE managed_networks MODIFY status VARCHAR(80) NOT NULL DEFAULT 'detected'");

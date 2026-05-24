@@ -28,11 +28,15 @@ return new class extends Migration
          * On les transforme en VARCHAR pour accepter :
          * scope = agent, path, global
          * execution_mode = automatic, approval_required, manual
+         *
+         * ALTER TABLE ... MODIFY est spécifique à MySQL — ignoré sur SQLite (tests).
          */
-        DB::statement("ALTER TABLE protection_policies MODIFY scope VARCHAR(80) NOT NULL DEFAULT 'agent'");
-        DB::statement("ALTER TABLE protection_policies MODIFY risk_level VARCHAR(80) NOT NULL DEFAULT 'suspect'");
-        DB::statement("ALTER TABLE protection_policies MODIFY execution_mode VARCHAR(80) NOT NULL DEFAULT 'manual'");
-        DB::statement("ALTER TABLE protection_policies MODIFY action_type VARCHAR(120) NOT NULL DEFAULT 'notify'");
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE protection_policies MODIFY scope VARCHAR(80) NOT NULL DEFAULT 'agent'");
+            DB::statement("ALTER TABLE protection_policies MODIFY risk_level VARCHAR(80) NOT NULL DEFAULT 'suspect'");
+            DB::statement("ALTER TABLE protection_policies MODIFY execution_mode VARCHAR(80) NOT NULL DEFAULT 'manual'");
+            DB::statement("ALTER TABLE protection_policies MODIFY action_type VARCHAR(120) NOT NULL DEFAULT 'notify'");
+        }
     }
 
     public function down(): void

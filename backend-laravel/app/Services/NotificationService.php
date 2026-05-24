@@ -137,7 +137,7 @@ class NotificationService
 
     private function settingValue(string $key, mixed $default = null): mixed
     {
-        return SystemSetting::where('key', $key)->value('value') ?? $default;
+        return SystemSetting::getCached($key) ?? $default;
     }
 
     private function settingBool(string $key, bool $default = false): bool

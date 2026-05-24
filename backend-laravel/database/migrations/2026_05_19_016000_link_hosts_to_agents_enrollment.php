@@ -27,12 +27,15 @@ return new class extends Migration
             }
         });
 
-        if (Schema::hasColumn('agents', 'status')) {
-            DB::statement("ALTER TABLE agents MODIFY status VARCHAR(80) NOT NULL DEFAULT 'active'");
-        }
+        // ALTER TABLE ... MODIFY est spécifique à MySQL — ignoré sur SQLite (tests).
+        if (DB::getDriverName() === 'mysql') {
+            if (Schema::hasColumn('agents', 'status')) {
+                DB::statement("ALTER TABLE agents MODIFY status VARCHAR(80) NOT NULL DEFAULT 'active'");
+            }
 
-        if (Schema::hasColumn('agents', 'enrollment_status')) {
-            DB::statement("ALTER TABLE agents MODIFY enrollment_status VARCHAR(80) NOT NULL DEFAULT 'enrolled'");
+            if (Schema::hasColumn('agents', 'enrollment_status')) {
+                DB::statement("ALTER TABLE agents MODIFY enrollment_status VARCHAR(80) NOT NULL DEFAULT 'enrolled'");
+            }
         }
 
         Schema::table('discovered_hosts', function (Blueprint $table) {
@@ -49,7 +52,7 @@ return new class extends Migration
             }
         });
 
-        if (Schema::hasColumn('discovered_hosts', 'enrollment_status')) {
+        if (DB::getDriverName() === 'mysql' && Schema::hasColumn('discovered_hosts', 'enrollment_status')) {
             DB::statement("ALTER TABLE discovered_hosts MODIFY enrollment_status VARCHAR(80) NOT NULL DEFAULT 'not_enrolled'");
         }
     }
