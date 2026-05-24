@@ -12,9 +12,10 @@ class EventController extends Controller
 {
     public function index(Request $request): View
     {
-        $risk = $request->query('risk', 'all');
-        $type = $request->query('type');
-        $agentId = $request->query('agent_id');
+        $risk       = $request->query('risk', 'all');
+        $type       = $request->query('type');
+        $agentId    = $request->query('agent_id');
+        $simulation = $request->query('simulation');   // '1' = simu seulement, '0' = réels seulement
 
         $query = Event::query()
             ->with(['agent', 'alert', 'incident'])
@@ -33,6 +34,12 @@ class EventController extends Controller
             $query->where('agent_id', $agentId);
         }
 
+        if ($simulation === '1') {
+            $query->where('is_simulation', true);
+        } elseif ($simulation === '0') {
+            $query->where('is_simulation', false);
+        }
+
         return view('platform.events.index', [
             'events' => $query->paginate(30)->withQueryString(),
             'agents' => Agent::query()->orderBy('agent_name')->get(),
@@ -41,16 +48,18 @@ class EventController extends Controller
                 ->distinct()
                 ->orderBy('event_type')
                 ->pluck('event_type'),
-            'activeRisk' => $risk,
-            'activeType' => $type,
-            'activeAgentId' => $agentId,
+            'activeRisk'     => $risk,
+            'activeType'     => $type,
+            'activeAgentId'  => $agentId,
+            'activeSimulation' => $simulation,
             'stats' => [
-                'total' => Event::count(),
-                'normal' => Event::where('risk_level', 'normal')->count(),
-                'suspect' => Event::where('risk_level', 'suspect')->count(),
-                'high' => Event::where('risk_level', 'high')->count(),
-                'critical' => Event::where('risk_level', 'critical')->count(),
+                'total'      => Event::count(),
+                'normal'     => Event::where('risk_level', 'normal')->count(),
+                'suspect'    => Event::where('risk_level', 'suspect')->count(),
+                'high'       => Event::where('risk_level', 'high')->count(),
+                'critical'   => Event::where('risk_level', 'critical')->count(),
                 'simulation' => Event::where('is_simulation', true)->count(),
+                'real'       => Event::where('is_simulation', false)->count(),
             ],
         ]);
     }

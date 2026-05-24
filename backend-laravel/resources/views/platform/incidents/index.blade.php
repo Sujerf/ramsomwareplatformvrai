@@ -72,7 +72,7 @@
         ];
 
         $riskFilters = [
-            null       => ['label' => 'Tous risques', 'icon' => 'fa-layer-group'],
+            ''         => ['label' => 'Tous risques', 'icon' => 'fa-layer-group'],
             'critical' => ['label' => 'Critical',     'icon' => 'fa-circle-exclamation'],
             'high'     => ['label' => 'High',         'icon' => 'fa-triangle-exclamation'],
             'suspect'  => ['label' => 'Suspect',      'icon' => 'fa-eye'],
@@ -473,7 +473,13 @@
             {{-- Filtres statut --}}
             @foreach($statusFilters as $key => $filter)
                 @php $cnt = $filterCounts['status'][$key] ?? 0; @endphp
-                <a href="{{ route('platform.incidents.index', array_filter(['status' => $key, 'risk' => $activeRisk])) }}"
+                @php
+                    $href = route('platform.incidents.index', array_filter(
+                        ['status' => $key, 'risk' => $activeRisk],
+                        fn($v) => $v !== null && $v !== ''
+                    ));
+                @endphp
+                <a href="{{ $href }}"
                    class="filter-tab {{ $activeStatus === $key ? 'active' : '' }}">
                     <i class="fa-solid {{ $filter['icon'] }}"></i>
                     {{ $filter['label'] }}
@@ -488,7 +494,13 @@
             {{-- Filtres risque --}}
             @foreach($riskFilters as $riskKey => $filter)
                 @php $cnt = $filterCounts['risk'][$riskKey] ?? 0; @endphp
-                <a href="{{ route('platform.incidents.index', array_filter(['status' => $activeStatus, 'risk' => $riskKey])) }}"
+                @php
+                    $riskHref = route('platform.incidents.index', array_filter(
+                        ['status' => $activeStatus, 'risk' => $riskKey],
+                        fn($v) => $v !== null && $v !== ''
+                    ));
+                @endphp
+                <a href="{{ $riskHref }}"
                    class="filter-tab {{ $activeRisk === $riskKey ? 'active' : '' }} {{ $riskKey ? 'risk-'.$riskKey : '' }}">
                     <i class="fa-solid {{ $filter['icon'] }}"></i>
                     {{ $filter['label'] }}

@@ -136,6 +136,53 @@ class AgentController extends Controller
     }
 
     /**
+     * Désinscrire un agent enrôlé : efface la clé API et le token, remet en pending.
+     * L'agent conserve son historique (events, alertes, incidents).
+     * Utile pour forcer un re-enrôlement sans supprimer les données.
+     */
+    public function unenroll(Agent $agent): RedirectResponse
+    {
+        \Illuminate\Support\Facades\DB::table('agents')
+            ->where('id', $agent->id)
+            ->update([
+                'enrollment_status'           => 'pending',
+                'status'                      => 'pending_enrollment',
+                'agent_api_key'               => null,
+                'enrollment_token'            => null,
+                'enrollment_token_expires_at' => null,
+                'enrolled_at'                 => null,
+                'updated_at'                  => now(),
+            ]);
+
+        return redirect()
+            ->route('platform.agents.show', $agent)
+            ->with('success', "Agent « {$agent->agent_name} » désinscrit. Générez un nouveau token pour le ré-enrôler.");
+    }
+
+    /**
+     * Supprimer définitivement un agent et toutes ses données liées.
+     * Action irréversible — demande confirmation côté vue.
+     */
+    public function destroy(Agent $agent): RedirectResponse
+    {
+        $name = $agent->agent_name;
+
+        // Suppression en cascade via la base (FK ou manual)
+        \Illuminate\Support\Facades\DB::transaction(function () use ($agent) {
+            $agent->protectionActions()->delete();
+            $agent->alerts()->delete();
+            $agent->incidents()->delete();
+            $agent->events()->delete();
+            $agent->riskSnapshots()->delete();
+            $agent->delete();
+        });
+
+        return redirect()
+            ->route('platform.agents.index')
+            ->with('success', "Agent « {$name} » supprimé définitivement avec toutes ses données.");
+    }
+
+    /**
      * Génère un short code unique sur 8 chars alphanumériques pour un agent.
      * Essaie d'abord les 8 premiers chars de l'UUID (sans tirets), puis fallback random.
      */

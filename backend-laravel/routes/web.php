@@ -63,6 +63,8 @@ Route::prefix('console')->name('platform.')->middleware('auth')->group(function 
     Route::get('/agents/{agent}', [AgentController::class, 'show'])->name('agents.show');
     Route::post('/agents/{agent}/command', [AgentController::class, 'sendCommand'])->name('agents.send-command');
     Route::post('/agents/{agent}/regenerate-token', [AgentController::class, 'regenerateToken'])->name('agents.regenerate-token');
+    Route::patch('/agents/{agent}/unenroll', [AgentController::class, 'unenroll'])->name('agents.unenroll');
+    Route::delete('/agents/{agent}', [AgentController::class, 'destroy'])->name('agents.destroy');
 
     Route::get('/alerts', [AlertController::class, 'index'])->name('alerts.index');
     Route::get('/alerts/{alert}', [AlertController::class, 'show'])->name('alerts.show');

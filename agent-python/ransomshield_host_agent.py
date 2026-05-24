@@ -76,7 +76,20 @@ _DEFAULT_EXCLUDED_PATHS = (
     r"node_modules,vendor,.git,venv,__pycache__,"
     # Caches et temporaires Windows
     r"AppData\Local\Temp,AppData\Local\Microsoft\Windows\Temporary Internet Files,"
-    r"\Temp,AppData\Roaming\npm-cache"
+    r"\Temp,AppData\Roaming\npm-cache,"
+    # Navigateurs — génèrent de l'I/O intense et légitime en permanence
+    r"AppData\Local\Google\Chrome,AppData\Local\Chromium,"
+    r"AppData\Roaming\Mozilla\Firefox,AppData\Local\Mozilla,"
+    r"AppData\Roaming\Opera Software,AppData\Local\Opera Software,"
+    r"AppData\Local\Microsoft\Edge,AppData\Local\BraveSoftware,"
+    # Applications Store Windows (Teams, WhatsApp, Outlook...) — I/O système
+    r"AppData\Local\Packages,"
+    # Mise à jour Windows et Microsoft Office
+    r"AppData\Local\Microsoft\Office,AppData\Roaming\Microsoft\Office,"
+    r"C:\ProgramData\Microsoft\Search,C:\Windows\SoftwareDistribution,"
+    # Antivirus / EDR tiers — génèrent des I/O de scan
+    r"C:\ProgramData\Malwarebytes,C:\ProgramData\Avast,C:\ProgramData\ESET,"
+    r"C:\ProgramData\Kaspersky,C:\ProgramData\Symantec,C:\ProgramData\McAfee"
     if IS_WINDOWS
     else
     # Système macOS toujours exclus
@@ -134,14 +147,24 @@ RANSOM_NOTE_KEYWORDS = {
 }
 
 SUSPICIOUS_PROCESS_KEYWORDS = {
+    # Outils de chiffrement / exfiltration réels — rare sur un poste utilisateur
     "openssl",
     "gpg",
     "cryptsetup",
     "encfs",
     "rclone",
-    "7z",
-    "zip",
-    "tar",
+    # Outils d'exfiltration réseau connus des ransomwares
+    "psexec",
+    "cobaltstrike",
+    "meterpreter",
+    "mimikatz",
+    "wce.exe",
+    # Chiffrement connu associé à des ransomwares
+    "veracrypt",
+    # Suppression de shadow copies (technique de destruction des sauvegardes)
+    "vssadmin",
+    # NOTE : zip, 7z, tar sont des outils légitimes — retirés pour éviter
+    # les faux positifs sur les sauvegardes et compressions normales.
 }
 
 

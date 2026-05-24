@@ -48,7 +48,7 @@ class IncidentController extends Controller
         return view('platform.incidents.index', [
             'incidents'    => $query->paginate(25)->withQueryString(),
             'activeStatus' => $status,
-            'activeRisk'   => $risk,
+            'activeRisk'   => $risk ?? '',   // '' = tous risques (jamais null côté vue)
             'stats'        => [
                 'active'         => $cntActive,
                 'resolved'       => $cntResolved,
@@ -65,7 +65,7 @@ class IncidentController extends Controller
                     'all'            => $cntTotal,
                 ],
                 'risk' => [
-                    null       => $cntActive,
+                    ''         => $cntActive,           // '' = tous risques actifs
                     'critical' => $riskCounts['critical'] ?? 0,
                     'high'     => $riskCounts['high']     ?? 0,
                     'suspect'  => $riskCounts['suspect']  ?? 0,

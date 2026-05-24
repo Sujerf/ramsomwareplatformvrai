@@ -48,7 +48,7 @@ class AlertController extends Controller
         return view('platform.alerts.index', [
             'alerts'       => $query->paginate(25)->withQueryString(),
             'activeStatus' => $status,
-            'activeRisk'   => $risk,
+            'activeRisk'   => $risk ?? '',   // '' = tous risques (jamais null côté vue)
             'stats'        => [
                 'active'        => $cntActive,
                 'resolved'      => $cntResolved,

@@ -269,6 +269,15 @@
                     </select>
                 </div>
 
+                <div class="ev-field">
+                    <label>Source</label>
+                    <select name="simulation" class="form-control">
+                        <option value=""  @selected(($activeSimulation ?? '') === '')>Tous (réels + simu)</option>
+                        <option value="0" @selected(($activeSimulation ?? '') === '0')>Réels uniquement</option>
+                        <option value="1" @selected(($activeSimulation ?? '') === '1')>Simulations uniquement</option>
+                    </select>
+                </div>
+
                 <button class="action-btn primary" type="submit">
                     <i class="fa-solid fa-filter"></i> Filtrer
                 </button>

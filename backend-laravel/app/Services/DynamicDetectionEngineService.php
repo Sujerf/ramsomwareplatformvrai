@@ -122,7 +122,8 @@ class DynamicDetectionEngineService
                 'file_moved', 'file_renamed', 'moved', 'renamed',
                 'file_encrypted_extension',  // Bug J — rename vers ext sensible
                 'mass_rename_detected',      // Bug G — burst ≥10 renames/30s
-            ], true),
+            ], true)
+                && ! $this->isBrowserOrSystemPath($path),
             'rule_ransom_note'        => $this->looksLikeRansomNote($path),
 
             // Bug N fix — 'file_created' et 'created' retirés.
@@ -130,9 +131,10 @@ class DynamicDetectionEngineService
             // → chaque création de .py/.json/.txt générait une fausse alerte.
             // La création de fichiers chiffrés est couverte par analyzeSensitiveExtension()
             // (extension scoring) et par rule_mass_rename (file_encrypted_extension).
-            // On conserve uniquement file_modified / modified : la modification rapide
-            // de fichiers existants est le signal chiffrement le plus fiable.
-            'rule_fast_write_activity'=> in_array($eventType, ['file_modified', 'modified'], true),
+            // On conserve uniquement file_modified / modified, mais en excluant les
+            // chemins de navigateurs et caches système (I/O légitime à haute fréquence).
+            'rule_fast_write_activity'=> in_array($eventType, ['file_modified', 'modified'], true)
+                && ! $this->isBrowserOrSystemPath($path),
             'rule_simulation_marker'  => (bool) ($payload['is_simulation'] ?? false),
             // Processus suspects (openssl, gpg, cryptsetup, rclone…) — scorés via
             // la règle rule_suspicious_process en base, capturés par genericRuleMatch.
@@ -180,6 +182,62 @@ class DynamicDetectionEngineService
             ->where('extension', ltrim(strtolower($extension), '.'))
             ->where('is_enabled', true)
             ->exists();
+    }
+
+    /**
+     * Retourne true si le chemin appartient à un navigateur, un cache système
+     * ou une application connue générant de l'I/O légitime intense.
+     *
+     * Ces chemins ne doivent PAS déclencher rule_fast_write_activity car ils
+     * produisent des centaines de file_modified légitimes par heure.
+     */
+    private function isBrowserOrSystemPath(string $path): bool
+    {
+        if (! $path) {
+            return false;
+        }
+
+        $normalised = str_replace('\\', '/', strtolower($path));
+
+        $browserPrefixes = [
+            // Navigateurs Windows (AppData)
+            'appdata/local/google/chrome',
+            'appdata/local/chromium',
+            'appdata/roaming/mozilla/firefox',
+            'appdata/local/mozilla',
+            'appdata/roaming/opera software',
+            'appdata/local/opera software',
+            'appdata/local/microsoft/edge',
+            'appdata/local/bravesoftware',
+            // Applications Windows Store (WhatsApp, Teams, Outlook…)
+            'appdata/local/packages',
+            // Caches Office / OneDrive
+            'appdata/local/microsoft/office',
+            'appdata/roaming/microsoft/office',
+            // Windows Update
+            'c:/windows/softwaredistribution',
+            // Navigateurs macOS
+            'library/caches',
+            'library/application support/google/chrome',
+            'library/application support/firefox',
+            'library/application support/opera',
+            'library/application support/microsoft edge',
+            // Linux – caches navigateurs
+            '.config/google-chrome',
+            '.config/chromium',
+            '.mozilla/firefox',
+            '.config/opera',
+            // Temporaires génériques
+            'appdata/local/temp',
+        ];
+
+        foreach ($browserPrefixes as $prefix) {
+            if (str_contains($normalised, $prefix)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function looksLikeRansomNote(string $path): bool

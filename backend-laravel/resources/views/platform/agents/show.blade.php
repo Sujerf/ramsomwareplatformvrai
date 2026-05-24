@@ -1290,6 +1290,67 @@
             </div>
         </section>
 
+        {{-- ── ZONE DE DANGER ───────────────────────────────────────────── --}}
+        <section class="section-gap" style="
+            border: 1.5px solid rgba(239, 68, 68, .25);
+            border-radius: 16px;
+            padding: 20px 24px;
+            background: rgba(239, 68, 68, .04);
+        ">
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px;">
+                <i class="fa-solid fa-triangle-exclamation" style="color:#ef4444; font-size:1.1rem;"></i>
+                <span style="font-size:.85rem; font-weight:700; color:#ef4444; text-transform:uppercase; letter-spacing:.07em;">Zone de danger</span>
+            </div>
+
+            <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-start;">
+
+                {{-- Désinscrire (soft) --}}
+                @if($agent->enrollment_status === 'enrolled')
+                <div style="flex:1; min-width:240px;">
+                    <p style="font-size:.8rem; color:var(--text-muted); margin:0 0 10px;">
+                        <strong style="color:var(--text-primary);">Désinscrire l'agent</strong><br>
+                        Efface la clé API et le token. L'agent repasse en <em>pending</em>. L'historique est conservé. Utile pour forcer un re-enrôlement.
+                    </p>
+                    <form method="POST" action="{{ route('platform.agents.unenroll', $agent) }}"
+                          onsubmit="return confirm('Désinscrire « {{ $agent->agent_name }} » ? La clé API sera révoquée, l\'agent devra être ré-enrôlé.')">
+                        @csrf
+                        @method('PATCH')
+                        <button type="submit" style="
+                            padding:8px 16px; border-radius:8px; cursor:pointer;
+                            background:transparent; border:1.5px solid #f97316;
+                            color:#f97316; font-size:.8rem; font-weight:700;
+                            display:inline-flex; align-items:center; gap:6px;
+                        ">
+                            <i class="fa-solid fa-plug-circle-minus"></i> Désinscrire
+                        </button>
+                    </form>
+                </div>
+                @endif
+
+                {{-- Supprimer définitivement --}}
+                <div style="flex:1; min-width:240px;">
+                    <p style="font-size:.8rem; color:var(--text-muted); margin:0 0 10px;">
+                        <strong style="color:#ef4444;">Supprimer définitivement</strong><br>
+                        Supprime l'agent et <strong>toutes ses données</strong> (events, alertes, incidents, actions). Action irréversible.
+                    </p>
+                    <form method="POST" action="{{ route('platform.agents.destroy', $agent) }}"
+                          onsubmit="return confirm('⚠ Supprimer DÉFINITIVEMENT « {{ $agent->agent_name }} » et toutes ses données ? Cette action est irréversible.')">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" style="
+                            padding:8px 16px; border-radius:8px; cursor:pointer;
+                            background:#ef4444; border:none;
+                            color:#fff; font-size:.8rem; font-weight:700;
+                            display:inline-flex; align-items:center; gap:6px;
+                        ">
+                            <i class="fa-solid fa-trash"></i> Supprimer l'agent
+                        </button>
+                    </form>
+                </div>
+
+            </div>
+        </section>
+
     </div>
 
     <script>
