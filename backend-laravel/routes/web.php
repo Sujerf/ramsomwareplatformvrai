@@ -85,7 +85,7 @@ Route::prefix('console')->name('platform.')->middleware('auth')->group(function 
     Route::get('/protection-actions/{protectionAction}/status', [ProtectionActionController::class, 'status'])->name('protection-actions.status');
     Route::patch('/protection-actions/{protectionAction}/approve', [ProtectionActionController::class, 'approve'])->name('protection-actions.approve');
     Route::patch('/protection-actions/{protectionAction}/reject', [ProtectionActionController::class, 'reject'])->name('protection-actions.reject');
-    Route::patch('/protection-actions/{protectionAction}/execute', [ProtectionActionController::class, 'executeManually'])->name('protection-actions.execute');
+    Route::patch('/protection-actions/{protectionAction}/execute', [ProtectionActionController::class, 'execute'])->name('protection-actions.execute');
     Route::patch('/protection-actions/{protectionAction}/rollback', [ProtectionActionController::class, 'rollback'])->name('protection-actions.rollback');
     Route::delete('/protection-actions/{protectionAction}', [ProtectionActionController::class, 'destroy'])->name('protection-actions.destroy');
 

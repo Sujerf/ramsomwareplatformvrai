@@ -159,11 +159,6 @@ class ProtectionActionController extends Controller
         return back()->with('success', 'Action exécutée et statut synchronisé.');
     }
 
-    public function executeManually(Request $request, ProtectionAction $protectionAction, SocStatusSynchronizerService $sync): RedirectResponse
-    {
-        return $this->execute($request, $protectionAction, $sync);
-    }
-
     public function rollback(Request $request, ProtectionAction $protectionAction, SocStatusSynchronizerService $sync): RedirectResponse
     {
         DB::transaction(function () use ($protectionAction) {
