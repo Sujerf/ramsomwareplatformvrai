@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Agent;
 use App\Models\Alert;
 use App\Models\Incident;
 use App\Models\ProtectionAction;
@@ -9,6 +10,10 @@ use Illuminate\Support\Facades\DB;
 
 class SocStatusSynchronizerService
 {
+    public function __construct(
+        private readonly AgentRiskService $agentRiskService,
+    ) {}
+
     public function syncAfterAction(ProtectionAction $action): void
     {
         $action->refresh();
@@ -51,6 +56,16 @@ class SocStatusSynchronizerService
                     'updated_at' => now(),
                 ]);
         });
+
+        // Bug D — recalcul du risque après clôture de l'incident.
+        // Fait hors transaction pour éviter un deadlock sur la table agents
+        // (l'incident est déjà committed en base avant ce SELECT).
+        if ($incident->agent_id) {
+            $agent = Agent::find($incident->agent_id);
+            if ($agent) {
+                $this->agentRiskService->recalculateAgentRisk($agent);
+            }
+        }
     }
 
     public function falsePositiveIncident(Incident $incident): void
@@ -79,6 +94,14 @@ class SocStatusSynchronizerService
                     'updated_at' => now(),
                 ]);
         });
+
+        // Bug D — idem pour les faux positifs.
+        if ($incident->agent_id) {
+            $agent = Agent::find($incident->agent_id);
+            if ($agent) {
+                $this->agentRiskService->recalculateAgentRisk($agent);
+            }
+        }
     }
 
     public function reopenIncident(Incident $incident): void

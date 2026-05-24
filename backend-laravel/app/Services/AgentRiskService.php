@@ -177,6 +177,56 @@ class AgentRiskService
         ]);
     }
 
+    /**
+     * Bug D — Décroissance du risque après résolution ou faux positif.
+     *
+     * Problème : updateAgentRisk() ne fait que monter le risque (max()).
+     * Quand tous les incidents d'un agent sont résolus, son risk_level reste
+     * bloqué à 'critical' indéfiniment — le tableau de bord affiche des agents
+     * compromis alors que les incidents sont clos depuis longtemps.
+     *
+     * Correction : recalcule le risque depuis les incidents encore ouverts.
+     *   - Aucun incident ouvert            → normal / 0
+     *   - Incidents ouverts mais pas crit. → plus haut risk_level parmi eux
+     *   - status 'compromised' remis à 'active' si le risque redescend
+     *
+     * Appelé par SocStatusSynchronizerService après resolveIncident()
+     * et falsePositiveIncident().
+     */
+    public function recalculateAgentRisk(Agent $agent): void
+    {
+        $openIncidents = Incident::query()
+            ->where('agent_id', $agent->id)
+            ->whereIn('status', ['open', 'investigating', 'under_review', 'reopened'])
+            ->get(['risk_level', 'risk_score']);
+
+        if ($openIncidents->isEmpty()) {
+            $agent->update([
+                'risk_score' => 0,
+                'risk_level' => 'normal',
+                'status'     => 'active',
+                'updated_at' => now(),
+            ]);
+
+            return;
+        }
+
+        $order = ['normal' => 0, 'suspect' => 1, 'high' => 2, 'critical' => 3];
+
+        $topLevel = $openIncidents->sortByDesc(
+            fn ($inc) => $order[$inc->risk_level] ?? 0
+        )->first()->risk_level;
+
+        $topScore = $openIncidents->max('risk_score');
+
+        $agent->update([
+            'risk_score' => (int) $topScore,
+            'risk_level' => $topLevel,
+            'status'     => $topLevel === 'critical' ? 'compromised' : 'active',
+            'updated_at' => now(),
+        ]);
+    }
+
     // ──────────────────────────────────────────────────────────────────────────
     //  INCIDENT
     // ──────────────────────────────────────────────────────────────────────────
