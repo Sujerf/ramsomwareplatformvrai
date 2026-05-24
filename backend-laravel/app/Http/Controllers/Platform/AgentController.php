@@ -58,8 +58,14 @@ class AgentController extends Controller
     }
 
     /**
-     * Régénère un token d'enrôlement valable 48h pour un agent pending.
-     * Permet de re-déclencher le bootstrap sans repasser par "Hôtes découverts".
+     * Régénère un token d'enrôlement valable 48h.
+     *
+     * Comportement selon l'état de l'agent :
+     *  - pending   : régénère le token + short code, conserve le statut pending.
+     *  - enrolled  : régénère un token de RE-enrôlement. L'agent actuel continue
+     *                de fonctionner avec sa clé API existante jusqu'à ce que le
+     *                nouveau bootstrap soit exécuté. Le statut reste 'enrolled'
+     *                pour ne pas interrompre la surveillance en cours.
      */
     public function regenerateToken(Agent $agent): RedirectResponse
     {
@@ -69,20 +75,29 @@ class AgentController extends Controller
         // Régénère aussi le short code pour cette session d'enrôlement
         $shortCode = $this->generateUniqueShortCode($agent->id);
 
+        // Ne PAS rétrograder un agent déjà enrôlé — il continue de surveiller
+        // pendant que le nouveau token est préparé pour une réinstallation.
+        $isEnrolled = $agent->enrollment_status === 'enrolled';
+
         \Illuminate\Support\Facades\DB::table('agents')
             ->where('id', $agent->id)
-            ->update([
+            ->update(array_filter([
                 'enrollment_token'            => $token,
                 'enrollment_token_expires_at' => $expiresAt,
-                'enrollment_status'           => 'pending',
-                'status'                      => 'pending_enrollment',
                 'enrollment_short_code'       => $shortCode,
+                // Seulement si l'agent n'est pas encore enrôlé
+                'enrollment_status'           => $isEnrolled ? 'enrolled' : 'pending',
+                'status'                      => $isEnrolled ? $agent->status : 'pending_enrollment',
                 'updated_at'                  => now(),
-            ]);
+            ]));
+
+        $msg = $isEnrolled
+            ? 'Token de ré-enrôlement généré — valable 48h. L\'agent actuel continue de fonctionner jusqu\'à la réinstallation.'
+            : 'Nouveau token généré — valable 48h. Lance le script bootstrap sur la machine cible.';
 
         return redirect()
             ->route('platform.agents.show', $agent)
-            ->with('success', 'Nouveau token généré — valable 48h. Lance le script bootstrap sur la machine cible.');
+            ->with('success', $msg);
     }
 
     /**
