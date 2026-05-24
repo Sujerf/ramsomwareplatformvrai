@@ -16,6 +16,7 @@ class DiscoveredHostController extends Controller
     public function index(Request $request): View
     {
         $status = $request->query('status', 'monitored');
+        $search = trim($request->query('search', ''));
 
         $query = DiscoveredHost::query()
             ->with(['managedNetwork', 'agent'])
@@ -28,13 +29,48 @@ class DiscoveredHostController extends Controller
             $query->where('is_monitored', false);
         }
 
+        if ($search !== '') {
+            $query->where(function ($q) use ($search) {
+                $q->where('hostname',   'like', "%{$search}%")
+                  ->orWhere('ip_address',  'like', "%{$search}%")
+                  ->orWhere('mac_address', 'like', "%{$search}%");
+            });
+        }
+
+        // ── URL SOC par réseau ───────────────────────────────────────────────
+        // Permet d'afficher la bonne commande d'enrôlement directement sur la carte.
+        $configuredUrl = rtrim(config('app.soc_url', config('app.url')), '/');
+        $scheme = parse_url($configuredUrl, PHP_URL_SCHEME) ?? 'http';
+        $port   = parse_url($configuredUrl, PHP_URL_PORT);
+
+        $networkSocUrls = \App\Models\ManagedNetwork::all()
+            ->mapWithKeys(function ($network) use ($scheme, $port, $configuredUrl) {
+                $ip  = data_get($network->metadata, 'ip');
+                $url = $ip
+                    ? $scheme.'://'.$ip.($port ? ':'.$port : '')
+                    : $configuredUrl;
+                return [$network->id => $url];
+            })
+            ->toArray();
+
+        $filterCounts = [
+            'monitored' => DiscoveredHost::where('is_monitored', true)->count(),
+            'retired'   => DiscoveredHost::where('is_monitored', false)->count(),
+            'all'       => DiscoveredHost::count(),
+        ];
+
         return view('platform.discovered-hosts.index', [
-            'hosts'        => $query->paginate(25)->withQueryString(),
-            'activeStatus' => $status,
-            'stats'        => [
+            'hosts'          => $query->paginate(30)->withQueryString(),
+            'activeStatus'   => $status,
+            'search'         => $search,
+            'filterCounts'   => $filterCounts,
+            'networkSocUrls' => $networkSocUrls,
+            'fallbackSocUrl' => $configuredUrl,
+            'stats'          => [
                 'total'    => DiscoveredHost::count(),
                 'monitored'=> DiscoveredHost::where('is_monitored', true)->count(),
                 'enrolled' => DiscoveredHost::where('enrollment_status', 'enrolled')->count(),
+                'pending'  => DiscoveredHost::where('enrollment_status', 'pre_enrolled')->count(),
                 'retired'  => DiscoveredHost::where('is_monitored', false)->count(),
             ],
         ]);
