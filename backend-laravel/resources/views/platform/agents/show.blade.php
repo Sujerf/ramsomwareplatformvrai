@@ -551,7 +551,11 @@
                 <div class="os-tabs" id="osTabs">
                     <button type="button" class="os-tab active" data-os="linux">
                         <span class="os-tab-icon">🐧</span>
-                        Linux / macOS
+                        Linux
+                    </button>
+                    <button type="button" class="os-tab" data-os="macos">
+                        <span class="os-tab-icon">🍎</span>
+                        macOS
                     </button>
                     <button type="button" class="os-tab" data-os="windows">
                         <span class="os-tab-icon">🪟</span>
@@ -569,7 +573,7 @@
 
                             <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
                                 <i class="fa-solid fa-bolt" style="color:#22c55e; font-size:15px;"></i>
-                                <span style="font-size:13px; font-weight:850; color:#22c55e;">Installation en une commande — Linux / macOS</span>
+                                <span style="font-size:13px; font-weight:850; color:#22c55e;">Installation en une commande — Linux (systemd)</span>
                                 <span style="margin-left:auto; font-size:11px; color:var(--text-muted);">
                                     Token valide — expire {{ $installInfo['token_expires_label'] }}
                                 </span>
@@ -585,7 +589,7 @@
                             <p style="margin:10px 0 0; font-size:12px; color:var(--text-muted);">
                                 <i class="fa-solid fa-circle-info" style="margin-right:4px; color:#22c55e;"></i>
                                 Télécharge l'agent depuis le SOC, écrit le <code>.env</code>, installe le venv Python
-                                et active le service <strong>systemd</strong>. Token détruit dès l'enrôlement réussi.
+                                et active le service <strong>systemd</strong> (Ubuntu, Debian, RHEL…). Token détruit dès l'enrôlement réussi.
                             </p>
                         </div>
 
@@ -620,6 +624,92 @@
                                     <div class="install-box">
                                         <button type="button" class="copy-btn" data-copy="copyLinuxStep3"><i class="fa-solid fa-copy"></i> Copier</button>
                                         <code id="copyLinuxStep3">cd /opt/ransomshield-agent && sudo bash install.sh</code>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </details>
+                    </div>
+
+                    {{-- ── ONE-LINER BOOTSTRAP : MACOS ──────────────────────── --}}
+                    <div class="os-panel" id="panel-macos">
+                        <div style="border-radius:16px; border:2px solid color-mix(in srgb, #f59e0b 35%, transparent);
+                                    background:color-mix(in srgb, #f59e0b 6%, transparent);
+                                    padding:18px 20px; margin-bottom:20px;">
+
+                            <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
+                                <i class="fa-brands fa-apple" style="color:#f59e0b; font-size:15px;"></i>
+                                <span style="font-size:13px; font-weight:850; color:#fbbf24;">Installation en une commande — macOS (Terminal admin)</span>
+                                <span style="margin-left:auto; font-size:11px; color:var(--text-muted);">
+                                    Token valide — expire {{ $installInfo['token_expires_label'] }}
+                                </span>
+                            </div>
+
+                            <div class="install-box" style="border-color:color-mix(in srgb, #f59e0b 35%, transparent);">
+                                <button type="button" class="copy-btn" data-copy="copyBootstrapMac">
+                                    <i class="fa-solid fa-copy"></i> Copier
+                                </button>
+                                <code id="copyBootstrapMac">curl -fsSL "{{ $installInfo['bootstrap_url'] }}?os=macos" | sudo bash</code>
+                            </div>
+
+                            <p style="margin:10px 0 0; font-size:12px; color:var(--text-muted);">
+                                <i class="fa-solid fa-circle-info" style="margin-right:4px; color:#f59e0b;"></i>
+                                À exécuter dans un <strong>Terminal avec sudo</strong>. Installe Python via Homebrew si absent,
+                                configure le <code>.env</code>, le venv, et enregistre un <strong>LaunchDaemon</strong>
+                                (<code>launchctl</code>) qui redémarre automatiquement. Token détruit dès l'enrôlement réussi.
+                            </p>
+
+                            <div style="margin-top:12px; padding:10px 12px; border-radius:8px;
+                                        background:color-mix(in srgb, #ef4444 8%, transparent);
+                                        border:1px solid color-mix(in srgb, #ef4444 25%, transparent);">
+                                <p style="margin:0; font-size:11.5px; color:var(--text-muted);">
+                                    <i class="fa-solid fa-shield-halved" style="color:#ef4444; margin-right:5px;"></i>
+                                    <strong style="color:#ef4444;">Isolation réseau sur macOS</strong> — utilise
+                                    <code>pfctl</code> (Packet Filter). Requiert que l'agent tourne en <code>root</code>.
+                                    Un backup des règles pf est sauvegardé avant isolation pour un rollback propre.
+                                </p>
+                            </div>
+                        </div>
+
+                        {{-- Manuel macOS --}}
+                        <details style="border-radius:12px; border:1px solid var(--border-soft);
+                                        background:color-mix(in srgb, var(--bg-panel-soft) 40%, transparent); overflow:hidden;">
+                            <summary style="padding:12px 16px; cursor:pointer; font-size:13px; font-weight:750;
+                                            color:var(--text-muted); list-style:none; display:flex; align-items:center; gap:8px;">
+                                <i class="fa-solid fa-chevron-right" style="font-size:10px;"></i>
+                                Installation manuelle macOS (alternative)
+                            </summary>
+                            <div style="padding:14px 16px 16px; display:flex; flex-direction:column; gap:14px; border-top:1px solid var(--border-soft);">
+
+                                <div>
+                                    <p style="margin:0 0 6px; font-size:12px; font-weight:850; color:var(--text-muted);">1 — Copier les fichiers sur la cible</p>
+                                    <div class="install-box">
+                                        <button type="button" class="copy-btn" data-copy="copyMacStep1"><i class="fa-solid fa-copy"></i> Copier</button>
+                                        <code id="copyMacStep1">rsync -avz {{ $installInfo['agent_source_path'] }} {{ $agent->ip_address ?? 'IP_MAC' }}:/opt/ransomshield-agent/</code>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <p style="margin:0 0 6px; font-size:12px; font-weight:850; color:var(--text-muted);">2 — Créer le fichier <code>.env</code></p>
+                                    <div class="install-box">
+                                        <button type="button" class="copy-btn" data-copy="copyMacStep2"><i class="fa-solid fa-copy"></i> Copier</button>
+                                        <code id="copyMacStep2">{{ $installInfo['env_content'] }}</code>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <p style="margin:0 0 6px; font-size:12px; font-weight:850; color:var(--text-muted);">3 — Installer le LaunchDaemon</p>
+                                    <div class="install-box">
+                                        <button type="button" class="copy-btn" data-copy="copyMacStep3"><i class="fa-solid fa-copy"></i> Copier</button>
+                                        <code id="copyMacStep3">curl -fsSL "{{ $installInfo['bootstrap_url'] }}?os=macos" -o ransomshield-install.sh && sudo bash ransomshield-install.sh</code>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <p style="margin:0 0 6px; font-size:12px; font-weight:850; color:var(--text-muted);">4 — Vérifier le service</p>
+                                    <div class="install-box">
+                                        <button type="button" class="copy-btn" data-copy="copyMacStep4"><i class="fa-solid fa-copy"></i> Copier</button>
+                                        <code id="copyMacStep4">launchctl list | grep ransomshield && tail -f /var/log/ransomshield-agent.log</code>
                                     </div>
                                 </div>
 

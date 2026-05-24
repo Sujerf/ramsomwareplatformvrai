@@ -22,6 +22,7 @@ load_dotenv()
 
 # ── Détection OS ──────────────────────────────────────────────────────────────
 IS_WINDOWS = platform.system() == "Windows"
+IS_MACOS   = platform.system() == "Darwin"
 OS_NAME    = platform.system()   # "Windows", "Linux", "Darwin"
 
 API_URL = os.getenv("RANSHIELD_API_URL", "http://127.0.0.1:8000/api").rstrip("/")
@@ -49,6 +50,8 @@ ENABLE_NETWORK_CONTEXT = os.getenv("RANSHIELD_ENABLE_NETWORK_CONTEXT", "true").l
 _DEFAULT_MONITOR_PATHS = (
     r"C:\Users,C:\Program Files,C:\Program Files (x86),C:\ProgramData"
     if IS_WINDOWS
+    else "/Users,/Volumes"           # macOS — dossiers utilisateurs + volumes montés
+    if IS_MACOS
     # /tmp exclus par défaut — trop de faux positifs (IDE, outils, builds)
     else "/home,/media,/mnt,/opt,/srv"
 )
@@ -70,6 +73,17 @@ _DEFAULT_EXCLUDED_PATHS = (
     r"AppData\Local\Temp,AppData\Local\Microsoft\Windows\Temporary Internet Files,"
     r"\Temp,AppData\Roaming\npm-cache"
     if IS_WINDOWS
+    else
+    # Système macOS toujours exclus
+    "/private,/System,/Library/Caches,/Library/Logs,"
+    "/var/folders,/var/tmp,/private/tmp,/private/var,"
+    # Outils de développement et IDE
+    "node_modules,vendor,.git,venv,__pycache__,"
+    # Caches utilisateur macOS
+    ".cache,.npm,.cargo,.rustup,Library/Caches,Library/Logs,"
+    # Outils IA
+    ".claude,.cursor,.vscode"
+    if IS_MACOS
     else
     # Chemins système Linux toujours exclus
     "/proc,/sys,/dev,/run,/snap,/var/lib,/var/cache,/var/log,"
@@ -581,6 +595,8 @@ def execute_isolation(soc_ip: str) -> None:
     """Isole l'hôte — seul le SOC reste joignable.
 
     Linux  : iptables — stateful, règles en mémoire.
+    macOS  : pfctl (Packet Filter) — fichier de règles dans /tmp/ransomshield.pf.
+             Sauvegarde de /etc/pf.conf avant modification pour rollback propre.
     Windows: netsh advfirewall — politique blockinbound/blockoutbound +
              règles explicites pour le SOC et le loopback.
     """
@@ -607,7 +623,47 @@ def execute_isolation(soc_ip: str) -> None:
         for rule in rules:
             subprocess.run(rule, check=True, capture_output=True)
         print(f"[ISOLATION] Hôte isolé (Windows) — SOC {soc_ip} autorisé uniquement.")
+
+    elif IS_MACOS:
+        # ── macOS : pfctl (Packet Filter) ────────────────────────────────────
+        # On sauvegarde les règles actives avant toute modification pour
+        # permettre un rollback propre via execute_rollback_isolation().
+        pf_backup = "/tmp/ransomshield_pf_backup.conf"
+        pf_rules  = "/tmp/ransomshield_isolation.pf"
+
+        # 1. Sauvegarder les règles actuelles
+        backup_result = subprocess.run(
+            ["pfctl", "-s", "rules"],
+            capture_output=True, text=True
+        )
+        with open(pf_backup, "w") as f:
+            f.write(backup_result.stdout or "# no existing rules\n")
+
+        # 2. Écrire le jeu de règles d'isolation
+        ruleset = (
+            "# RansomShield — isolation réseau (généré automatiquement)\n"
+            "# Loopback toujours autorisé\n"
+            "set skip on lo0\n"
+            "\n"
+            f"# SOC ({soc_ip}) — communication bidirectionnelle autorisée\n"
+            f"pass in  quick inet from {soc_ip} to any\n"
+            f"pass out quick inet from any to {soc_ip}\n"
+            "\n"
+            "# Tout le reste est bloqué\n"
+            "block in  all\n"
+            "block out all\n"
+        )
+        with open(pf_rules, "w") as f:
+            f.write(ruleset)
+
+        # 3. Activer pfctl et charger les règles
+        subprocess.run(["pfctl", "-e"], capture_output=True)          # enable (idempotent)
+        subprocess.run(["pfctl", "-f", pf_rules], check=True, capture_output=True)
+        print(f"[ISOLATION] Hôte isolé (macOS/pfctl) — SOC {soc_ip} autorisé uniquement.")
+        print(f"[ISOLATION] Backup des règles pf dans {pf_backup}")
+
     else:
+        # ── Linux : iptables ─────────────────────────────────────────────────
         rules = [
             ["iptables", "-F"],
             ["iptables", "-A", "INPUT", "-i", "lo", "-j", "ACCEPT"],
@@ -622,6 +678,54 @@ def execute_isolation(soc_ip: str) -> None:
         for rule in rules:
             subprocess.run(rule, check=True, capture_output=True)
         print(f"[ISOLATION] Hôte isolé (Linux) — SOC {soc_ip} autorisé uniquement.")
+
+
+def execute_rollback_isolation() -> None:
+    """Lève l'isolation réseau — restaure le trafic normal.
+
+    Linux  : flush iptables + politique ACCEPT.
+    macOS  : restaure le backup pfctl ou désactive pfctl.
+    Windows: restaure la politique advfirewall par défaut et supprime les règles.
+    """
+    if IS_WINDOWS:
+        subprocess.run(
+            ["netsh", "advfirewall", "firewall", "delete", "rule", "name=RansomShield"],
+            capture_output=True,
+        )
+        subprocess.run(
+            ["netsh", "advfirewall", "set", "allprofiles", "firewallpolicy", "blockinbound,allowoutbound"],
+            capture_output=True,
+        )
+        print("[ROLLBACK] Isolation levée (Windows) — règles advfirewall restaurées.")
+
+    elif IS_MACOS:
+        pf_backup = "/tmp/ransomshield_pf_backup.conf"
+        if Path(pf_backup).exists():
+            # Restaurer les règles sauvegardées avant l'isolation
+            subprocess.run(["pfctl", "-f", pf_backup], capture_output=True)
+            print(f"[ROLLBACK] Isolation levée (macOS) — règles pf restaurées depuis {pf_backup}.")
+        else:
+            # Pas de backup → désactiver pfctl (comportement macOS par défaut = pf désactivé)
+            subprocess.run(["pfctl", "-d"], capture_output=True)
+            print("[ROLLBACK] Isolation levée (macOS) — pfctl désactivé (pas de backup trouvé).")
+
+        # Nettoyage des fichiers temporaires
+        for tmp in [pf_backup, "/tmp/ransomshield_isolation.pf"]:
+            try:
+                Path(tmp).unlink(missing_ok=True)
+            except OSError:
+                pass
+
+    else:
+        # Linux : flush toutes les règles et repasser en ACCEPT
+        for cmd in [
+            ["iptables", "-F"],
+            ["iptables", "-P", "INPUT",   "ACCEPT"],
+            ["iptables", "-P", "OUTPUT",  "ACCEPT"],
+            ["iptables", "-P", "FORWARD", "ACCEPT"],
+        ]:
+            subprocess.run(cmd, capture_output=True)
+        print("[ROLLBACK] Isolation levée (Linux) — iptables flushé, politique ACCEPT.")
 
 
 def execute_process_kill(pid: int) -> None:
@@ -690,6 +794,10 @@ def poll_commands(agent_uuid: str) -> None:
                     message = f"Processus {pid} terminé."
                 else:
                     message = "PID manquant ou invalide dans le payload."
+            elif action_type == "rollback_isolation":
+                execute_rollback_isolation()
+                success = True
+                message = "Isolation réseau levée — trafic normal restauré."
             else:
                 message = f"Type d'action non supporté localement : {action_type}"
         except Exception as exc:

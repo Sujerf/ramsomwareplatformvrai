@@ -11,8 +11,9 @@ use Illuminate\Http\Response;
  * Génère un script d'installation auto-suffisant pour l'agent RansomShield.
  *
  * Endpoint public (pas de middleware agent.secret) :
- *   GET /api/agent/bootstrap/{uuid}           → Bash (Linux/macOS)
- *   GET /api/agent/bootstrap/{uuid}?os=windows → PowerShell (Windows)
+ *   GET /api/agent/bootstrap/{uuid}            → Bash (Linux — systemd)
+ *   GET /api/agent/bootstrap/{uuid}?os=macos   → Bash (macOS — launchd)
+ *   GET /api/agent/bootstrap/{uuid}?os=windows → PowerShell (Windows — sc.exe)
  *
  * L'UUID sert de jeton d'accès — 122 bits d'entropie, usage one-time.
  * Le script embarque le .env complet avec le token d'enrôlement.
@@ -42,11 +43,15 @@ class AgentBootstrapController extends Controller
 
         $socUrl    = rtrim(config('app.soc_url'), '/');
         $apiSecret = config('app.agent_api_secret', '');
-        $isWindows = strtolower($request->query('os', 'linux')) === 'windows';
+        $os        = strtolower($request->query('os', 'linux'));
 
-        if ($isWindows) {
+        if ($os === 'windows') {
             $script   = $this->buildPowerShellScript(agent: $agent, socUrl: $socUrl, apiSecret: $apiSecret);
             $filename = 'ransomshield-install.ps1';
+            $mime     = 'text/plain; charset=utf-8';
+        } elseif ($os === 'macos') {
+            $script   = $this->buildMacOsScript(agent: $agent, socUrl: $socUrl, apiSecret: $apiSecret);
+            $filename = 'ransomshield-install.sh';
             $mime     = 'text/plain; charset=utf-8';
         } else {
             $script   = $this->buildBashScript(agent: $agent, socUrl: $socUrl, apiSecret: $apiSecret);
@@ -201,6 +206,172 @@ class AgentBootstrapController extends Controller
         echo ""
         echo "  Statut : systemctl status \$SERVICE_NAME"
         echo "  Logs   : journalctl -u \$SERVICE_NAME -f"
+        echo ""
+        BASH;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  BASH — macOS (launchd au lieu de systemd)
+    // ─────────────────────────────────────────────────────────────────────────
+    private function buildMacOsScript(Agent $agent, string $socUrl, string $apiSecret): string
+    {
+        $uuid    = $agent->agent_uuid;
+        $token   = $agent->enrollment_token;
+        $name    = $agent->agent_name;
+        $role    = $agent->host_role ?? 'client';
+        $apiUrl  = $socUrl.'/api';
+        $expires = optional($agent->enrollment_token_expires_at)->toDateTimeString() ?? 'inconnue';
+        $now     = now()->toDateTimeString();
+
+        return <<<BASH
+        #!/usr/bin/env bash
+        # ─────────────────────────────────────────────────────────────────────────────
+        #  RansomShield Host Agent — Script d'installation macOS auto-généré
+        #  Généré le : {$now}
+        #  Agent     : {$name} ({$uuid})
+        #  Token     : usage unique, expire le {$expires}
+        # ─────────────────────────────────────────────────────────────────────────────
+        set -euo pipefail
+
+        AGENT_UUID="{$uuid}"
+        AGENT_NAME="{$name}"
+        HOST_ROLE="{$role}"
+        API_URL="{$apiUrl}"
+        API_SECRET="{$apiSecret}"
+        ENROLLMENT_TOKEN="{$token}"
+        SOC_BASE="{$socUrl}"
+        INSTALL_DIR="/opt/ransomshield-agent"
+        PLIST_LABEL="com.ransomshield.agent"
+        PLIST_PATH="/Library/LaunchDaemons/\${PLIST_LABEL}.plist"
+
+        echo ""
+        echo "╔══════════════════════════════════════════════════╗"
+        echo "║  RansomShield — Installation macOS (launchd)     ║"
+        echo "╚══════════════════════════════════════════════════╝"
+        echo ""
+        echo "  Machine    : \$(hostname)"
+        echo "  Agent UUID : \$AGENT_UUID"
+        echo "  SOC API    : \$API_URL"
+        echo ""
+
+        # ── 1. Vérifications système ───────────────────────────────────────────────
+        if [ "\$(id -u)" -ne 0 ]; then
+            echo "[ERREUR] Ce script doit être exécuté en tant que root (sudo)."
+            exit 1
+        fi
+
+        # Python 3 — via Homebrew, Xcode CLT ou python.org
+        PYTHON_BIN=""
+        for candidate in /usr/local/bin/python3 /opt/homebrew/bin/python3 /usr/bin/python3; do
+            if [ -x "\$candidate" ]; then
+                PYTHON_BIN="\$candidate"
+                break
+            fi
+        done
+
+        if [ -z "\$PYTHON_BIN" ]; then
+            echo "[INFO] Python 3 introuvable. Installation via Homebrew..."
+            if ! command -v brew &>/dev/null; then
+                echo "[ERREUR] Homebrew absent. Installe Python 3 depuis https://python.org ou installe Homebrew."
+                exit 1
+            fi
+            brew install python3
+            PYTHON_BIN="\$(command -v python3)"
+        fi
+
+        PY_VERSION="\$("\$PYTHON_BIN" -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
+        echo "[OK] Python \$PY_VERSION (\$PYTHON_BIN)"
+
+        # ── 2. Dossier d'installation ──────────────────────────────────────────────
+        echo "[INFO] Création du dossier \$INSTALL_DIR..."
+        mkdir -p "\$INSTALL_DIR"
+        cd "\$INSTALL_DIR"
+
+        # ── 3. Téléchargement des fichiers agent ───────────────────────────────────
+        echo "[INFO] Téléchargement des fichiers depuis le SOC..."
+        curl -fsSL "\$SOC_BASE/api/agent/download/ransomshield_host_agent.py" -o ransomshield_host_agent.py
+        curl -fsSL "\$SOC_BASE/api/agent/download/requirements.txt"           -o requirements.txt
+        echo "[OK] Fichiers téléchargés"
+
+        # ── 4. Fichier .env ────────────────────────────────────────────────────────
+        cat > .env << 'ENVEOF'
+        RANSHIELD_API_URL={$apiUrl}
+        RANSHIELD_API_SECRET=
+        RANSHIELD_AGENT_UUID={$uuid}
+        RANSHIELD_ENROLLMENT_TOKEN={$token}
+        RANSHIELD_AGENT_NAME={$name}
+        RANSHIELD_HOST_ROLE={$role}
+        RANSHIELD_MONITOR_MODE=host
+        RANSHIELD_HEARTBEAT_INTERVAL=30
+        RANSHIELD_SCAN_INTERVAL=5
+        RANSHIELD_ENABLE_FILE_MONITOR=true
+        RANSHIELD_ENABLE_PROCESS_MONITOR=true
+        ENVEOF
+        echo "[OK] .env configuré"
+
+        # ── 5. Environnement virtuel et dépendances ────────────────────────────────
+        echo "[INFO] Création du venv Python..."
+        if [ ! -d venv ]; then
+            "\$PYTHON_BIN" -m venv venv
+        fi
+        venv/bin/pip install --quiet --upgrade pip
+        venv/bin/pip install --quiet -r requirements.txt
+        echo "[OK] Dépendances installées"
+
+        # ── 6. Service launchd (LaunchDaemon) ─────────────────────────────────────
+        echo "[INFO] Installation du LaunchDaemon macOS..."
+
+        # Arrêter et décharger si déjà installé
+        if [ -f "\$PLIST_PATH" ]; then
+            launchctl unload -w "\$PLIST_PATH" 2>/dev/null || true
+        fi
+
+        cat > "\$PLIST_PATH" << PLISTEOF
+        <?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+        <plist version="1.0">
+        <dict>
+            <key>Label</key>
+            <string>\${PLIST_LABEL}</string>
+            <key>ProgramArguments</key>
+            <array>
+                <string>\${INSTALL_DIR}/venv/bin/python</string>
+                <string>\${INSTALL_DIR}/ransomshield_host_agent.py</string>
+            </array>
+            <key>WorkingDirectory</key>
+            <string>\${INSTALL_DIR}</string>
+            <key>RunAtLoad</key>
+            <true/>
+            <key>KeepAlive</key>
+            <true/>
+            <key>ThrottleInterval</key>
+            <integer>10</integer>
+            <key>StandardOutPath</key>
+            <string>/var/log/ransomshield-agent.log</string>
+            <key>StandardErrorPath</key>
+            <string>/var/log/ransomshield-agent-error.log</string>
+            <key>EnvironmentVariables</key>
+            <dict>
+                <key>PYTHONUNBUFFERED</key>
+                <string>1</string>
+            </dict>
+        </dict>
+        </plist>
+        PLISTEOF
+
+        chmod 644 "\$PLIST_PATH"
+        launchctl load -w "\$PLIST_PATH"
+
+        echo ""
+        echo "╔══════════════════════════════════════════════════╗"
+        echo "║         Installation terminée avec succès !      ║"
+        echo "╚══════════════════════════════════════════════════╝"
+        echo ""
+        echo "  L'agent va maintenant contacter le SOC et s'enrôler."
+        echo ""
+        echo "  Statut : launchctl list | grep ransomshield"
+        echo "  Logs   : tail -f /var/log/ransomshield-agent.log"
+        echo "  Stop   : sudo launchctl unload -w \$PLIST_PATH"
         echo ""
         BASH;
     }
