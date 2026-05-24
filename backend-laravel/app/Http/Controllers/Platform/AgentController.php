@@ -66,6 +66,9 @@ class AgentController extends Controller
         $token     = Str::random(48);
         $expiresAt = now()->addHours(48);
 
+        // Régénère aussi le short code pour cette session d'enrôlement
+        $shortCode = $this->generateUniqueShortCode($agent->id);
+
         \Illuminate\Support\Facades\DB::table('agents')
             ->where('id', $agent->id)
             ->update([
@@ -73,6 +76,7 @@ class AgentController extends Controller
                 'enrollment_token_expires_at' => $expiresAt,
                 'enrollment_status'           => 'pending',
                 'status'                      => 'pending_enrollment',
+                'enrollment_short_code'       => $shortCode,
                 'updated_at'                  => now(),
             ]);
 
@@ -132,6 +136,23 @@ class AgentController extends Controller
     }
 
     /**
+     * Génère un short code unique sur 8 chars alphanumériques pour un agent.
+     * Essaie d'abord les 8 premiers chars de l'UUID (sans tirets), puis fallback random.
+     */
+    private function generateUniqueShortCode(?int $excludeAgentId = null): string
+    {
+        do {
+            $code   = strtolower(Str::random(8));
+            $exists = \Illuminate\Support\Facades\DB::table('agents')
+                ->where('enrollment_short_code', $code)
+                ->when($excludeAgentId, fn ($q) => $q->where('id', '!=', $excludeAgentId))
+                ->exists();
+        } while ($exists);
+
+        return $code;
+    }
+
+    /**
      * Retourne les informations d'installation de l'agent.
      *
      * RANSHIELD_SOC_URL (dans .env) = URL du SOC accessible depuis les VMs.
@@ -176,6 +197,12 @@ class AgentController extends Controller
             ? $socUrl.'/api/agent/bootstrap/'.$agent->agent_uuid
             : null;
 
+        // URL courte pour KVM — copier-coller-free
+        $shortCode      = $agent->enrollment_short_code;
+        $shortEnrollUrl = ($hasValidToken && $shortCode)
+            ? $socUrl.'/e/'.$shortCode
+            : null;
+
         // Chemin réel vers les fichiers agent pour rsync
         $agentSourcePath = base_path('../agent-python/');
 
@@ -193,6 +220,8 @@ class AgentController extends Controller
             'has_valid_token'      => $hasValidToken,
             'env_content'          => implode("\n", $envLines),
             'bootstrap_url'        => $bootstrapUrl,
+            'short_enroll_url'     => $shortEnrollUrl,
+            'short_code'           => $shortCode,
             'agent_source_path'    => $agentSourcePath,
             'service_name'         => 'ransomshield-agent',
         ];

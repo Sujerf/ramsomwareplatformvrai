@@ -35,6 +35,8 @@ class HostEnrollmentService
             $expiresAt  = now()->addHours(48);
 
             if ($existingAgent) {
+                $shortCode = $this->generateUniqueShortCode(excludeAgentId: $existingAgent->id);
+
                 DB::table('agents')
                     ->where('id', $existingAgent->id)
                     ->update([
@@ -47,13 +49,18 @@ class HostEnrollmentService
                         'enrollment_status'           => 'pending',
                         'enrollment_token'            => $token,
                         'enrollment_token_expires_at' => $expiresAt,
+                        'enrollment_short_code'       => $shortCode,
                         'updated_at'                  => now(),
                     ]);
 
                 $agent = Agent::find($existingAgent->id);
             } else {
+                $uuid      = (string) Str::uuid();
+                $shortCode = $this->generateUniqueShortCode();
+
                 $agent = Agent::create([
-                    'agent_uuid'                  => (string) Str::uuid(),
+                    'agent_uuid'                  => $uuid,
+                    'enrollment_short_code'       => $shortCode,
                     'discovered_host_id'          => $host->id,
                     'agent_name'                  => $host->hostname ?: 'agent-'.$host->ip_address,
                     'hostname'                    => $host->hostname,
@@ -87,6 +94,23 @@ class HostEnrollmentService
 
             return $agent->refresh();
         });
+    }
+
+    /**
+     * Génère un short code unique sur 8 chars alphanumériques.
+     * Optionnellement exclut l'agent courant (pour les updates).
+     */
+    private function generateUniqueShortCode(?int $excludeAgentId = null): string
+    {
+        do {
+            $code   = strtolower(Str::random(8));
+            $exists = DB::table('agents')
+                ->where('enrollment_short_code', $code)
+                ->when($excludeAgentId, fn ($q) => $q->where('id', '!=', $excludeAgentId))
+                ->exists();
+        } while ($exists);
+
+        return $code;
     }
 
     public function linkRealEnrollment(array $payload, Agent $agent): Agent

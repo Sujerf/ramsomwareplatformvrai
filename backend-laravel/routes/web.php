@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AgentBootstrapController;
 use App\Http\Controllers\Platform\AgentController;
 use App\Http\Controllers\Platform\AlertController;
 use App\Http\Controllers\Platform\AppearanceController;
@@ -19,6 +20,12 @@ use App\Http\Controllers\Platform\ProtectionPolicyController;
 use App\Http\Controllers\Platform\SensitiveExtensionController;
 use App\Http\Controllers\Platform\SystemSettingController;
 use Illuminate\Support\Facades\Route;
+
+// ── URL courte d'enrôlement : /e/{8chars} — copier-coller-free pour KVM ─────
+// Exemple : curl http://10.20.0.1:8080/e/c075615a | sudo bash
+Route::get('/e/{code}', [AgentBootstrapController::class, 'scriptByShortCode'])
+    ->name('agent.enroll.short')
+    ->where('code', '[a-zA-Z0-9]{8}');
 
 Route::get('/login', [LoginController::class, 'showForm'])->name('platform.login')->middleware('guest');
 Route::post('/login', [LoginController::class, 'login'])->name('platform.login.post')->middleware('guest');

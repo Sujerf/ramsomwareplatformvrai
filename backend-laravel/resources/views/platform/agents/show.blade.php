@@ -547,6 +547,71 @@
                     </div>
                 </div>
 
+                {{-- ── COMMANDE COURTE KVM ─────────────────────────────────────── --}}
+                @if($installInfo['has_valid_token'] && $installInfo['short_enroll_url'])
+                <div style="border-radius:16px; border:2px solid color-mix(in srgb, #6366f1 50%, transparent);
+                            background: linear-gradient(135deg,
+                                color-mix(in srgb, #6366f1 10%, transparent),
+                                color-mix(in srgb, #8b5cf6 6%, transparent));
+                            padding:18px 20px; margin-bottom:20px;">
+
+                    <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px;">
+                        <i class="fa-solid fa-keyboard" style="color:#818cf8; font-size:18px;"></i>
+                        <div>
+                            <div style="font-size:14px; font-weight:900; color:#a5b4fc; letter-spacing:-.02em;">
+                                🚀 Commande courte — KVM / terminal sans copier-coller
+                            </div>
+                            <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">
+                                ~50 caractères · facile à taper · code court : <code style="background:color-mix(in srgb,#6366f1 20%,transparent); padding:1px 5px; border-radius:4px;">{{ $installInfo['short_code'] }}</code>
+                            </div>
+                        </div>
+                        <span style="margin-left:auto; font-size:11px; color:var(--text-muted); white-space:nowrap;">
+                            Token valide — expire {{ $installInfo['token_expires_label'] }}
+                        </span>
+                    </div>
+
+                    {{-- Linux (défaut) --}}
+                    <div style="margin-bottom:10px;">
+                        <div style="font-size:11px; font-weight:750; color:var(--text-muted); margin-bottom:5px;">
+                            🐧 Linux / 🍎 macOS
+                        </div>
+                        <div class="install-box" style="border-color:color-mix(in srgb, #6366f1 40%, transparent);">
+                            <button type="button" class="copy-btn" data-copy="copyShortLinux">
+                                <i class="fa-solid fa-copy"></i> Copier
+                            </button>
+                            <code id="copyShortLinux">curl {{ $installInfo['short_enroll_url'] }} | sudo bash</code>
+                        </div>
+                    </div>
+
+                    {{-- macOS --}}
+                    <div style="margin-bottom:10px;">
+                        <div style="font-size:11px; font-weight:750; color:var(--text-muted); margin-bottom:5px;">
+                            🍎 macOS (launchd)
+                        </div>
+                        <div class="install-box" style="border-color:color-mix(in srgb, #6366f1 40%, transparent);">
+                            <button type="button" class="copy-btn" data-copy="copyShortMac">
+                                <i class="fa-solid fa-copy"></i> Copier
+                            </button>
+                            <code id="copyShortMac">curl "{{ $installInfo['short_enroll_url'] }}?os=macos" | sudo bash</code>
+                        </div>
+                    </div>
+
+                    {{-- Windows --}}
+                    <div>
+                        <div style="font-size:11px; font-weight:750; color:var(--text-muted); margin-bottom:5px;">
+                            🪟 Windows (PowerShell admin)
+                        </div>
+                        <div class="install-box" style="border-color:color-mix(in srgb, #6366f1 40%, transparent);">
+                            <button type="button" class="copy-btn" data-copy="copyShortWin">
+                                <i class="fa-solid fa-copy"></i> Copier
+                            </button>
+                            <code id="copyShortWin">powershell -ExecutionPolicy Bypass -Command "iwr '{{ $installInfo['short_enroll_url'] }}?os=windows' -UseBasicParsing | iex"</code>
+                        </div>
+                    </div>
+
+                </div>
+                @endif
+
                 {{-- ── SÉLECTEUR OS ──────────────────────────────────────────── --}}
                 <div class="os-tabs" id="osTabs">
                     <button type="button" class="os-tab active" data-os="linux">

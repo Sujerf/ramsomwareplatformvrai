@@ -21,6 +21,25 @@ use Illuminate\Http\Response;
  */
 class AgentBootstrapController extends Controller
 {
+    /**
+     * Route courte : GET /e/{code}   (8 chars alphanumériques)
+     * Identique à /api/agent/bootstrap/{uuid} mais avec un code court
+     * pensé pour la saisie dans un terminal KVM où copier-coller est impossible.
+     *
+     * Exemple : curl http://10.20.0.1:8080/e/c075615a | sudo bash
+     */
+    public function scriptByShortCode(Request $request, string $code): Response
+    {
+        $agent = Agent::where('enrollment_short_code', $code)->first();
+
+        if (! $agent) {
+            abort(404, 'Code d\'enrôlement invalide ou expiré.');
+        }
+
+        // Delègue au même handler, en injectant l'UUID comme paramètre de route fictif
+        return $this->script($request, $agent->agent_uuid);
+    }
+
     public function script(Request $request, string $uuid): Response
     {
         $agent = Agent::where('agent_uuid', $uuid)->first();

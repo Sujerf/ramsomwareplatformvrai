@@ -25,6 +25,7 @@ class Agent extends Model
         'enrolled_at',
         'metadata',
         'agent_api_key',
+        'enrollment_short_code',
     ];
 
     protected $casts = [
