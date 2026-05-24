@@ -246,13 +246,10 @@ class InfrastructureInventoryService
         $mac    = $host['mac_address'] ?? null;
         $vendor = $this->macVendor->lookup($mac);
 
-        // Si le rôle est générique ET que le fabricant indique un mobile → mobile_device
+        // Ne pas écraser un rôle manuellement défini (enrolled / file_server / soc_server / mobile_device…)
+        // Le vendor badge dans l'UI informe l'admin — c'est lui qui décide du rôle manuellement.
         $genericRoles = ['client', null, 'unknown'];
-        if (in_array($role, $genericRoles, true) && in_array($vendor['category'], ['mobile', 'apple_device'], true)) {
-            $role = 'mobile_device';
-        }
-        // Ne pas écraser un rôle manuellement défini (enrolled / file_server / soc_server…)
-        if ($existing && ! in_array($existing->host_role, $genericRoles, true) && $existing->host_role !== 'mobile_device') {
+        if ($existing && ! in_array($existing->host_role, $genericRoles, true)) {
             $role = $existing->host_role;
         }
 
