@@ -789,18 +789,40 @@
                     {{-- ── TOKEN EXPIRÉ ──────────────────────────────────────── --}}
                     <div style="border-radius:12px; border:1px solid color-mix(in srgb, #ef4444 30%, transparent);
                                 background:color-mix(in srgb, #ef4444 7%, transparent);
-                                padding:14px 18px; margin-bottom:20px; display:flex; gap:12px; align-items:flex-start;">
-                        <i class="fa-solid fa-lock-open" style="color:#ef4444; font-size:16px; margin-top:2px; flex-shrink:0;"></i>
-                        <div>
+                                padding:14px 18px; margin-bottom:20px; display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+                        <i class="fa-solid fa-lock-open" style="color:#ef4444; font-size:16px; flex-shrink:0;"></i>
+                        <div style="flex:1; min-width:200px;">
                             <p style="margin:0 0 4px; font-size:13px; font-weight:850; color:#ef4444;">Token d'enrôlement expiré</p>
                             <p style="margin:0; font-size:12px; color:var(--text-muted);">
-                                Le script d'installation automatique n'est plus disponible.
-                                Retourne sur <a href="{{ route('platform.discovered-hosts.index') }}" style="color:#ef4444;">Hôtes découverts</a>
-                                et clique à nouveau sur <strong>Enrôler</strong> pour générer un nouveau token.
+                                Régénère un nouveau token pour obtenir le script d'installation.
                             </p>
                         </div>
+                        <form method="POST" action="{{ route('platform.agents.regenerate-token', $agent) }}">
+                            @csrf
+                            <button type="submit" style="padding:8px 16px; border-radius:8px; border:none;
+                                    background:#ef4444; color:#fff; font-weight:700; font-size:13px; cursor:pointer;
+                                    display:flex; align-items:center; gap:7px; white-space:nowrap;">
+                                <i class="fa-solid fa-rotate-right"></i> Régénérer le token
+                            </button>
+                        </form>
                     </div>
 
+                @endif
+
+                {{-- ── BOUTON RÉGÉNÉRER (agent non-enrôlé avec token valide) ── --}}
+                @if($agent->enrollment_status !== 'enrolled')
+                    <div style="margin-bottom:16px; display:flex; justify-content:flex-end;">
+                        <form method="POST" action="{{ route('platform.agents.regenerate-token', $agent) }}">
+                            @csrf
+                            <button type="submit"
+                                    style="padding:7px 14px; border-radius:8px; border:1.5px solid var(--border);
+                                           background:transparent; color:var(--text-muted); font-size:12px;
+                                           font-weight:700; cursor:pointer; display:flex; align-items:center; gap:6px;"
+                                    title="Génère un nouveau token valable 48h et rafraîchit le script bootstrap">
+                                <i class="fa-solid fa-rotate-right"></i> Nouveau token (48h)
+                            </button>
+                        </form>
+                    </div>
                 @endif
 
                 {{-- ── BANDEAU UUID + TOKEN ──────────────────────────────── --}}

@@ -58,6 +58,30 @@ class AgentController extends Controller
     }
 
     /**
+     * Régénère un token d'enrôlement valable 48h pour un agent pending.
+     * Permet de re-déclencher le bootstrap sans repasser par "Hôtes découverts".
+     */
+    public function regenerateToken(Agent $agent): RedirectResponse
+    {
+        $token     = Str::random(48);
+        $expiresAt = now()->addHours(48);
+
+        \Illuminate\Support\Facades\DB::table('agents')
+            ->where('id', $agent->id)
+            ->update([
+                'enrollment_token'            => $token,
+                'enrollment_token_expires_at' => $expiresAt,
+                'enrollment_status'           => 'pending',
+                'status'                      => 'pending_enrollment',
+                'updated_at'                  => now(),
+            ]);
+
+        return redirect()
+            ->route('platform.agents.show', $agent)
+            ->with('success', 'Nouveau token généré — valable 48h. Lance le script bootstrap sur la machine cible.');
+    }
+
+    /**
      * Crée et envoie une commande manuelle à un agent.
      *
      * Actions supportées :
