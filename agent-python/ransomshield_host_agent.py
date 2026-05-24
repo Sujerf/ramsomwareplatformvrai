@@ -18,7 +18,12 @@ from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
 
-load_dotenv()
+# Chemin explicite vers le .env (dossier du script) + override=True
+# pour que le fichier .env prenne toujours la priorité sur les variables
+# d'environnement système (fix Windows : load_dotenv() sans argument pouvait
+# remonter l'arborescence et trouver un mauvais fichier, ou ne pas écraser
+# des variables déjà définies dans l'env Windows).
+load_dotenv(dotenv_path=Path(__file__).parent / ".env", override=True)
 
 # ── Détection OS ──────────────────────────────────────────────────────────────
 IS_WINDOWS = platform.system() == "Windows"
