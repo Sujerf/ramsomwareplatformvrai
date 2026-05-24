@@ -27,16 +27,18 @@ class AgentCommandController extends Controller
         $allowIsolation = ($settings['enable_real_isolation'] ?? '0') === '1';
         $allowKill      = ($settings['enable_real_process_kill'] ?? '0') === '1';
 
-        $eligibleTypes = [];
+        // Bug S fix — rollback_isolation toujours autorisé, indépendamment des
+        // settings. Un agent isolé doit pouvoir être dé-isolé même si
+        // enable_real_isolation est repassé à 0 après coup.
+        // L'ancien early-return (empty($eligibleTypes)) bloquait TOUTES les
+        // commandes quand les deux settings étaient à 0, empêchant définitivement
+        // le rollback.
+        $eligibleTypes = ['rollback_isolation'];
         if ($allowIsolation) {
             $eligibleTypes[] = 'isolate_host';
         }
         if ($allowKill) {
             $eligibleTypes[] = 'kill_process';
-        }
-
-        if (empty($eligibleTypes)) {
-            return response()->json(['commands' => []]);
         }
 
         $actions = ProtectionAction::where('agent_id', $agent->id)

@@ -528,6 +528,19 @@ class HostFileEventHandler(FileSystemEventHandler):
 
 
 def monitor_processes(agent_uuid: str) -> None:
+    # Bug X fix — purge les PIDs morts avant chaque cycle.
+    #
+    # Sans cette ligne, process_seen grossit sans limite (tous les PIDs éphémères
+    # s'accumulent) et les PIDs recyclés par l'OS sont silencieusement ignorés :
+    # si PID 1234 était un process bénin déjà vu, et que l'OS le réattribue à un
+    # nouveau process suspect (openssl, gpg…), il serait sauté — faux négatif.
+    #
+    # intersection_update(live_pids) retire du set tous les PIDs qui n'existent
+    # plus. Le prochain process portant ce PID sera évalué comme nouveau.
+    # psutil.process_iter(["pid"]) est très léger (lecture /proc sans cmdline).
+    live_pids = {p.pid for p in psutil.process_iter(["pid"])}
+    process_seen.intersection_update(live_pids)
+
     for proc in psutil.process_iter(["pid", "name", "cmdline", "username", "cpu_percent", "memory_percent"]):
         try:
             pid = proc.info["pid"]

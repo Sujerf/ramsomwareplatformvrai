@@ -124,7 +124,15 @@ class DynamicDetectionEngineService
                 'mass_rename_detected',      // Bug G — burst ≥10 renames/30s
             ], true),
             'rule_ransom_note'        => $this->looksLikeRansomNote($path),
-            'rule_fast_write_activity'=> in_array($eventType, ['file_modified', 'modified', 'file_created', 'created'], true),
+
+            // Bug N fix — 'file_created' et 'created' retirés.
+            // Avant : tout file_created (+30) dépassait seul le seuil suspect (25)
+            // → chaque création de .py/.json/.txt générait une fausse alerte.
+            // La création de fichiers chiffrés est couverte par analyzeSensitiveExtension()
+            // (extension scoring) et par rule_mass_rename (file_encrypted_extension).
+            // On conserve uniquement file_modified / modified : la modification rapide
+            // de fichiers existants est le signal chiffrement le plus fiable.
+            'rule_fast_write_activity'=> in_array($eventType, ['file_modified', 'modified'], true),
             'rule_simulation_marker'  => (bool) ($payload['is_simulation'] ?? false),
             // Processus suspects (openssl, gpg, cryptsetup, rclone…) — scorés via
             // la règle rule_suspicious_process en base, capturés par genericRuleMatch.

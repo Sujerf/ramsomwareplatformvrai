@@ -11,6 +11,12 @@ use Illuminate\Support\Collection;
 
 class ConfigurationLinkService
 {
+    // Bug DD fix — injecté pour que simulation() appelle le vrai moteur
+    // au lieu d'une formule approchée.
+    public function __construct(
+        private readonly DynamicDetectionEngineService $engine,
+    ) {}
+
     public function overview(): array
     {
         $extensions = SensitiveExtension::query()
@@ -127,9 +133,12 @@ class ConfigurationLinkService
             $items[] = 'Active au moins une extension sensible comme .locked, .encrypted ou .crypt.';
         }
 
-        if (! $rules->firstWhere('code', 'rule_sensitive_extension')?->is_enabled) {
-            $items[] = 'Active la règle “Extension sensible détectée” pour relier les extensions au score de risque.';
-        }
+        // Bug CC fix — recommandation supprimée.
+        // rule_sensitive_extension est intentionnellement DÉSACTIVÉE : le scoring
+        // par extension est géré par analyzeSensitiveExtension() (table sensitive_extensions)
+        // avec des poids granulaires par extension. Activer rule_sensitive_extension
+        // en plus provoquerait un double comptage sur chaque événement.
+        // L'ancienne ligne générait donc une recommandation permanente et trompeuse.
 
         if ($thresholds->where('is_enabled', true)->count() < 4) {
             $items[] = 'Active les quatre seuils normal, suspect, high et critical pour avoir une classification complète.';
@@ -279,35 +288,59 @@ class ConfigurationLinkService
 
     private function simulation(Collection $extensions, Collection $rules, Collection $thresholds, Collection $policies, Collection $settings): array
     {
-        $extension = $extensions
+        // Bug DD fix — ancienne formule approchée remplacée par le vrai moteur.
+        //
+        // Avant :
+        //   score = extension.score_weight + rule_sensitive_extension.score_weight
+        //   → rule_sensitive_extension n'existe pas en DB → fallback rule_ransom_note (90)
+        //   → résultat = 80 + 90 = 170, ou 80 + 45 = 125 selon l'état DB — jamais cohérent
+        //   → le vrai moteur retournait 135 pour le même scénario
+        //
+        // Après : on appelle DynamicDetectionEngineService::analyze() avec
+        //   event_type='file_encrypted_extension', ce qui déclenche exactement
+        //   analyzeSensitiveExtension() + rule_mass_rename — le chemin réel de
+        //   l'agent quand un fichier est renommé vers une extension sensible.
+
+        $extension = $extensions->where('is_enabled', true)->sortByDesc('score_weight')->first();
+
+        $engineResult = $this->engine->analyze([
+            'event_type'     => 'file_encrypted_extension',
+            'path'           => '/simulation/fichier_chiffre.'.($extension?->extension ?? 'locked'),
+            'file_extension' => $extension?->extension ?? 'locked',
+        ]);
+
+        $score   = $engineResult['score'];
+        $signals = collect($engineResult['signals']);
+
+        // Signal extension (depuis analyzeSensitiveExtension)
+        $extensionSignal = $signals->firstWhere('type', 'sensitive_extension');
+        $extensionScore  = (int) ($extensionSignal['score'] ?? ($extension?->score_weight ?? 0));
+
+        // Règle la plus contributrice (hors extension)
+        $topRuleSignal = $signals->where('type', 'detection_rule')->sortByDesc('score')->first();
+
+        // Seuil et politiques depuis la collection déjà chargée
+        $matchedThreshold = $thresholds
             ->where('is_enabled', true)
-            ->sortByDesc('score_weight')
-            ->first();
+            ->first(fn ($t) => $score >= $t->min_score && ($t->max_score === null || $score <= $t->max_score));
 
-        $rule = $rules->firstWhere('code', 'rule_sensitive_extension')
-            ?? $rules->where('is_enabled', true)->sortByDesc('score_weight')->first();
-
-        $score = (int) (($extension->score_weight ?? 0) + ($rule->score_weight ?? 0));
-
-        $threshold = $thresholds
-            ->where('is_enabled', true)
-            ->first(fn ($item) => $score >= $item->min_score && ($item->max_score === null || $score <= $item->max_score));
-
-        $matchedPolicies = $threshold
-            ? $policies->where('is_enabled', true)->where('risk_level', $threshold->risk_level)->values()
+        $matchedPolicies = $matchedThreshold
+            ? $policies->where('is_enabled', true)->where('risk_level', $matchedThreshold->risk_level)->values()
             : collect();
 
         return [
-            'extension' => $extension ? '.'.$extension->extension : '—',
-            'extension_score' => (int) ($extension->score_weight ?? 0),
-            'rule' => $rule?->name ?? '—',
-            'rule_score' => (int) ($rule->score_weight ?? 0),
-            'final_score' => $score,
-            'risk_level' => $threshold?->risk_level ?? 'unknown',
-            'threshold' => $threshold ? (($threshold->label ?? $threshold->name).' : '.$threshold->min_score.' - '.($threshold->max_score ?? '∞')) : 'Aucun seuil correspondant',
+            'extension'       => $extension ? '.'.$extension->extension : '—',
+            'extension_score' => $extensionScore,
+            'rule'            => $topRuleSignal['label'] ?? '—',
+            'rule_score'      => (int) ($topRuleSignal['score'] ?? 0),
+            'final_score'     => $score,
+            'risk_level'      => $engineResult['risk_level'],
+            'threshold'       => $matchedThreshold
+                ? (($matchedThreshold->label ?? $matchedThreshold->name).' : '.$matchedThreshold->min_score.' - '.($matchedThreshold->max_score ?? '∞'))
+                : 'Aucun seuil correspondant',
             'policies' => $matchedPolicies->map(fn ($policy) => [
-                'name' => $policy->name,
-                'action_type' => $policy->action_type,
+                'name'           => $policy->name,
+                'action_type'    => $policy->action_type,
                 'execution_mode' => $policy->execution_mode,
             ])->all(),
             'safety' => [

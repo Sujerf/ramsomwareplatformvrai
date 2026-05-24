@@ -199,7 +199,10 @@ class SocStatusSynchronizerService
 
         $failed = $actions->where('execution_status', 'failed')->count();
 
-        $success = $actions->where('execution_status', 'success')->count();
+        // Bug R fix — la valeur réelle posée par AgentCommandController::result()
+        // est 'executed', pas 'success'. Ce mismatch faisait que $success était
+        // toujours 0 → resolveIncident() n'était jamais appelé automatiquement.
+        $success = $actions->where('execution_status', 'executed')->count();
         $rejected = $actions->where('approval_status', 'rejected')->count();
         $cancelled = $actions->whereIn('execution_status', ['cancelled', 'rolled_back'])->count();
 
