@@ -1402,7 +1402,8 @@
                         Efface la clé API et le token. L'agent repasse en <em>pending</em>. L'historique est conservé. Utile pour forcer un re-enrôlement.
                     </p>
                     <form method="POST" action="{{ route('platform.agents.unenroll', $agent) }}"
-                          onsubmit="return confirm('Désinscrire « {{ $agent->agent_name }} » ? La clé API sera révoquée, l\'agent devra être ré-enrôlé.')">
+                          data-confirm="Désinscrire cet agent ?\nLa clé API sera révoquée. Un ré-enrôlement sera nécessaire."
+                          onsubmit="return confirm(this.dataset.confirm)">
                         @csrf
                         @method('PATCH')
                         <button type="submit" style="
@@ -1424,7 +1425,8 @@
                         Supprime l'agent et <strong>toutes ses données</strong> (events, alertes, incidents, actions). Action irréversible.
                     </p>
                     <form method="POST" action="{{ route('platform.agents.destroy', $agent) }}"
-                          onsubmit="return confirm('⚠ Supprimer DÉFINITIVEMENT « {{ $agent->agent_name }} » et toutes ses données ? Cette action est irréversible.')">
+                          data-confirm="⚠ Supprimer DÉFINITIVEMENT cet agent et toutes ses données ?\nCette action est irréversible."
+                          onsubmit="return confirm(this.dataset.confirm)">
                         @csrf
                         @method('DELETE')
                         <button type="submit" style="
