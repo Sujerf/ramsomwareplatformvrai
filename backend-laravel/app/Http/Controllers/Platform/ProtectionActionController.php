@@ -36,9 +36,22 @@ class ProtectionActionController extends Controller
             $query->where('execution_status', 'rolled_back');
         }
 
+        // Counts per tab for badge display
+        $filterCounts = [
+            'active'   => ProtectionAction::where('approval_status', 'pending')
+                            ->whereIn('execution_status', ['waiting_approval', 'pending', 'executing'])->count(),
+            'approved' => ProtectionAction::where('approval_status', 'approved')
+                            ->whereIn('execution_status', ['pending', 'executing'])->count(),
+            'executed' => ProtectionAction::whereIn('execution_status', ['executed', 'success'])->count(),
+            'rejected' => ProtectionAction::whereIn('approval_status', ['rejected', 'cancelled'])->count(),
+            'rollback' => ProtectionAction::where('execution_status', 'rolled_back')->count(),
+            'all'      => ProtectionAction::count(),
+        ];
+
         return view('platform.protection-actions.index', [
             'actions'      => $query->paginate(25)->withQueryString(),
             'activeStatus' => $status,
+            'filterCounts' => $filterCounts,
             'stats'        => [
                 'total'    => ProtectionAction::count(),
                 'pending'  => ProtectionAction::where('approval_status', 'pending')->count(),
@@ -46,6 +59,7 @@ class ProtectionActionController extends Controller
                                 ->whereIn('execution_status', ['pending', 'executing'])->count(),
                 'executed' => ProtectionAction::whereIn('execution_status', ['executed', 'success'])->count(),
                 'rejected' => ProtectionAction::whereIn('approval_status', ['rejected', 'cancelled'])->count(),
+                'rollback' => ProtectionAction::where('execution_status', 'rolled_back')->count(),
             ],
         ]);
     }
