@@ -432,6 +432,9 @@ class AgentBootstrapController extends Controller
         $token   = $agent->enrollment_token;
         $name    = addslashes($agent->agent_name);
         $role    = $agent->host_role ?? 'client';
+        // Relire le soc_url directement depuis le fichier .env pour éviter
+        // qu'un process nohup en cache l'ancienne valeur
+        $socUrl  = rtrim(\Illuminate\Support\Facades\Config::get('app.soc_url'), '/');
         $apiUrl  = $socUrl.'/api';
         $expires = optional($agent->enrollment_token_expires_at)->toDateTimeString() ?? 'inconnue';
         $now     = now()->toDateTimeString();
@@ -565,23 +568,15 @@ Invoke-WebRequest -Uri "\$SOC_BASE/api/agent/download/requirements.txt" `
                   -OutFile "requirements.txt" -UseBasicParsing
 Write-Host "[OK] Fichiers telecharges"
 
-# ── 4. Fichier .env ───────────────────────────────────────────────────────────
-Write-Host "[4/6] Ecriture du fichier .env..."
-\$envContent = @"
-RANSHIELD_API_URL={$apiUrl}
-RANSHIELD_API_SECRET=
-RANSHIELD_AGENT_UUID={$uuid}
-RANSHIELD_ENROLLMENT_TOKEN={$token}
-RANSHIELD_AGENT_NAME={$name}
-RANSHIELD_HOST_ROLE={$role}
-RANSHIELD_MONITOR_MODE=host
-RANSHIELD_HEARTBEAT_INTERVAL=30
-RANSHIELD_SCAN_INTERVAL=5
-RANSHIELD_ENABLE_FILE_MONITOR=true
-RANSHIELD_ENABLE_PROCESS_MONITOR=true
-"@
-\$envContent | Set-Content -Path ".env" -Encoding UTF8
-Write-Host "[OK] .env configure"
+# ── 4. Fichier .env — écrit sans BOM (UTF-8 pur) ─────────────────────────────
+# PowerShell Set-Content -Encoding UTF8 écrit un BOM (\xef\xbb\xbf) que
+# python-dotenv ne reconnaît pas → toutes les clés tombent sur les defaults.
+# On utilise [System.IO.File]::WriteAllText avec UTF8Encoding($false).
+Write-Host "[4/6] Ecriture du fichier .env (UTF-8 sans BOM)..."
+\$envContent = "RANSHIELD_API_URL={$apiUrl}`nRANSHIELD_API_SECRET=`nRANSHIELD_AGENT_UUID={$uuid}`nRANSHIELD_ENROLLMENT_TOKEN={$token}`nRANSHIELD_AGENT_NAME={$name}`nRANSHIELD_HOST_ROLE={$role}`nRANSHIELD_MONITOR_MODE=host`nRANSHIELD_HEARTBEAT_INTERVAL=30`nRANSHIELD_SCAN_INTERVAL=5`nRANSHIELD_ENABLE_FILE_MONITOR=true`nRANSHIELD_ENABLE_PROCESS_MONITOR=true`n"
+\$utf8NoBom = New-Object System.Text.UTF8Encoding(\$false)
+[System.IO.File]::WriteAllText((Join-Path \$INSTALL_DIR ".env"), \$envContent, \$utf8NoBom)
+Write-Host "[OK] .env configure (sans BOM)"
 
 # ── 5. Environnement virtuel Python et dépendances ────────────────────────────
 Write-Host "[5/6] Creation du venv et installation des dependances..."
