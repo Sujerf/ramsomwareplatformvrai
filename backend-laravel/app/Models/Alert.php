@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Alert extends Model
 {
     protected $fillable = [
+        'alert_uuid',      // Bug L fix — colonne ajoutée par migration 110001
         'agent_id',
         'incident_id',
         'event_id',
