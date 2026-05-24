@@ -442,10 +442,30 @@ class AgentBootstrapController extends Controller
 #  Généré le : {$now}
 #  Agent     : {$name} ({$uuid})
 #  Token     : usage unique, expire le {$expires}
-#
-#  Exécution : powershell -ExecutionPolicy Bypass -File ransomshield-install.ps1
 # =============================================================================
-#Requires -RunAsAdministrator
+
+# ── Auto-élévation ────────────────────────────────────────────────────────────
+# Fonctionne que le script soit lancé via iex ou via un fichier .ps1
+if (-not ([Security.Principal.WindowsPrincipal]
+          [Security.Principal.WindowsIdentity]::GetCurrent()
+         ).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+
+    Write-Host "[INFO] Privileges insuffisants — re-lancement en Administrateur..."
+
+    # Sauvegarder le script dans un fichier temporaire pour le re-lancer
+    \$tmpFile = "\$env:TEMP\rsinstall-{$uuid}.ps1"
+    \$MyInvocation.MyCommand.ScriptContents | Set-Content \$tmpFile -Encoding UTF8 -ErrorAction SilentlyContinue
+
+    if (Test-Path \$tmpFile) {
+        Start-Process powershell `
+            -ArgumentList "-ExecutionPolicy Bypass -File `"\$tmpFile`"" `
+            -Verb RunAs
+    } else {
+        # Fallback : demander à l'utilisateur de relancer manuellement
+        Write-Warning "Relancez PowerShell en tant qu'Administrateur et reexecutez cette commande."
+    }
+    exit
+}
 
 \$ErrorActionPreference = "Stop"
 
