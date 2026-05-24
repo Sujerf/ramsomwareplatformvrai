@@ -16,11 +16,25 @@
             default    => 'badge-normal',
         };
 
+        // [Amélioration 1] Badge statut — couleurs sémantiques correctes
         $statusClass = fn($s) => match($s) {
-            'resolved'                                   => 'badge-normal',
-            'false_positive'                             => 'badge-suspect',
-            'under_review', 'investigating', 'reopened' => 'badge-high',
-            default                                      => 'badge-critical',
+            'open'           => 'badge-status-open',
+            'investigating'  => 'badge-status-investigating',
+            'under_review'   => 'badge-status-review',
+            'reopened'       => 'badge-status-reopened',
+            'resolved'       => 'badge-status-resolved',
+            'false_positive' => 'badge-status-false-positive',
+            default          => 'badge',
+        };
+
+        $statusIcon = fn($s) => match($s) {
+            'open'           => 'fa-circle-dot',
+            'investigating'  => 'fa-magnifying-glass',
+            'under_review'   => 'fa-eye',
+            'reopened'       => 'fa-rotate-right',
+            'resolved'       => 'fa-circle-check',
+            'false_positive' => 'fa-circle-xmark',
+            default          => 'fa-circle',
         };
 
         $statusLabel = fn($s) => match($s) {
@@ -31,6 +45,16 @@
             'resolved'       => 'Résolu',
             'false_positive' => 'Faux positif',
             default          => $s,
+        };
+
+        // [Amélioration 7] Hero gradient adaptatif
+        $heroGradient = match($activeStatus) {
+            'resolved'       => 'radial-gradient(circle at 14% 18%, color-mix(in srgb, #22c55e 16%, transparent), transparent 28%),
+                                 radial-gradient(circle at 88% 10%, color-mix(in srgb, #86efac 10%, transparent), transparent 32%)',
+            'false_positive' => 'radial-gradient(circle at 14% 18%, color-mix(in srgb, #94a3b8 14%, transparent), transparent 28%),
+                                 radial-gradient(circle at 88% 10%, color-mix(in srgb, #64748b 8%, transparent), transparent 32%)',
+            default          => 'radial-gradient(circle at 14% 18%, color-mix(in srgb, #fb923c 16%, transparent), transparent 28%),
+                                 radial-gradient(circle at 88% 10%, color-mix(in srgb, #ef4444 12%, transparent), transparent 32%)',
         };
 
         $heroTitle = match($activeStatus) {
@@ -64,9 +88,9 @@
             padding: 28px;
             border-radius: 32px;
             border: 1px solid var(--border-soft);
+            /* [Amélioration 7] gradient injecté via PHP */
             background:
-                radial-gradient(circle at 14% 18%, color-mix(in srgb, #fb923c 16%, transparent), transparent 28%),
-                radial-gradient(circle at 88% 10%, color-mix(in srgb, #ef4444 12%, transparent), transparent 32%),
+                {{ $heroGradient }},
                 var(--bg-card);
             box-shadow: var(--shadow-soft);
         }
@@ -130,6 +154,26 @@
         .filter-tab.risk-high.active     { background: #fb923c; border-color: #fb923c; }
         .filter-tab.risk-suspect.active  { background: #f59e0b; border-color: #f59e0b; color: #111; }
         .filter-tab.risk-normal.active   { background: #22c55e; border-color: #22c55e; }
+
+        /* [Amélioration 3] Compteur dans les onglets */
+        .filter-tab .ft-count {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 18px;
+            height: 18px;
+            padding: 0 5px;
+            border-radius: 9px;
+            font-size: 11px;
+            font-weight: 900;
+            background: color-mix(in srgb, currentColor 15%, transparent);
+            line-height: 1;
+        }
+
+        .filter-tab.active .ft-count {
+            background: rgba(255,255,255,.25);
+            color: #fff;
+        }
 
         .filter-sep {
             width: 1px;
@@ -221,6 +265,7 @@
             line-height: 1.55;
         }
 
+        /* ── Meta ligne ─────────────────────────────────────────────────── */
         .inc-meta {
             display: flex;
             gap: 16px;
@@ -236,7 +281,95 @@
             gap: 5px;
         }
 
-        /* Strip */
+        /* [Amélioration 5] IP agent */
+        .inc-agent-ip {
+            font-size: 11px;
+            font-family: monospace;
+            color: var(--text-muted);
+            opacity: .75;
+        }
+
+        /* [Amélioration 4] Âge urgency */
+        .inc-meta-item.age-warning  { color: #f59e0b; font-weight: 800; }
+        .inc-meta-item.age-critical { color: #ef4444; font-weight: 800; }
+
+        /* ── Score mini-bar [Amélioration 2] ─────────────────────────── */
+        .inc-score-wrap {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: default;
+        }
+
+        .inc-score-num {
+            font-size: 12px;
+            font-weight: 800;
+            font-variant-numeric: tabular-nums;
+            color: var(--text-main);
+            min-width: 24px;
+            text-align: right;
+        }
+
+        .inc-score-track {
+            width: 64px;
+            height: 5px;
+            border-radius: 3px;
+            background: var(--border-soft);
+            overflow: hidden;
+        }
+
+        .inc-score-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width .3s ease;
+        }
+
+        .inc-score-fill.critical { background: #ef4444; }
+        .inc-score-fill.high     { background: #fb923c; }
+        .inc-score-fill.suspect  { background: #f59e0b; }
+        .inc-score-fill.normal   { background: #22c55e; }
+
+        /* [Amélioration 1] Badges statut sémantiques */
+        .badge-status-open {
+            background: color-mix(in srgb, #ef4444 12%, transparent);
+            color: #ef4444;
+            border: 1px solid color-mix(in srgb, #ef4444 25%, transparent);
+        }
+        .badge-status-investigating {
+            background: color-mix(in srgb, #8b5cf6 12%, transparent);
+            color: #8b5cf6;
+            border: 1px solid color-mix(in srgb, #8b5cf6 25%, transparent);
+        }
+        .badge-status-review {
+            background: color-mix(in srgb, #3b82f6 12%, transparent);
+            color: #3b82f6;
+            border: 1px solid color-mix(in srgb, #3b82f6 25%, transparent);
+        }
+        .badge-status-reopened {
+            background: color-mix(in srgb, #fb923c 12%, transparent);
+            color: #fb923c;
+            border: 1px solid color-mix(in srgb, #fb923c 25%, transparent);
+        }
+        .badge-status-resolved {
+            background: color-mix(in srgb, #22c55e 12%, transparent);
+            color: #22c55e;
+            border: 1px solid color-mix(in srgb, #22c55e 25%, transparent);
+        }
+        .badge-status-false-positive {
+            background: color-mix(in srgb, #94a3b8 10%, transparent);
+            color: #64748b;
+            border: 1px solid color-mix(in srgb, #94a3b8 22%, transparent);
+        }
+
+        /* [Amélioration 6] Badge compteur alertes liées */
+        .badge-alerts-count {
+            background: color-mix(in srgb, var(--accent) 10%, transparent);
+            color: var(--accent);
+            border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* ── Strip ──────────────────────────────────────────────────────── */
         .inc-strip {
             margin-top: 14px;
             padding: 10px 18px;
@@ -249,8 +382,6 @@
         }
 
         .inc-strip .spacer { flex: 1; }
-
-        /* mobile : boutons pleine largeur */
 
         /* ── RESPONSIVE ───────────────────────────────────────────────────── */
         @media (max-width: 760px) {
@@ -339,21 +470,31 @@
 
         {{-- ── FILTER TABS ──────────────────────────────────────────────── --}}
         <div class="filter-tabs section-gap">
+            {{-- Filtres statut --}}
             @foreach($statusFilters as $key => $filter)
+                @php $cnt = $filterCounts['status'][$key] ?? 0; @endphp
                 <a href="{{ route('platform.incidents.index', array_filter(['status' => $key, 'risk' => $activeRisk])) }}"
                    class="filter-tab {{ $activeStatus === $key ? 'active' : '' }}">
                     <i class="fa-solid {{ $filter['icon'] }}"></i>
                     {{ $filter['label'] }}
+                    @if($cnt > 0)
+                        <span class="ft-count">{{ $cnt }}</span>
+                    @endif
                 </a>
             @endforeach
 
             <div class="filter-sep"></div>
 
+            {{-- Filtres risque --}}
             @foreach($riskFilters as $riskKey => $filter)
+                @php $cnt = $filterCounts['risk'][$riskKey] ?? 0; @endphp
                 <a href="{{ route('platform.incidents.index', array_filter(['status' => $activeStatus, 'risk' => $riskKey])) }}"
                    class="filter-tab {{ $activeRisk === $riskKey ? 'active' : '' }} {{ $riskKey ? 'risk-'.$riskKey : '' }}">
                     <i class="fa-solid {{ $filter['icon'] }}"></i>
                     {{ $filter['label'] }}
+                    @if($cnt > 0)
+                        <span class="ft-count">{{ $cnt }}</span>
+                    @endif
                 </a>
             @endforeach
         </div>
@@ -372,6 +513,19 @@
                             $risk === 'suspect'                          => 'fa-triangle-exclamation',
                             default                                      => 'fa-shield-halved',
                         };
+
+                        // [Amélioration 4] Âge urgency
+                        $detectedAt = $incident->detected_at ?? $incident->created_at;
+                        $ageMinutes = $detectedAt ? $detectedAt->diffInMinutes(now()) : 0;
+                        $ageClass   = (!$isDone && $ageMinutes >= 480) ? 'age-critical'
+                                    : ((!$isDone && $ageMinutes >= 120) ? 'age-warning' : '');
+                        $ageLabel   = $ageMinutes >= 480
+                                        ? '⚠ ' . $detectedAt->diffForHumans()
+                                        : ($detectedAt?->diffForHumans() ?? '—');
+
+                        // [Amélioration 2] Score mini-bar (max 200pts = 100%)
+                        $score         = $incident->risk_score ?? 0;
+                        $scoreBarWidth = min(100, round($score / 200 * 100));
                     @endphp
 
                     <article class="incident-card risk-{{ $risk }}">
@@ -387,12 +541,33 @@
                                 <div class="inc-head">
                                     <h3 class="inc-title">{{ $incident->title }}</h3>
                                     <div class="inc-badges">
+                                        {{-- Badge risque --}}
                                         <span class="badge {{ $riskClass($risk) }}">
                                             <i class="fa-solid fa-circle" style="font-size:7px; margin-right:3px;"></i>
                                             {{ $risk }}
                                         </span>
-                                        <span class="badge {{ $statusClass($status) }}">{{ $statusLabel($status) }}</span>
-                                        <span class="badge">Score {{ $incident->risk_score }}</span>
+
+                                        {{-- [Amélioration 1] Badge statut coloré --}}
+                                        <span class="badge {{ $statusClass($status) }}">
+                                            <i class="fa-solid {{ $statusIcon($status) }}"></i>
+                                            {{ $statusLabel($status) }}
+                                        </span>
+
+                                        {{-- [Amélioration 2] Score mini-bar --}}
+                                        <div class="inc-score-wrap" title="Score de risque : {{ $score }} / 200">
+                                            <span class="inc-score-num">{{ $score }}</span>
+                                            <div class="inc-score-track">
+                                                <div class="inc-score-fill {{ $risk }}" style="width:{{ $scoreBarWidth }}%"></div>
+                                            </div>
+                                        </div>
+
+                                        {{-- [Amélioration 6] Compteur alertes liées --}}
+                                        @if(($incident->alerts_count ?? 0) > 0)
+                                            <span class="badge badge-alerts-count">
+                                                <i class="fa-solid fa-bell"></i>
+                                                {{ $incident->alerts_count }} {{ Str::plural('alerte', $incident->alerts_count) }}
+                                            </span>
+                                        @endif
                                     </div>
                                 </div>
 
@@ -401,14 +576,21 @@
                                 @endif
 
                                 <div class="inc-meta">
+                                    {{-- [Amélioration 5] Agent + IP --}}
                                     <span class="inc-meta-item">
                                         <i class="fa-solid fa-robot"></i>
                                         {{ $incident->agent?->agent_name ?? 'Agent inconnu' }}
+                                        @if($incident->agent?->ip_address)
+                                            <span class="inc-agent-ip">({{ $incident->agent->ip_address }})</span>
+                                        @endif
                                     </span>
-                                    <span class="inc-meta-item">
+
+                                    {{-- [Amélioration 4] Âge coloré --}}
+                                    <span class="inc-meta-item {{ $ageClass }}">
                                         <i class="fa-regular fa-clock"></i>
-                                        {{ $incident->detected_at?->diffForHumans() ?? $incident->created_at?->diffForHumans() ?? '—' }}
+                                        {{ $ageLabel }}
                                     </span>
+
                                     @if($incident->resolved_at)
                                         <span class="inc-meta-item" style="color:#22c55e;">
                                             <i class="fa-solid fa-circle-check"></i>

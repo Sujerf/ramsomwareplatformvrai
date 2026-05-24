@@ -17,6 +17,7 @@ class IncidentController extends Controller
         $risk = $request->query('risk');
 
         $query = Incident::with(['agent', 'attackProfile'])
+            ->withCount('alerts')
             ->latest('detected_at')
             ->latest();
 
@@ -32,17 +33,44 @@ class IncidentController extends Controller
             $query->where('risk_level', $risk);
         }
 
+        $cntActive   = Incident::whereIn('status', ['open', 'investigating', 'under_review', 'reopened'])->count();
+        $cntResolved = Incident::where('status', 'resolved')->count();
+        $cntFalsePos = Incident::where('status', 'false_positive')->count();
+        $cntTotal    = Incident::count();
+
+        // Compteurs par risque parmi les incidents actifs (pour onglets filtre)
+        $riskCounts = Incident::whereIn('status', ['open', 'investigating', 'under_review', 'reopened'])
+            ->selectRaw('risk_level, COUNT(*) as cnt')
+            ->groupBy('risk_level')
+            ->pluck('cnt', 'risk_level')
+            ->toArray();
+
         return view('platform.incidents.index', [
-            'incidents' => $query->paginate(25)->withQueryString(),
+            'incidents'    => $query->paginate(25)->withQueryString(),
             'activeStatus' => $status,
-            'activeRisk' => $risk,
-            'stats' => [
-                'active' => Incident::whereIn('status', ['open', 'investigating', 'under_review', 'reopened'])->count(),
-                'resolved' => Incident::where('status', 'resolved')->count(),
-                'false_positive' => Incident::where('status', 'false_positive')->count(),
-                'critical' => Incident::where('risk_level', 'critical')->count(),
-                'high' => Incident::where('risk_level', 'high')->count(),
-                'total' => Incident::count(),
+            'activeRisk'   => $risk,
+            'stats'        => [
+                'active'         => $cntActive,
+                'resolved'       => $cntResolved,
+                'false_positive' => $cntFalsePos,
+                'critical'       => Incident::where('risk_level', 'critical')->count(),
+                'high'           => Incident::where('risk_level', 'high')->count(),
+                'total'          => $cntTotal,
+            ],
+            'filterCounts' => [
+                'status' => [
+                    'active'         => $cntActive,
+                    'resolved'       => $cntResolved,
+                    'false_positive' => $cntFalsePos,
+                    'all'            => $cntTotal,
+                ],
+                'risk' => [
+                    null       => $cntActive,
+                    'critical' => $riskCounts['critical'] ?? 0,
+                    'high'     => $riskCounts['high']     ?? 0,
+                    'suspect'  => $riskCounts['suspect']  ?? 0,
+                    'normal'   => $riskCounts['normal']   ?? 0,
+                ],
             ],
         ]);
     }
