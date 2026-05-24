@@ -18,7 +18,11 @@ class ManagedNetworkController extends Controller
         $status = $request->query('status', 'monitored');
 
         $query = ManagedNetwork::query()
-            ->withCount('discoveredHosts')
+            ->withCount([
+                'discoveredHosts',
+                'discoveredHosts as monitored_hosts_count' => fn ($q) => $q->where('is_monitored', true),
+                'discoveredHosts as enrolled_hosts_count'  => fn ($q) => $q->where('enrollment_status', 'enrolled'),
+            ])
             ->latest();
 
         if ($status === 'monitored') {
@@ -27,14 +31,23 @@ class ManagedNetworkController extends Controller
             $query->where('is_monitored', false);
         }
 
+        $filterCounts = [
+            'monitored' => ManagedNetwork::where('is_monitored', true)->count(),
+            'retired'   => ManagedNetwork::where('is_monitored', false)->count(),
+            'all'       => ManagedNetwork::count(),
+        ];
+
         return view('platform.networks.index', [
             'networks'     => $query->paginate(20)->withQueryString(),
             'activeStatus' => $status,
+            'filterCounts' => $filterCounts,
             'stats'        => [
-                'total'     => ManagedNetwork::count(),
-                'monitored' => ManagedNetwork::where('is_monitored', true)->count(),
-                'retired'   => ManagedNetwork::where('is_monitored', false)->count(),
-                'approved'  => ManagedNetwork::where('status', 'approved')->count(),
+                'total'          => ManagedNetwork::count(),
+                'monitored'      => ManagedNetwork::where('is_monitored', true)->count(),
+                'retired'        => ManagedNetwork::where('is_monitored', false)->count(),
+                'approved'       => ManagedNetwork::where('status', 'approved')->count(),
+                'total_hosts'    => \App\Models\DiscoveredHost::where('is_monitored', true)->count(),
+                'total_enrolled' => \App\Models\DiscoveredHost::where('enrollment_status', 'enrolled')->count(),
             ],
         ]);
     }
