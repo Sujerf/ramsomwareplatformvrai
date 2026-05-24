@@ -12,7 +12,12 @@ class ApprovalQueueController extends Controller
     {
         $actions = ProtectionAction::with(['agent', 'incident', 'protectionPolicy'])
             ->where('approval_status', 'pending')
-            ->orderByRaw("FIELD(COALESCE(execution_status,''), 'waiting_approval', 'pending') ASC")
+            // Tri : critical → high → suspect → normal, puis par ancienneté décroissante
+            ->orderByRaw("CASE COALESCE(JSON_UNQUOTE(JSON_EXTRACT(payload, '$.risk_level')), 'normal')
+                WHEN 'critical' THEN 1
+                WHEN 'high'     THEN 2
+                WHEN 'suspect'  THEN 3
+                ELSE 4 END ASC")
             ->latest('proposed_at')
             ->latest()
             ->paginate(20);

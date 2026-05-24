@@ -85,6 +85,53 @@
             flex-wrap: wrap;
         }
 
+        /* ── SECTION HEADERS (amélioration 6) ────────────────────────────── */
+        .aq-section-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 16px 6px 10px;
+            margin-top: 8px;
+        }
+
+        .aqsh-icon {
+            width: 34px;
+            height: 34px;
+            border-radius: 12px;
+            display: grid;
+            place-items: center;
+            font-size: 15px;
+            flex-shrink: 0;
+        }
+
+        .aqsh-title {
+            font-size: 12px;
+            font-weight: 950;
+            letter-spacing: .10em;
+            text-transform: uppercase;
+        }
+
+        .aqsh-sep { flex: 1; height: 1px; background: var(--border-soft); }
+
+        .aqsh-count {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-weight: 850;
+            background: color-mix(in srgb, var(--bg-panel-soft) 60%, transparent);
+            border: 1px solid var(--border-soft);
+            border-radius: 999px;
+            padding: 2px 10px;
+        }
+
+        .aq-section-header.aqsh-critical .aqsh-icon  { background: color-mix(in srgb, #ef4444 12%, transparent); color: #ef4444; }
+        .aq-section-header.aqsh-critical .aqsh-title { color: #ef4444; }
+        .aq-section-header.aqsh-high .aqsh-icon      { background: color-mix(in srgb, #fb923c 12%, transparent); color: #fb923c; }
+        .aq-section-header.aqsh-high .aqsh-title     { color: #fb923c; }
+        .aq-section-header.aqsh-suspect .aqsh-icon   { background: color-mix(in srgb, #f59e0b 12%, transparent); color: #f59e0b; }
+        .aq-section-header.aqsh-suspect .aqsh-title  { color: #f59e0b; }
+        .aq-section-header.aqsh-normal .aqsh-icon    { background: color-mix(in srgb, #6b7280 12%, transparent); color: #6b7280; }
+        .aq-section-header.aqsh-normal .aqsh-title   { color: #6b7280; }
+
         /* ── APPROVAL CARD ────────────────────────────────────────────────── */
         .approval-list {
             display: grid;
@@ -97,7 +144,7 @@
             border: 1px solid var(--border-soft);
             box-shadow: var(--shadow-soft);
             overflow: hidden;
-            max-height: 400px;
+            max-height: 500px;
             margin-bottom: 16px;
             transition: transform .18s ease, box-shadow .18s ease,
                         opacity .32s ease, max-height .42s ease, margin-bottom .42s ease;
@@ -120,36 +167,36 @@
         .approval-card.risk-critical { border-left: 3px solid #ef4444; }
         .approval-card.risk-high     { border-left: 3px solid #fb923c; }
         .approval-card.risk-suspect  { border-left: 3px solid #f59e0b; }
-        .approval-card.risk-normal   { border-left: 3px solid #22c55e; }
+        .approval-card.risk-normal   { border-left: 3px solid #6b7280; }
 
         .approval-card-inner {
             display: grid;
-            grid-template-columns: 80px minmax(0, 1fr);
+            grid-template-columns: 88px minmax(0, 1fr);
             gap: 0;
         }
 
-        /* Left icon column */
+        /* Left icon column — amélioration 1 : icône XL */
         .ac-icon-col {
             display: flex;
             align-items: flex-start;
             justify-content: center;
-            padding: 20px 0 20px 14px;
+            padding: 22px 0 22px 14px;
         }
 
         .ac-icon {
-            width: 52px;
-            height: 52px;
-            border-radius: 18px;
+            width: 60px;
+            height: 60px;
+            border-radius: 20px;
             display: grid;
             place-items: center;
-            font-size: 22px;
+            font-size: 26px;
             flex-shrink: 0;
         }
 
         .ac-icon.critical { background: color-mix(in srgb, #ef4444 12%, transparent); color: #ef4444; }
         .ac-icon.high     { background: color-mix(in srgb, #fb923c 12%, transparent); color: #fb923c; }
         .ac-icon.suspect  { background: color-mix(in srgb, #f59e0b 12%, transparent); color: #f59e0b; }
-        .ac-icon.normal   { background: color-mix(in srgb, #22c55e 12%, transparent); color: #22c55e; }
+        .ac-icon.normal   { background: color-mix(in srgb, #6b7280 12%, transparent); color: #6b7280; }
 
         /* Main content */
         .ac-body {
@@ -164,11 +211,24 @@
             flex-wrap: wrap;
         }
 
+        /* amélioration 1 : label lisible sous le type */
+        .ac-type-wrap { display: flex; flex-direction: column; gap: 2px; }
+
         .ac-type {
             margin: 0;
             font-size: 18px;
             font-weight: 950;
             letter-spacing: -.04em;
+        }
+
+        /* amélioration 2 : description */
+        .ac-description {
+            margin: 6px 0 0;
+            font-size: 13px;
+            color: var(--text-muted);
+            line-height: 1.55;
+            font-style: italic;
+            max-width: 640px;
         }
 
         .ac-badges {
@@ -177,6 +237,47 @@
             flex-wrap: wrap;
             align-items: center;
         }
+
+        /* amélioration 7 : badge statut neutre */
+        .badge-pending {
+            background: color-mix(in srgb, #94a3b8 10%, transparent);
+            color: #64748b;
+            border: 1px solid color-mix(in srgb, #94a3b8 22%, transparent);
+        }
+
+        /* amélioration 4 : score mini-bar */
+        .ac-score-wrap {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px 4px 8px;
+            border-radius: 999px;
+            background: color-mix(in srgb, var(--bg-panel-soft) 60%, transparent);
+            border: 1px solid var(--border-soft);
+        }
+
+        .ac-score-num {
+            font-size: 12px;
+            font-weight: 950;
+            letter-spacing: -.02em;
+            min-width: 24px;
+            text-align: right;
+        }
+
+        .ac-score-track {
+            width: 48px;
+            height: 4px;
+            border-radius: 999px;
+            background: color-mix(in srgb, var(--border-soft) 100%, transparent);
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .ac-score-fill { height: 100%; border-radius: 999px; }
+        .ac-score-fill.critical { background: #ef4444; }
+        .ac-score-fill.high     { background: #fb923c; }
+        .ac-score-fill.suspect  { background: #f59e0b; }
+        .ac-score-fill.normal   { background: #6b7280; }
 
         /* Context grid */
         .ac-context {
@@ -209,6 +310,19 @@
             font-size: 13px;
             font-weight: 950;
             letter-spacing: -.02em;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* amélioration 3 : IP sous le nom de machine */
+        .ac-ctx-sub {
+            margin-top: 2px;
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 700;
+            font-family: 'Courier New', monospace;
+            letter-spacing: .03em;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
@@ -265,7 +379,7 @@
             pointer-events: none;
         }
 
-        /* proposed_at */
+        /* amélioration 5 : proposed_at coloré selon âge */
         .ac-proposed {
             font-size: 12px;
             color: var(--text-muted);
@@ -273,6 +387,9 @@
             align-items: center;
             gap: 5px;
         }
+
+        .ac-proposed.age-warning { color: #f59e0b; font-weight: 850; }
+        .ac-proposed.age-critical { color: #ef4444; font-weight: 850; }
 
         /* ── ALL CLEAR STATE ──────────────────────────────────────────────── */
         .all-clear-state {
@@ -486,12 +603,24 @@
         {{-- ── APPROVAL LIST ────────────────────────────────────────────── --}}
         @if($actions->count())
             <div class="approval-list section-gap" id="aqList">
+
+                {{-- Amélioration 6 : groupement par section --}}
+                @php $currentSection = null; @endphp
+
                 @foreach($actions as $action)
                     @php
-                        $riskLevel  = data_get($action->payload, 'risk_level',  $action->incident?->risk_level  ?? 'normal');
-                        $riskScore  = data_get($action->payload, 'risk_score',  $action->incident?->risk_score  ?? 0);
+                        $riskLevel  = data_get($action->payload, 'risk_level', $action->incident?->risk_level ?? 'normal');
+                        $riskScore  = (int) data_get($action->payload, 'risk_score', $action->incident?->risk_score ?? 0);
                         $policyCode = data_get($action->payload, 'policy_code', $action->protectionPolicy?->code ?? null);
                         $signals    = collect(data_get($action->payload, 'signals', []))->take(4);
+
+                        // Amélioration 5 : âge de l'action
+                        $proposedAt  = $action->proposed_at ?? $action->created_at;
+                        $ageMinutes  = $proposedAt ? $proposedAt->diffInMinutes(now()) : 0;
+                        $ageClass    = $ageMinutes >= 30 ? 'age-critical' : ($ageMinutes >= 10 ? 'age-warning' : '');
+
+                        // Amélioration 4 : largeur mini-bar (max 200 pts = 100%)
+                        $scoreBarWidth = min(100, round($riskScore / 200 * 100));
 
                         $riskBadge = match($riskLevel) {
                             'critical' => 'badge-critical',
@@ -500,25 +629,71 @@
                             default    => 'badge-normal',
                         };
 
+                        // Amélioration 1 : label lisible + icône enrichie
+                        $actionLabel = match($action->action_type) {
+                            'isolate_host'       => 'Isolation réseau',
+                            'kill_process'       => 'Arrêt de processus',
+                            'alert_only'         => 'Notification SOC',
+                            'emergency_backup'   => 'Sauvegarde urgence',
+                            'lock_safe_copy'     => 'Copie sécurisée',
+                            'restrict_path'      => 'Restriction chemin',
+                            'rollback_isolation' => 'Lever isolation',
+                            default              => ucwords(str_replace('_', ' ', $action->action_type)),
+                        };
+
                         $actionIcon = match(true) {
-                            str_contains($action->action_type, 'isolat')  => 'fa-plug-circle-xmark',
-                            str_contains($action->action_type, 'kill')    => 'fa-ban',
-                            str_contains($action->action_type, 'backup')  => 'fa-cloud-arrow-up',
-                            str_contains($action->action_type, 'copy')    => 'fa-copy',
-                            str_contains($action->action_type, 'block')   => 'fa-shield-halved',
-                            str_contains($action->action_type, 'alert')   => 'fa-bell',
-                            str_contains($action->action_type, 'notify')  => 'fa-envelope',
-                            str_contains($action->action_type, 'quarant') => 'fa-box',
-                            default                                        => 'fa-shield-virus',
+                            str_contains($action->action_type, 'rollback')  => 'fa-plug-circle-check',
+                            str_contains($action->action_type, 'isolat')    => 'fa-plug-circle-xmark',
+                            str_contains($action->action_type, 'kill')      => 'fa-ban',
+                            str_contains($action->action_type, 'backup')    => 'fa-cloud-arrow-up',
+                            str_contains($action->action_type, 'copy')      => 'fa-lock',
+                            str_contains($action->action_type, 'restrict')  => 'fa-folder-minus',
+                            str_contains($action->action_type, 'alert')     => 'fa-bell',
+                            str_contains($action->action_type, 'notify')    => 'fa-envelope',
+                            default                                          => 'fa-shield-virus',
+                        };
+
+                        $sectionIcon = match($riskLevel) {
+                            'critical' => 'fa-radiation',
+                            'high'     => 'fa-shield-halved',
+                            'suspect'  => 'fa-eye',
+                            default    => 'fa-circle-dot',
+                        };
+
+                        $sectionLabel = match($riskLevel) {
+                            'critical' => 'CRITIQUE',
+                            'high'     => 'ÉLEVÉ',
+                            'suspect'  => 'SUSPECT',
+                            default    => 'NORMAL',
+                        };
+
+                        $sectionCount = match($riskLevel) {
+                            'critical' => $stats['critical'],
+                            'high'     => $stats['high'],
+                            'suspect'  => $stats['suspect'],
+                            default    => $stats['normal'],
                         };
                     @endphp
+
+                    {{-- ── Section header quand le niveau change (amélioration 6) --}}
+                    @if($riskLevel !== $currentSection)
+                        @php $currentSection = $riskLevel; @endphp
+                        <div class="aq-section-header aqsh-{{ $riskLevel }}">
+                            <div class="aqsh-icon">
+                                <i class="fa-solid {{ $sectionIcon }}"></i>
+                            </div>
+                            <span class="aqsh-title">{{ $sectionLabel }}</span>
+                            <div class="aqsh-sep"></div>
+                            <span class="aqsh-count">{{ $sectionCount }} en attente</span>
+                        </div>
+                    @endif
 
                     <article class="approval-card risk-{{ $riskLevel }}"
                              id="ac-{{ $action->id }}"
                              data-id="{{ $action->id }}">
                         <div class="approval-card-inner">
 
-                            {{-- Icon column --}}
+                            {{-- Icône XL (amélioration 1) --}}
                             <div class="ac-icon-col">
                                 <div class="ac-icon {{ $riskLevel }}">
                                     <i class="fa-solid {{ $actionIcon }}"></i>
@@ -528,14 +703,33 @@
                             {{-- Body --}}
                             <div class="ac-body">
                                 <div class="ac-head">
-                                    <h3 class="ac-type">{{ $action->action_type }}</h3>
+
+                                    <div class="ac-type-wrap">
+                                        {{-- Amélioration 1 : label lisible --}}
+                                        <h3 class="ac-type">{{ $actionLabel }}</h3>
+                                        {{-- Amélioration 2 : description --}}
+                                        @if($action->description)
+                                            <p class="ac-description">{{ $action->description }}</p>
+                                        @endif
+                                    </div>
+
                                     <div class="ac-badges">
                                         <span class="badge {{ $riskBadge }}">
                                             <i class="fa-solid fa-circle" style="font-size:8px; margin-right:4px;"></i>
                                             {{ $riskLevel }}
                                         </span>
-                                        <span class="badge">Score {{ $riskScore }}</span>
-                                        <span class="badge badge-high">
+
+                                        {{-- Amélioration 4 : score mini-bar --}}
+                                        <div class="ac-score-wrap" title="Score de risque : {{ $riskScore }} / 200">
+                                            <span class="ac-score-num">{{ $riskScore }}</span>
+                                            <div class="ac-score-track">
+                                                <div class="ac-score-fill {{ $riskLevel }}"
+                                                     style="width:{{ $scoreBarWidth }}%"></div>
+                                            </div>
+                                        </div>
+
+                                        {{-- Amélioration 7 : badge pending neutre --}}
+                                        <span class="badge badge-pending">
                                             <i class="fa-solid fa-hourglass-half" style="font-size:10px; margin-right:3px;"></i>
                                             en attente
                                         </span>
@@ -544,13 +738,18 @@
 
                                 {{-- Context grid --}}
                                 <div class="ac-context">
+
+                                    {{-- Amélioration 3 : Machine avec IP --}}
                                     <div class="ac-ctx-item">
                                         <div class="ac-ctx-label">
                                             <i class="fa-solid fa-robot"></i> Machine
                                         </div>
-                                        <div class="ac-ctx-value" title="{{ $action->agent?->agent_name ?? 'Inconnu' }}">
+                                        <div class="ac-ctx-value" title="{{ $action->agent?->hostname ?? $action->agent?->agent_name ?? 'Inconnu' }}">
                                             {{ $action->agent?->agent_name ?? '—' }}
                                         </div>
+                                        @if($action->agent?->ip_address)
+                                            <div class="ac-ctx-sub">{{ $action->agent->ip_address }}</div>
+                                        @endif
                                     </div>
 
                                     <div class="ac-ctx-item">
@@ -593,9 +792,17 @@
 
                         {{-- Decision strip --}}
                         <div class="ac-decision-strip">
-                            <span class="ac-proposed">
-                                <i class="fa-regular fa-clock"></i>
-                                {{ $action->proposed_at?->diffForHumans() ?? $action->created_at?->diffForHumans() ?? '—' }}
+
+                            {{-- Amélioration 5 : âge coloré --}}
+                            <span class="ac-proposed {{ $ageClass }}"
+                                  title="{{ $proposedAt?->format('d/m/Y H:i:s') }}">
+                                <i class="fa-{{ $ageClass === 'age-critical' ? 'solid' : 'regular' }} fa-clock"></i>
+                                {{ $proposedAt?->diffForHumans() ?? '—' }}
+                                @if($ageClass === 'age-critical')
+                                    <span style="font-size:10px; opacity:.8;">— urgent</span>
+                                @elseif($ageClass === 'age-warning')
+                                    <span style="font-size:10px; opacity:.8;">— en attente</span>
+                                @endif
                             </span>
 
                             <div class="spacer"></div>
@@ -679,8 +886,8 @@
         function updateCounter(delta) {
             pendingCount = Math.max(0, pendingCount + delta);
             if (counter) {
-                counter.textContent  = pendingCount;
-                counter.style.color  = pendingCount > 0 ? '#f59e0b' : '';
+                counter.textContent = pendingCount;
+                counter.style.color = pendingCount > 0 ? '#f59e0b' : '';
             }
         }
 
@@ -690,6 +897,15 @@
             card.classList.add('removing');
             setTimeout(() => {
                 card.remove();
+
+                // Supprimer les section-headers vides (plus aucune card de ce niveau)
+                document.querySelectorAll('.aq-section-header').forEach(header => {
+                    const next = header.nextElementSibling;
+                    if (!next || next.classList.contains('aq-section-header')) {
+                        header.remove();
+                    }
+                });
+
                 const list = document.getElementById('aqList');
                 if (list && list.querySelectorAll('.approval-card:not(.removing)').length === 0) {
                     list.insertAdjacentHTML('afterend',
@@ -710,8 +926,8 @@
                 const url      = this.dataset.url;
                 const decision = this.dataset.decision;
 
-                const card     = document.getElementById('ac-' + id);
-                const btns     = card?.querySelectorAll('.action-btn[data-decision]');
+                const card = document.getElementById('ac-' + id);
+                const btns = card?.querySelectorAll('.action-btn[data-decision]');
                 btns?.forEach(b => b.classList.add('loading'));
 
                 try {
@@ -726,16 +942,15 @@
 
                     if (!resp.ok) throw new Error('Erreur serveur');
 
-                    const data = await resp.json();
-
                     updateCounter(-1);
                     removeCard(id);
 
-                    if (decision === 'approve') {
-                        showToast('Action approuvée — elle sera exécutée.', 'green');
-                    } else {
-                        showToast('Action rejetée — annulée.', 'red');
-                    }
+                    showToast(
+                        decision === 'approve'
+                            ? 'Action approuvée — elle sera exécutée.'
+                            : 'Action rejetée — annulée.',
+                        decision === 'approve' ? 'green' : 'red'
+                    );
 
                 } catch (e) {
                     btns?.forEach(b => b.classList.remove('loading'));
