@@ -105,11 +105,18 @@ class DynamicDetectionEngineService
         $code = $rule->code;
 
         $matched = match ($code) {
-            'rule_sensitive_extension' => $extension && $this->isSensitiveExtension($extension),
-            'rule_mass_rename' => in_array($eventType, ['file_moved', 'file_renamed', 'moved', 'renamed'], true),
-            'rule_ransom_note' => $this->looksLikeRansomNote($path),
-            'rule_fast_write_activity' => in_array($eventType, ['file_modified', 'modified', 'file_created', 'created'], true),
-            'rule_simulation_marker' => (bool) ($payload['is_simulation'] ?? false),
+            // NOTE : rule_sensitive_extension est intentionnellement absent ici.
+            // analyzeSensitiveExtension() gère déjà le scoring par extension avec
+            // des poids granulaires depuis la table sensitive_extensions.
+            // Un case hardcodé ici provoquerait un double comptage sur chaque
+            // événement portant une extension sensible.
+
+            'rule_mass_rename'        => in_array($eventType, ['file_moved', 'file_renamed', 'moved', 'renamed'], true),
+            'rule_ransom_note'        => $this->looksLikeRansomNote($path),
+            'rule_fast_write_activity'=> in_array($eventType, ['file_modified', 'modified', 'file_created', 'created'], true),
+            'rule_simulation_marker'  => (bool) ($payload['is_simulation'] ?? false),
+            // Processus suspects (openssl, gpg, cryptsetup, rclone…) — scorés via
+            // la règle rule_suspicious_process en base, capturés par genericRuleMatch.
             default => $this->genericRuleMatch($rule, $payload, $eventType, $path),
         };
 
