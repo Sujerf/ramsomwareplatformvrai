@@ -229,16 +229,41 @@ class InfrastructureInventoryService
             return null;
         }
 
+        // ── Lookup prioritaire : IP (clé canonique dans le réseau) ────────────
+        // L'IP est la source de vérité. L'`orWhere(mac)` de l'ancienne version
+        // pouvait retourner une ligne à une IP DIFFÉRENTE (DHCP migration), puis
+        // la mise à jour essayait de lui affecter l'IP cible → conflit de clé
+        // unique (managed_network_id, ip_address).
         $existing = DiscoveredHost::query()
             ->where('managed_network_id', $network->id)
-            ->where(function ($query) use ($ip, $host) {
-                $query->where('ip_address', $ip);
-
-                if (! empty($host['mac_address'])) {
-                    $query->orWhere('mac_address', $host['mac_address']);
-                }
-            })
+            ->where('ip_address', $ip)
             ->first();
+
+        // ── Lookup secondaire : MAC (fallback migration DHCP) ────────────────
+        // Utilisé UNIQUEMENT si aucune ligne ne correspond à l'IP cible.
+        // Si l'IP cible est déjà prise par un autre enregistrement, on ignore
+        // le match MAC pour éviter un conflit de clé.
+        if (! $existing && ! empty($host['mac_address'])) {
+            $byMac = DiscoveredHost::query()
+                ->where('managed_network_id', $network->id)
+                ->where('mac_address', $host['mac_address'])
+                ->first();
+
+            if ($byMac) {
+                // Vérifier qu'aucune autre ligne n'occupe déjà l'IP cible
+                $ipAlreadyTaken = DB::table('discovered_hosts')
+                    ->where('managed_network_id', $network->id)
+                    ->where('ip_address', $ip)
+                    ->where('id', '!=', $byMac->id)
+                    ->exists();
+
+                if (! $ipAlreadyTaken) {
+                    $existing = $byMac; // Safe : on peut réaffecter l'IP
+                }
+                // Si l'IP est déjà occupée → on ignore le match MAC et on
+                // laisse l'hôte créer une nouvelle ligne (ou échouer proprement)
+            }
+        }
 
         $role = $host['host_role'] ?? $this->guessHostRole($network, $ip, $host['hostname'] ?? null);
 
@@ -275,16 +300,37 @@ class InfrastructureInventoryService
             'updated_at'         => now(),
         ];
 
-        if ($existing) {
-            DB::table('discovered_hosts')->where('id', $existing->id)->update($payload);
+        try {
+            if ($existing) {
+                DB::table('discovered_hosts')->where('id', $existing->id)->update($payload);
 
-            return DiscoveredHost::find($existing->id);
+                return DiscoveredHost::find($existing->id);
+            }
+
+            $payload['created_at'] = now();
+            $id = DB::table('discovered_hosts')->insertGetId($payload);
+
+            return DiscoveredHost::find($id);
+        } catch (\Illuminate\Database\UniqueConstraintViolationException) {
+            // Race condition : une autre requête concurrente a inséré/mis à jour
+            // la même combinaison (managed_network_id, ip_address) entre notre
+            // SELECT et notre UPDATE/INSERT. On récupère la ligne gagnante et on
+            // la met à jour avec notre payload.
+            $conflicting = DiscoveredHost::query()
+                ->where('managed_network_id', $network->id)
+                ->where('ip_address', $ip)
+                ->first();
+
+            if ($conflicting) {
+                DB::table('discovered_hosts')
+                    ->where('id', $conflicting->id)
+                    ->update($payload);
+
+                return DiscoveredHost::find($conflicting->id);
+            }
+
+            return null;
         }
-
-        $payload['created_at'] = now();
-        $id = DB::table('discovered_hosts')->insertGetId($payload);
-
-        return DiscoveredHost::find($id);
     }
 
     // ──────────────────────────────────────────────────────────────────────────
