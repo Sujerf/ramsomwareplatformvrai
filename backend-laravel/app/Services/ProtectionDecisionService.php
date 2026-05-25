@@ -70,6 +70,10 @@ class ProtectionDecisionService
                             'effective_decision_mode'  => $effectiveDecisionMode,
                             'real_execution_allowed'   => $realExecutionAllowed,
                             'is_sensitive_real_action' => $isSensitiveAction,
+                            // F — signaux propagés depuis incident.metadata pour la vue show
+                            'signals'                  => data_get($incident->metadata, 'signals', []),
+                            // G — champ attendu par la vue show (dérivé de effective_decision_mode)
+                            'human_approval_required'  => $effectiveDecisionMode === 'approval_required',
                             'timeline_message'         => $this->timelineMessageForAction($actionType, $effectiveDecisionMode),
                         ],
                         'proposed_at' => now(),
