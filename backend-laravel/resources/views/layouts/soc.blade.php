@@ -20,8 +20,8 @@
         default => 'Dark SOC',
     };
 
-    $navActiveAlerts    = Alert::where('status', 'active')->count();
-    $navActiveIncidents = Incident::where('status', 'active')->count();
+    $navActiveAlerts    = Alert::whereIn('status', ['open', 'acknowledged', 'investigating'])->count();
+    $navActiveIncidents = Incident::whereIn('status', ['open', 'investigating', 'under_review', 'reopened'])->count();
     $navPendingActions  = ProtectionAction::where('approval_status', 'pending')->count();
     $engineActive       = SystemSetting::where('key', 'protection_execution_enabled')->value('value') === '1';
 @endphp
@@ -1135,6 +1135,24 @@
                 <i class="fa-solid {{ $engineActive ? 'fa-circle-play' : 'fa-circle-pause' }}"></i>
                 <span>Moteur {{ $engineActive ? 'actif' : 'en pause' }}</span>
             </div>
+
+            <form method="POST" action="{{ route('platform.logout') }}" style="margin-top: 8px;">
+                @csrf
+                <button type="submit" style="
+                    display: flex; align-items: center; gap: 9px; width: 100%;
+                    padding: 9px 12px; border-radius: 11px;
+                    font-size: 12px; font-weight: 700;
+                    color: var(--text-muted); background: none;
+                    border: 1px solid transparent; cursor: pointer;
+                    transition: color .15s, background .15s, border-color .15s;
+                    text-align: left; font-family: inherit;
+                "
+                onmouseover="this.style.color='#ef4444';this.style.background='rgba(239,68,68,.08)';this.style.borderColor='rgba(239,68,68,.18)';"
+                onmouseout="this.style.color='var(--text-muted)';this.style.background='none';this.style.borderColor='transparent';">
+                    <i class="fa-solid fa-right-from-bracket" style="width: 14px; text-align: center; font-size: 11px;"></i>
+                    Se déconnecter
+                </button>
+            </form>
         </div>
     </aside>
 

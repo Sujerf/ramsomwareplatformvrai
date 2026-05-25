@@ -1133,7 +1133,7 @@
             <a href="{{ route('platform.agents.index') }}">Agents</a>
             <a href="{{ route('platform.system-settings.index') }}">Paramètres</a>
         </nav>
-        <div class="f-copy">© {{ date('Y') }} — Tout droit reservés/div>
+        <div class="f-copy">© {{ date('Y') }} — Tous droits réservés</div>
     </div>
 </footer>
 @endsection

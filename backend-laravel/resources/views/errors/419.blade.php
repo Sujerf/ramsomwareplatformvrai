@@ -22,7 +22,7 @@
         <a href="{{ url()->previous() ?: url('/console/dashboard') }}" class="btn btn-primary">
             <i class="fa-solid fa-rotate"></i> Recharger la page
         </a>
-        <a href="{{ url('/login') }}" class="btn btn-soft">
+        <a href="{{ route('platform.login') }}" class="btn btn-soft">
             <i class="fa-solid fa-right-to-bracket"></i> Se reconnecter
         </a>
     </div>
