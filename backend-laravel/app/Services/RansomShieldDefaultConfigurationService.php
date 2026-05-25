@@ -175,27 +175,42 @@ class RansomShieldDefaultConfigurationService
     public function syncSystemSettings(): int
     {
         $items = [
-            ['group' => 'protection', 'key' => 'enable_real_isolation', 'label' => 'Isolation réelle', 'value_type' => 'boolean', 'value' => '0', 'description' => 'Autorise les actions d’isolation réelle. Désactivé par défaut pour sécurité.'],
-            ['group' => 'protection', 'key' => 'require_human_approval_for_sensitive_actions', 'label' => 'Approbation humaine obligatoire', 'value_type' => 'boolean', 'value' => '1', 'description' => 'Exige une validation humaine pour les actions sensibles.'],
-            ['group' => 'detection', 'key' => 'min_risk_level_for_incident', 'label' => 'Niveau minimum incident', 'value_type' => 'string', 'value' => 'high', 'description' => 'Niveau minimal pour créer automatiquement un incident.'],
-            ['group' => 'detection', 'key' => 'min_risk_level_for_action', 'label' => 'Niveau minimum action', 'value_type' => 'string', 'value' => 'high', 'description' => 'Niveau minimal pour proposer une action de protection.'],
-            ['group' => 'notifications', 'key' => 'notification_ui_enabled', 'label' => 'Notifications interface', 'value_type' => 'boolean', 'value' => '1', 'description' => 'Active les notifications visibles dans l’interface.'],
-            ['group' => 'notifications', 'key' => 'notification_sound_enabled', 'label' => 'Alarme sonore navigateur', 'value_type' => 'boolean', 'value' => '1', 'description' => 'Active l’alarme sonore navigateur pour les alertes importantes.'],
-            ['group' => 'ui', 'key' => 'ui_theme', 'label' => 'Thème interface', 'value_type' => 'string', 'value' => 'light', 'description' => 'Thème par défaut de l’interface.'],
+            // ── Protection ────────────────────────────────────────────────────
+            ['group' => 'protection', 'key' => 'protection_execution_enabled',                 'label' => 'Exécution des protections',       'value_type' => 'boolean', 'value' => '1',    'description' => "Active la génération et l'exécution des actions de protection."],
+            ['group' => 'protection', 'key' => 'enable_real_isolation',                        'label' => 'Isolation réelle',                'value_type' => 'boolean', 'value' => '0',    'description' => "Autorise les actions d'isolation réelle. Désactivé par défaut pour sécurité."],
+            ['group' => 'protection', 'key' => 'enable_real_process_kill',                     'label' => 'Arrêt réel de processus',    'value_type' => 'boolean', 'value' => '0',    'description' => "Autorise l'arrêt réel de processus. Désactivé par défaut pour sécurité."],
+            ['group' => 'protection', 'key' => 'require_human_approval_for_sensitive_actions', 'label' => 'Approbation humaine obligatoire',      'value_type' => 'boolean', 'value' => '1',    'description' => 'Exige une validation humaine pour les actions sensibles.'],
+            ['group' => 'protection', 'key' => 'safe_copy_root',                               'label' => 'Dossier copies sûres',            'value_type' => 'string',  'value' => '',     'description' => "Chemin de stockage des copies sûres ou sauvegardes d'urgence."],
+
+            // ── Détection ────────────────────────────────────────────────────────
+            ['group' => 'detection',  'key' => 'min_risk_level_for_incident',                  'label' => 'Niveau minimum pour incident',         'value_type' => 'string',  'value' => 'high', 'description' => "Niveau de risque minimum déclenchant la création automatique d'un incident."],
+            ['group' => 'detection',  'key' => 'min_risk_level_for_action',                    'label' => 'Niveau minimum pour action',           'value_type' => 'string',  'value' => 'high', 'description' => "Niveau de risque minimum déclenchant la proposition d'une action de protection."],
+
+            // ── Notifications ─────────────────────────────────────────────────
+            ['group' => 'notifications', 'key' => 'notification_ui_enabled',                   'label' => 'Notifications interface',              'value_type' => 'boolean', 'value' => '1',    'description' => "Active les notifications visibles dans l'interface."],
+            ['group' => 'notifications', 'key' => 'notification_sound_enabled',                'label' => 'Alarme sonore navigateur',             'value_type' => 'boolean', 'value' => '1',    'description' => "Active l'alarme sonore navigateur pour les alertes importantes."],
+            ['group' => 'notifications', 'key' => 'notification_mail_enabled',                 'label' => 'Notifications mail',                  'value_type' => 'boolean', 'value' => '0',    'description' => "Active ou désactive l'envoi de mails d'alerte."],
+            ['group' => 'notifications', 'key' => 'notification_mail_recipient',               'label' => 'Destinataire mail alerte',             'value_type' => 'string',  'value' => '',     'description' => "Adresse mail de l'administrateur à notifier."],
+            ['group' => 'notifications', 'key' => 'notification_min_risk_level',               'label' => 'Niveau minimum de notification',       'value_type' => 'string',  'value' => 'high', 'description' => 'Niveau minimum de risque déclenchant les notifications importantes.'],
+
+            // ── Interface ─────────────────────────────────────────────────────
+            // Corrigé : 'soc_dark' est le thème par défaut réel (soc.blade.php + SystemSettingSeeder).
+            // L'ancienne valeur 'light' n'existe pas dans le sélecteur et produisait un thème inconnu.
+            ['group' => 'ui',            'key' => 'ui_theme',                                  'label' => 'Thème interface',                 'value_type' => 'string',  'value' => 'soc_dark', 'description' => 'Thème visuel par défaut de la console SOC.'],
         ];
 
         foreach ($items as $item) {
             DB::table('system_settings')->updateOrInsert(
                 ['key' => $item['key']],
                 $this->withTimestamps('system_settings', [
-                    'group' => $item['group'],
-                    'key' => $item['key'],
-                    'label' => $item['label'],
-                    'value_type' => $item['value_type'],
-                    'value' => $item['value'],
+                    'group'       => $item['group'],
+                    'key'         => $item['key'],
+                    'label'       => $item['label'],
+                    'value_type'  => $item['value_type'],
+                    'value'       => $item['value'],
                     'description' => $item['description'],
-                    'metadata' => json_encode([
-                        'default' => true,
+                    'metadata'    => json_encode([
+                        'default'       => true,
                         'default_value' => $item['value'],
                     ], JSON_UNESCAPED_UNICODE),
                 ])
