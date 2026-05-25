@@ -18,16 +18,16 @@ class UserController extends Controller
 
     public function index(): View
     {
-        $this->requireAdmin();
+        $this->authorize('viewAny', User::class);
 
         $users = User::orderBy('role')->orderBy('name')->get();
 
         return view('platform.users.index', [
             'users' => $users,
             'stats' => [
-                'total'   => $users->count(),
-                'admins'  => $users->where('role', 'admin')->count(),
-                'analysts'=> $users->where('role', 'analyst')->count(),
+                'total'    => $users->count(),
+                'admins'   => $users->where('role', 'admin')->count(),
+                'analysts' => $users->where('role', 'analyst')->count(),
             ],
         ]);
     }
@@ -36,7 +36,7 @@ class UserController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $this->requireAdmin();
+        $this->authorize('create', User::class);
 
         $validated = $request->validate([
             'name'     => ['required', 'string', 'max:255'],
@@ -64,8 +64,7 @@ class UserController extends Controller
 
     public function edit(User $user): View
     {
-        // Un admin peut éditer n'importe qui ; un analyste peut éditer son propre profil
-        $this->requireAdminOrSelf($user);
+        $this->authorize('view', $user);
 
         return view('platform.users.edit', compact('user'));
     }
@@ -74,14 +73,14 @@ class UserController extends Controller
 
     public function update(Request $request, User $user): RedirectResponse
     {
-        $this->requireAdminOrSelf($user);
+        $this->authorize('update', $user);
 
         $rules = [
             'name'  => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
         ];
 
-        // Seul un admin peut changer le rôle
+        // Seul un admin peut changer le rôle d'un autre utilisateur
         if (Auth::user()->isAdmin() && Auth::id() !== $user->id) {
             $rules['role'] = ['required', 'in:admin,analyst'];
         }
@@ -103,7 +102,10 @@ class UserController extends Controller
             && $user->role === 'admin'
             && User::where('role', 'admin')->count() <= 1
         ) {
-            return back()->withErrors(['role' => 'Impossible de rétrograder le dernier administrateur.'], 'updateBag');
+            return back()->withErrors(
+                ['role' => 'Impossible de rétrograder le dernier administrateur.'],
+                'updateBag'
+            );
         }
 
         $user->update($validated);
@@ -121,7 +123,7 @@ class UserController extends Controller
 
     public function updatePassword(Request $request, User $user): RedirectResponse
     {
-        $this->requireAdminOrSelf($user);
+        $this->authorize('update', $user);
 
         $rules = [
             'new_password' => ['required', Password::min(8)->letters()->numbers(), 'confirmed'],
@@ -140,7 +142,7 @@ class UserController extends Controller
 
         $user->update(['password' => Hash::make($request->new_password)]);
 
-        // Si l'admin change son propre mot de passe, on régénère la session
+        // Régénérer la session si l'utilisateur change son propre mot de passe
         if (Auth::id() === $user->id) {
             $request->session()->regenerate();
         }
@@ -152,7 +154,7 @@ class UserController extends Controller
 
     public function destroy(User $user): RedirectResponse
     {
-        $this->requireAdmin();
+        $this->authorize('delete', $user);
 
         if (Auth::id() === $user->id) {
             return back()->withErrors(['delete' => 'Vous ne pouvez pas supprimer votre propre compte.']);
@@ -168,21 +170,5 @@ class UserController extends Controller
         return redirect()
             ->route('platform.users.index')
             ->with('success', "Utilisateur « {$name} » supprimé.");
-    }
-
-    // ── Helpers de contrôle d'accès ───────────────────────────────────────
-
-    private function requireAdmin(): void
-    {
-        abort_if(! Auth::user()->isAdmin(), 403, 'Accès réservé aux administrateurs.');
-    }
-
-    private function requireAdminOrSelf(User $user): void
-    {
-        abort_if(
-            ! Auth::user()->isAdmin() && Auth::id() !== $user->id,
-            403,
-            'Vous ne pouvez pas modifier le profil d\'un autre utilisateur.'
-        );
     }
 }

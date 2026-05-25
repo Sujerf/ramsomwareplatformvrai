@@ -23,6 +23,28 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'agent.secret' => \App\Http\Middleware\ValidateAgentSecret::class,
+            'role'         => \App\Http\Middleware\EnsureRole::class,
+        ]);
+
+        /*
+         * Priorité middleware : EnsureRole doit s'exécuter AVANT SubstituteBindings
+         * pour que le 403 soit retourné avant que le model binding tente une résolution DB.
+         * Sans cette priorité, les routes avec {model} non existants retournent 404
+         * au lieu de 403 — même quand l'utilisateur n'a pas le rôle requis.
+         */
+        $middleware->priority([
+            \Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests::class,
+            \Illuminate\Cookie\Middleware\EncryptCookies::class,
+            \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
+            \Illuminate\Session\Middleware\StartSession::class,
+            \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+            \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class,
+            \Illuminate\Routing\Middleware\ThrottleRequests::class,
+            \Illuminate\Routing\Middleware\ThrottleRequestsWithRedis::class,
+            \Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests::class,
+            \App\Http\Middleware\EnsureRole::class,
+            \Illuminate\Routing\Middleware\SubstituteBindings::class,
+            \Illuminate\Auth\Middleware\Authorize::class,
         ]);
 
         $middleware->redirectGuestsTo(fn () => route('platform.login'));
