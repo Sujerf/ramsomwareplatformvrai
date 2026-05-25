@@ -14,6 +14,7 @@ class UserSeeder extends Seeder
             ['email' => 'admin@ransomshield.local'],
             [
                 'name'     => 'Administrateur SOC',
+                'role'     => 'admin',
                 'password' => Hash::make('RansomShield@2026!'),
             ]
         );

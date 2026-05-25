@@ -304,8 +304,7 @@
             Changer le mot de passe
         </h3>
 
-        <form method="POST" action="{{ route('platform.users.update-password', $user) }}"
-              errorBag="passwordBag">
+        <form method="POST" action="{{ route('platform.users.update-password', $user) }}">
             @csrf
             @method('PATCH')
 
