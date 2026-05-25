@@ -195,12 +195,14 @@
                     </div>
 
                     <div class="btn-row">
+                        @if(auth()->user()->isAdmin())
                         <form method="POST" action="{{ route('platform.configuration.reset-defaults') }}" style="display:contents">
                             @csrf
                             <button type="submit" class="action-btn warning">
                                 <i class="fa-solid fa-rotate-left"></i> Réinitialiser défauts
                             </button>
                         </form>
+                        @endif
                         <a href="{{ route('platform.system-settings.index') }}" class="action-btn">
                             <i class="fa-solid fa-sliders"></i> Paramètres
                         </a>

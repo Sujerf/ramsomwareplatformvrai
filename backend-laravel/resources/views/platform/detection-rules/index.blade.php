@@ -217,12 +217,14 @@
                 <a href="{{ route('platform.detection-thresholds.index') }}" class="action-btn">
                     <i class="fa-solid fa-gauge-high"></i> Seuils d'analyse
                 </a>
+                @if(auth()->user()->isAdmin())
                 <form method="POST" action="{{ route('platform.configuration.reset-defaults') }}" style="display:contents">
                     @csrf
                     <button class="action-btn warning" type="submit">
                         <i class="fa-solid fa-rotate-left"></i> Restaurer défauts
                     </button>
                 </form>
+                @endif
             </div>
         </section>
 

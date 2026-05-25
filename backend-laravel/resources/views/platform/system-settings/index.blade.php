@@ -246,10 +246,12 @@
                             </a>
                         @endforeach
 
+                        @if(auth()->user()->isAdmin())
                         <form method="POST" action="{{ route('platform.configuration.reset-defaults') }}">
                             @csrf
                             <button class="action-btn warning" type="submit">Réinitialiser défauts</button>
                         </form>
+                        @endif
                     </div>
                 </div>
 
@@ -355,6 +357,7 @@
                                 <strong>Impact :</strong> {{ $impactText($setting) }}
                             </div>
 
+                            @if(auth()->user()->isAdmin())
                             <form method="POST" action="{{ route('platform.system-settings.update', $setting) }}" class="setting-form">
                                 @csrf
                                 @method('PUT')
@@ -407,6 +410,7 @@
                                     <i class="fa-solid fa-rotate-left"></i> Restaurer défaut
                                 </button>
                             </form>
+                            @endif {{-- end @if(auth()->user()->isAdmin()) setting form --}}
                         </article>
                     @endforeach
                 </div>

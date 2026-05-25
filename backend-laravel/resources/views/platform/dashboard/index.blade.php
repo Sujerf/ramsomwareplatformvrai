@@ -806,7 +806,8 @@
             </div>
         </section>
 
-        {{-- ── SURVEILLANCE CONTROL PANEL ──────────────────────────────── --}}
+        {{-- ── SURVEILLANCE CONTROL PANEL — admin uniquement ─────────── --}}
+        @if(auth()->user()->isAdmin())
         <section class="section-gap">
             <div class="section-heading">
                 <div class="section-heading-icon">
@@ -1075,6 +1076,7 @@
 
             </div>
         </section>
+        @endif {{-- end @if(auth()->user()->isAdmin()) surveillance panel --}}
 
         {{-- ── CHARTS ───────────────────────────────────────────────────── --}}
         <section class="chart-grid-premium section-gap">

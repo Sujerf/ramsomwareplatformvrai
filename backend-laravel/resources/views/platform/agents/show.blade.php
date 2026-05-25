@@ -1423,8 +1423,8 @@
 
             <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-start;">
 
-                {{-- Désinscrire (soft) --}}
-                @if($agent->enrollment_status === 'enrolled')
+                {{-- Désinscrire (soft) — admin uniquement --}}
+                @if(auth()->user()->isAdmin() && $agent->enrollment_status === 'enrolled')
                 <div style="flex:1; min-width:240px;">
                     <p style="font-size:.8rem; color:var(--text-muted); margin:0 0 10px;">
                         <strong style="color:var(--text-primary);">Désinscrire l'agent</strong><br>
@@ -1447,7 +1447,8 @@
                 </div>
                 @endif
 
-                {{-- Supprimer définitivement --}}
+                {{-- Supprimer définitivement — admin uniquement --}}
+                @if(auth()->user()->isAdmin())
                 <div style="flex:1; min-width:240px;">
                     <p style="font-size:.8rem; color:var(--text-muted); margin:0 0 10px;">
                         <strong style="color:#ef4444;">Supprimer définitivement</strong><br>
@@ -1468,6 +1469,7 @@
                         </button>
                     </form>
                 </div>
+                @endif
 
             </div>
         </section>

@@ -302,12 +302,14 @@
                 <a href="{{ route('platform.detection-rules.index') }}" class="action-btn">
                     <i class="fa-solid fa-list-check"></i> Règles de détection
                 </a>
+                @if(auth()->user()->isAdmin())
                 <form method="POST" action="{{ route('platform.configuration.reset-defaults') }}" style="display:contents">
                     @csrf
                     <button class="action-btn warning" type="submit">
                         <i class="fa-solid fa-rotate-left"></i> Restaurer défauts
                     </button>
                 </form>
+                @endif
             </div>
         </section>
 

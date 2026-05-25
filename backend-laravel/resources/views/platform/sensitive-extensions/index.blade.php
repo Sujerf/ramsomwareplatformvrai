@@ -228,12 +228,14 @@
                 <a href="{{ route('platform.detection-rules.index') }}" class="action-btn">
                     <i class="fa-solid fa-list-check"></i> Règles de détection
                 </a>
+                @if(auth()->user()->isAdmin())
                 <form method="POST" action="{{ route('platform.configuration.reset-defaults') }}" style="display:contents">
                     @csrf
                     <button class="action-btn warning" type="submit">
                         <i class="fa-solid fa-rotate-left"></i> Restaurer défauts
                     </button>
                 </form>
+                @endif
             </div>
         </section>
 
@@ -291,7 +293,8 @@
             </div>
         @endif
 
-        {{-- ── 8. Formulaire "Ajouter" différencié ──────────────── --}}
+        {{-- ── 8. Formulaire "Ajouter" — admin uniquement ─────── --}}
+        @if(auth()->user()->isAdmin())
         <section class="section-gap">
             <article class="config-card create-card">
                 <div class="create-header">
@@ -348,6 +351,7 @@
                 </form>
             </article>
         </section>
+        @endif {{-- end @if(auth()->user()->isAdmin()) add extension --}}
 
         {{-- ── 7. Sections groupées par niveau ──────────────────── --}}
         @forelse ($groups as $level => $levelExts)

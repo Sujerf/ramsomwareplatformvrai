@@ -599,7 +599,8 @@
                                 </div>
                             </div>
 
-                            {{-- Actions rapides (col droite) --}}
+                            {{-- Actions rapides (col droite) — admin uniquement --}}
+                            @if(auth()->user()->isAdmin())
                             <div style="display:flex; flex-direction:column; gap:6px; flex-shrink:0; padding-top:2px;">
                                 @if($host->is_monitored)
                                     @if($isEnrolled && $agent)
@@ -633,6 +634,7 @@
                                     </form>
                                 @endif
                             </div>
+                            @endif {{-- end @if(auth()->user()->isAdmin()) actions rapides --}}
                         </div>
 
                         {{-- ── COMMANDE D'ENRÔLEMENT ────────────────────── --}}
@@ -784,8 +786,8 @@
                                 </span>
                             @endif
 
-                            {{-- Boutons Valider / Réinitialiser (discovery_status) --}}
-                            @if($host->is_monitored)
+                            {{-- Boutons Valider / Réinitialiser — admin uniquement --}}
+                            @if(auth()->user()->isAdmin() && $host->is_monitored)
                                 @if($ds === 'detected')
                                     <form method="POST" action="{{ route('platform.discovered-hosts.validate', $host) }}" style="display:contents">
                                         @csrf @method('PATCH')

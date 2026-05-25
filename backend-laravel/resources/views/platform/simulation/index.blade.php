@@ -397,11 +397,16 @@
                             <i class="fa-solid fa-ban icon"></i>
                             Aucun agent disponible
                         </button>
-                    @else
+                    @elseif(auth()->user()->isAdmin())
                         <button type="submit" class="btn-launch" id="btnLaunch">
                             <i class="fa-solid fa-play icon"></i>
                             <i class="fa-solid fa-circle-notch spin"></i>
                             Lancer la simulation
+                        </button>
+                    @else
+                        <button type="button" class="btn-launch" disabled title="Réservé aux administrateurs">
+                            <i class="fa-solid fa-lock icon"></i>
+                            Réservé aux administrateurs
                         </button>
                     @endif
                 </div>

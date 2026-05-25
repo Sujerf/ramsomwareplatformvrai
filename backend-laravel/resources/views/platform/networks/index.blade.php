@@ -523,7 +523,8 @@
                                 @endif
                             </div>
 
-                            {{-- Actions col --}}
+                            {{-- Actions col — admin uniquement --}}
+                            @if(auth()->user()->isAdmin())
                             <div style="display:flex; flex-direction:column; gap:6px; flex-shrink:0; padding-top:2px;">
                                 @if($network->is_monitored)
                                     <button type="button"
@@ -567,6 +568,7 @@
                                     </form>
                                 @endif
                             </div>
+                            @endif {{-- end @if(auth()->user()->isAdmin()) actions col --}}
                         </div>
 
                         {{-- ── SCAN RESULT ────────────────────────────── --}}
@@ -617,7 +619,8 @@
             </div>
         @endif
 
-        {{-- ── ADD NETWORK ──────────────────────────────────────────────── --}}
+        {{-- ── ADD NETWORK — admin uniquement ──────────────────────────── --}}
+        @if(auth()->user()->isAdmin())
         <div class="soc-card section-gap">
             <h3 class="soc-card-title">
                 <i class="fa-solid fa-plus" style="color:var(--accent); margin-right:8px;"></i>
@@ -649,6 +652,7 @@
                 </button>
             </form>
         </div>
+        @endif {{-- end @if(auth()->user()->isAdmin()) add network --}}
 
     </div>
 

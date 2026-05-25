@@ -1096,10 +1096,12 @@
             <div class="soc-nav-section">
                 <div class="soc-nav-label">Configuration</div>
                 <nav class="soc-nav">
+                    @if(auth()->user()->isAdmin())
                     <a href="{{ route('platform.users.index') }}" class="soc-nav-link {{ request()->routeIs('platform.users.*', 'platform.profile') ? 'active' : '' }}">
                         <span class="nav-icon"><i class="fa-solid fa-users-gear"></i></span>
                         <span class="nav-label">Utilisateurs</span>
                     </a>
+                    @endif
                     <a href="{{ route('platform.configuration.index') }}" class="soc-nav-link {{ request()->routeIs('platform.configuration.*') ? 'active' : '' }}">
                         <span class="nav-icon"><i class="fa-solid fa-table-cells-large"></i></span>
                         <span class="nav-label">Centre de configuration</span>
