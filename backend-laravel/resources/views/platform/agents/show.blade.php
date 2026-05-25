@@ -30,10 +30,11 @@
         };
 
         $approvalLabel = fn($s) => match($s) {
-            'approved' => 'Approuvée',
-            'rejected' => 'Rejetée',
-            'pending'  => 'En attente',
-            default    => $s,
+            'approved'  => 'Approuvée',
+            'rejected'  => 'Rejetée',
+            'cancelled' => 'Annulée',
+            'pending'   => 'En attente',
+            default     => $s,
         };
 
         $execLabel = fn($s) => match($s) {
@@ -1374,9 +1375,9 @@
                                 default                                        => 'fa-shield-virus',
                             };
                             $aClass = match($action->approval_status) {
-                                'approved' => 'approved',
-                                'rejected' => 'rejected',
-                                default    => 'pending',
+                                'approved'             => 'approved',
+                                'rejected', 'cancelled' => 'rejected',
+                                default                => 'pending',
                             };
                         @endphp
                         <div class="action-item">

@@ -272,6 +272,12 @@ class AgentRiskService
                 'last_event_id'    => $event->id,
                 'last_update_at'   => now()->toDateTimeString(),
                 'timeline_message' => 'Incident mis à jour avec un nouvel événement.',
+                // Mise à jour des signaux avec ceux du dernier événement —
+                // ProtectionDecisionService lit metadata.signals pour les actions
+                // proposées ; conserver des signaux obsolètes (premier événement)
+                // produirait un payload incorrect pour les nouvelles actions créées
+                // sur des politiques nouvellement activées.
+                'signals'          => $analysis['signals'],
             ]),
         ]);
 

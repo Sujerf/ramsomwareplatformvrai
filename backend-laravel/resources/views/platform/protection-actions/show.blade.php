@@ -25,10 +25,11 @@
         };
 
         $approvalClass = fn($s) => match($s) {
-            'approved'                    => 'badge-normal',
-            'rejected'                    => 'badge-critical',
-            'pending'                     => 'badge-high',
-            default                       => 'badge',
+            'approved'             => 'badge-normal',
+            'rejected',
+            'cancelled'            => 'badge-critical',
+            'pending'              => 'badge-high',
+            default                => 'badge',
         };
 
         $execClass = fn($s) => match($s) {
@@ -39,10 +40,11 @@
         };
 
         $approvalLabel = fn($s) => match($s) {
-            'approved' => 'Approuvée',
-            'rejected' => 'Rejetée',
-            'pending'  => 'En attente',
-            default    => $s,
+            'approved'  => 'Approuvée',
+            'rejected'  => 'Rejetée',
+            'cancelled' => 'Annulée',
+            'pending'   => 'En attente',
+            default     => $s,
         };
 
         $execLabel = fn($s) => match($s) {
