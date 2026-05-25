@@ -152,9 +152,9 @@ Route::prefix('console')->name('platform.')->middleware('auth')->group(function 
         Route::delete('/protection-actions/{protectionAction}', [ProtectionActionController::class, 'destroy'])->name('protection-actions.destroy');
 
         // Configuration — écriture
-        Route::resource('/detection-rules', DetectionRuleController::class)->only(['store', 'update']);
-        Route::resource('/detection-thresholds', DetectionThresholdController::class)->only(['store', 'update']);
-        Route::resource('/protection-policies', ProtectionPolicyController::class)->only(['store', 'update']);
+        Route::resource('/detection-rules', DetectionRuleController::class)->only(['update']);
+        Route::resource('/detection-thresholds', DetectionThresholdController::class)->only(['update']);
+        Route::resource('/protection-policies', ProtectionPolicyController::class)->only(['update']);
         Route::resource('/system-settings', SystemSettingController::class)->only(['update']);
         Route::patch('/system-settings/{systemSetting}/reset', [SystemSettingController::class, 'resetOne'])->name('system-settings.reset-one');
         Route::patch('/system-settings/{systemSetting}/toggle', [SystemSettingController::class, 'toggle'])->name('system-settings.toggle');

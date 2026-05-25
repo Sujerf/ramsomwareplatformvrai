@@ -99,24 +99,20 @@ class RbacMiddlewareTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_analyst_cannot_create_detection_rule(): void
+    public function test_analyst_cannot_update_detection_rule(): void
     {
+        // PATCH sur un ID inexistant → middleware role:admin s'exécute avant le model binding
         $this->actingAs($this->analyst())
-            ->post(route('platform.detection-rules.store'), [
-                'code'         => 'rule_test',
-                'name'         => 'Test',
-                'risk_level'   => 'high',
-                'score_weight' => 50,
+            ->patch(route('platform.detection-rules.update', 99999), [
+                'score_weight' => 99,
             ])
             ->assertForbidden();
     }
 
-    public function test_analyst_cannot_create_protection_policy(): void
+    public function test_analyst_cannot_update_protection_policy(): void
     {
         $this->actingAs($this->analyst())
-            ->post(route('platform.protection-policies.store'), [
-                'code'       => 'policy_test',
-                'name'       => 'Test',
+            ->patch(route('platform.protection-policies.update', 99999), [
                 'risk_level' => 'critical',
             ])
             ->assertForbidden();
@@ -190,11 +186,11 @@ class RbacMiddlewareTest extends TestCase
         $this->assertNotEquals(403, $resp1->status(),
             'Un admin ne doit pas recevoir 403 sur POST simulation/run');
 
-        // POST detection-rules → 422 (validation) ou redirect — pas 403
+        // PATCH detection-rules update → 404 (ID inexistant) ou redirect — pas 403
         $resp2 = $this->actingAs($admin)
-            ->post(route('platform.detection-rules.store'), []);
+            ->patch(route('platform.detection-rules.update', 99999), []);
         $this->assertNotEquals(403, $resp2->status(),
-            'Un admin ne doit pas recevoir 403 sur POST detection-rules');
+            'Un admin ne doit pas recevoir 403 sur PATCH detection-rules');
 
         // POST configuration/reset-defaults → redirect ou 200 — pas 403
         $resp3 = $this->actingAs($admin)
