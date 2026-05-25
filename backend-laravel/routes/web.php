@@ -20,6 +20,7 @@ use App\Http\Controllers\Platform\ProtectionPolicyController;
 use App\Http\Controllers\Platform\SensitiveExtensionController;
 use App\Http\Controllers\Platform\SimulationController;
 use App\Http\Controllers\Platform\SystemSettingController;
+use App\Http\Controllers\Platform\UserController;
 use Illuminate\Support\Facades\Route;
 
 // ── URL courte d'enrôlement : /e/{8chars} — copier-coller-free pour KVM ─────
@@ -114,4 +115,16 @@ Route::prefix('console')->name('platform.')->middleware('auth')->group(function 
     // ── Simulateur d'attaque ───────────────────────────────────────────────
     Route::get('/simulation',      [SimulationController::class, 'index'])->name('simulation.index');
     Route::post('/simulation/run', [SimulationController::class, 'run'])->name('simulation.run');
+
+    // ── Gestion des utilisateurs ───────────────────────────────────────────
+    Route::get('/users', [UserController::class, 'index'])->name('users.index');
+    Route::post('/users', [UserController::class, 'store'])->name('users.store');
+    Route::get('/users/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
+    Route::patch('/users/{user}', [UserController::class, 'update'])->name('users.update');
+    Route::patch('/users/{user}/password', [UserController::class, 'updatePassword'])->name('users.update-password');
+    Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
+
+    // ── Raccourci "Mon profil" → page d'édition de l'utilisateur connecté ─
+    Route::get('/profile', fn() => redirect()->route('platform.users.edit', auth()->user()))
+        ->name('profile');
 });

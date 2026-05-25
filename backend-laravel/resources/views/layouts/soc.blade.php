@@ -1096,6 +1096,10 @@
             <div class="soc-nav-section">
                 <div class="soc-nav-label">Configuration</div>
                 <nav class="soc-nav">
+                    <a href="{{ route('platform.users.index') }}" class="soc-nav-link {{ request()->routeIs('platform.users.*', 'platform.profile') ? 'active' : '' }}">
+                        <span class="nav-icon"><i class="fa-solid fa-users-gear"></i></span>
+                        <span class="nav-label">Utilisateurs</span>
+                    </a>
                     <a href="{{ route('platform.configuration.index') }}" class="soc-nav-link {{ request()->routeIs('platform.configuration.*') ? 'active' : '' }}">
                         <span class="nav-icon"><i class="fa-solid fa-table-cells-large"></i></span>
                         <span class="nav-label">Centre de configuration</span>
@@ -1176,17 +1180,52 @@
                     {{ $themeLabel }}
                 </div>
 
-                <div class="topbar-user">
-                    <span class="topbar-user-name" title="{{ auth()->user()->email }}">
-                        <i class="fa-solid fa-user-shield"></i>
+                <div class="topbar-user" style="position: relative;" id="userMenuWrap">
+                    <button type="button" class="topbar-user-name" id="userMenuTrigger"
+                            title="{{ auth()->user()->email }}"
+                            style="background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px; padding: 0; color: var(--text-muted);">
+                        <i class="fa-solid {{ auth()->user()->isAdmin() ? 'fa-user-shield' : 'fa-user-magnifying-glass' }}"></i>
                         {{ auth()->user()->name }}
-                    </span>
-                    <form method="POST" action="{{ route('platform.logout') }}" style="display:inline;">
-                        @csrf
-                        <button type="submit" class="topbar-logout-btn" title="Se déconnecter">
-                            <i class="fa-solid fa-right-from-bracket"></i>
-                        </button>
-                    </form>
+                        <i class="fa-solid fa-chevron-down" style="font-size: 10px; opacity: .6;"></i>
+                    </button>
+
+                    {{-- Dropdown menu --}}
+                    <div id="userMenuDropdown" style="
+                        display: none;
+                        position: absolute;
+                        top: calc(100% + 8px);
+                        right: 0;
+                        min-width: 180px;
+                        background: var(--bg-panel);
+                        border: 1px solid var(--border-soft);
+                        border-radius: 16px;
+                        box-shadow: 0 16px 48px rgba(0,0,0,0.4);
+                        overflow: hidden;
+                        z-index: 100;
+                        padding: 6px;
+                    ">
+                        <a href="{{ route('platform.profile') }}"
+                           style="display: flex; align-items: center; gap: 9px; padding: 9px 12px; border-radius: 10px; font-size: 13px; font-weight: 700; color: var(--text-main); text-decoration: none; transition: background .15s;">
+                            <i class="fa-solid fa-id-card" style="color: var(--accent); width: 16px; text-align: center;"></i>
+                            Mon profil
+                        </a>
+                        @if(auth()->user()->isAdmin())
+                        <a href="{{ route('platform.users.index') }}"
+                           style="display: flex; align-items: center; gap: 9px; padding: 9px 12px; border-radius: 10px; font-size: 13px; font-weight: 700; color: var(--text-main); text-decoration: none; transition: background .15s;">
+                            <i class="fa-solid fa-users-gear" style="color: var(--text-muted); width: 16px; text-align: center;"></i>
+                            Utilisateurs
+                        </a>
+                        @endif
+                        <div style="height: 1px; background: var(--border-soft); margin: 4px 0; opacity: .5;"></div>
+                        <form method="POST" action="{{ route('platform.logout') }}">
+                            @csrf
+                            <button type="submit"
+                                    style="display: flex; align-items: center; gap: 9px; width: 100%; padding: 9px 12px; border-radius: 10px; font-size: 13px; font-weight: 700; color: #ef4444; background: none; border: none; cursor: pointer; transition: background .15s; text-align: left;">
+                                <i class="fa-solid fa-right-from-bracket" style="width: 16px; text-align: center;"></i>
+                                Se déconnecter
+                            </button>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1227,6 +1266,33 @@
             body.classList.remove('sidebar-open');
         });
     });
+
+    // ── User menu dropdown ──────────────────────────────────────────────────
+    const userMenuTrigger  = document.getElementById('userMenuTrigger');
+    const userMenuDropdown = document.getElementById('userMenuDropdown');
+
+    if (userMenuTrigger && userMenuDropdown) {
+        userMenuTrigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isOpen = userMenuDropdown.style.display !== 'none';
+            userMenuDropdown.style.display = isOpen ? 'none' : 'block';
+        });
+
+        // Close on outside click
+        document.addEventListener('click', () => {
+            userMenuDropdown.style.display = 'none';
+        });
+
+        // Hover highlight on dropdown items
+        userMenuDropdown.querySelectorAll('a, button').forEach(el => {
+            el.addEventListener('mouseenter', () => {
+                el.style.background = 'color-mix(in srgb, var(--accent) 9%, transparent)';
+            });
+            el.addEventListener('mouseleave', () => {
+                el.style.background = 'none';
+            });
+        });
+    }
 </script>
 
 @stack('scripts')
