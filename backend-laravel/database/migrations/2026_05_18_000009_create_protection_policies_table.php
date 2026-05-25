@@ -14,18 +14,9 @@ return new class extends Migration
             $table->string('code')->unique();
             $table->string('name');
 
-            $table->enum('scope', [
-                'host',
-                'share',
-                'network',
-                'hybrid',
-            ])->default('host');
+            $table->string('scope', 80)->default('agent');
 
-            $table->enum('risk_level', [
-                'suspect',
-                'high',
-                'critical',
-            ])->default('suspect');
+            $table->string('risk_level', 80)->default('suspect');
 
             $table->boolean('alert_only')->default(true);
             $table->boolean('emergency_backup')->default(false);
@@ -34,11 +25,7 @@ return new class extends Migration
             $table->boolean('kill_process')->default(false);
             $table->boolean('restrict_path')->default(false);
 
-            $table->enum('execution_mode', [
-                'automatic',
-                'approval_required',
-                'manual_only',
-            ])->default('approval_required');
+            $table->string('execution_mode', 80)->default('manual');
 
             $table->boolean('is_enabled')->default(true);
             $table->boolean('allow_admin_override')->default(true);

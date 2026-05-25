@@ -21,17 +21,17 @@ class RansomShieldDefaultConfigurationService
     public function syncSensitiveExtensions(): int
     {
         $items = [
-            ['extension' => 'locked', 'risk_level' => 'critical', 'score_weight' => 80, 'description' => 'Extension typique observée dans des scénarios ransomware.'],
-            ['extension' => 'encrypted', 'risk_level' => 'critical', 'score_weight' => 80, 'description' => 'Extension indiquant un fichier potentiellement chiffré.'],
-            ['extension' => 'crypt', 'risk_level' => 'critical', 'score_weight' => 75, 'description' => 'Extension suspecte liée au chiffrement.'],
-            ['extension' => 'enc', 'risk_level' => 'high', 'score_weight' => 60, 'description' => 'Extension de chiffrement potentielle.'],
-            ['extension' => 'pay', 'risk_level' => 'high', 'score_weight' => 55, 'description' => 'Extension ou marqueur potentiellement lié à une demande de rançon.'],
-            ['extension' => 'docx', 'risk_level' => 'suspect', 'score_weight' => 10, 'description' => 'Document bureautique sensible à surveiller en cas de modification massive.'],
-            ['extension' => 'xlsx', 'risk_level' => 'suspect', 'score_weight' => 10, 'description' => 'Tableur sensible à surveiller en cas de modification massive.'],
-            ['extension' => 'pdf', 'risk_level' => 'suspect', 'score_weight' => 10, 'description' => 'Document PDF sensible à surveiller en cas de modification massive.'],
-            ['extension' => 'csv', 'risk_level' => 'suspect', 'score_weight' => 10, 'description' => 'Fichier CSV sensible à surveiller en cas de modification massive.'],
-            ['extension' => 'sql', 'risk_level' => 'high', 'score_weight' => 45, 'description' => 'Dump ou fichier SQL potentiellement critique.'],
-            ['extension' => 'zip', 'risk_level' => 'suspect', 'score_weight' => 15, 'description' => 'Archive à surveiller selon contexte.'],
+            ['extension' => 'locked',    'category' => 'suspicious', 'risk_level' => 'critical', 'score_weight' => 80, 'description' => 'Extension typique observée dans des scénarios ransomware.'],
+            ['extension' => 'encrypted', 'category' => 'suspicious', 'risk_level' => 'critical', 'score_weight' => 80, 'description' => 'Extension indiquant un fichier potentiellement chiffré.'],
+            ['extension' => 'crypt',     'category' => 'suspicious', 'risk_level' => 'critical', 'score_weight' => 75, 'description' => 'Extension suspecte liée au chiffrement.'],
+            ['extension' => 'enc',       'category' => 'suspicious', 'risk_level' => 'high',     'score_weight' => 60, 'description' => 'Extension de chiffrement potentielle.'],
+            ['extension' => 'pay',       'category' => 'suspicious', 'risk_level' => 'high',     'score_weight' => 55, 'description' => 'Extension ou marqueur potentiellement lié à une demande de rançon.'],
+            ['extension' => 'docx',      'category' => 'important',  'risk_level' => 'suspect',  'score_weight' => 10, 'description' => 'Document bureautique sensible à surveiller en cas de modification massive.'],
+            ['extension' => 'xlsx',      'category' => 'important',  'risk_level' => 'suspect',  'score_weight' => 10, 'description' => 'Tableur sensible à surveiller en cas de modification massive.'],
+            ['extension' => 'pdf',       'category' => 'important',  'risk_level' => 'suspect',  'score_weight' => 10, 'description' => 'Document PDF sensible à surveiller en cas de modification massive.'],
+            ['extension' => 'csv',       'category' => 'important',  'risk_level' => 'suspect',  'score_weight' => 10, 'description' => 'Fichier CSV sensible à surveiller en cas de modification massive.'],
+            ['extension' => 'sql',       'category' => 'important',  'risk_level' => 'high',     'score_weight' => 45, 'description' => 'Dump ou fichier SQL potentiellement critique.'],
+            ['extension' => 'zip',       'category' => 'suspicious', 'risk_level' => 'suspect',  'score_weight' => 15, 'description' => 'Archive à surveiller selon contexte.'],
         ];
 
         foreach ($items as $item) {
@@ -39,6 +39,7 @@ class RansomShieldDefaultConfigurationService
                 ['extension' => $item['extension']],
                 $this->withTimestamps('sensitive_extensions', [
                     'extension' => $item['extension'],
+                    'category' => $item['category'],
                     'risk_level' => $item['risk_level'],
                     'score_weight' => $item['score_weight'],
                     'is_enabled' => true,
