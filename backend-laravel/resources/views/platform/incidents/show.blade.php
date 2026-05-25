@@ -363,6 +363,9 @@
                 <a href="{{ route('platform.incidents.index', ['status' => 'all']) }}" class="btn btn-soft">
                     <i class="fa-solid fa-arrow-left"></i> Historique incidents
                 </a>
+                <a href="{{ route('platform.incidents.timeline', $incident) }}" class="btn btn-soft">
+                    <i class="fa-solid fa-clock-rotate-left"></i> Timeline
+                </a>
 
                 @if(!$isDone)
                     <form method="POST" action="{{ route('platform.incidents.resolve', $incident) }}" style="display:contents;">

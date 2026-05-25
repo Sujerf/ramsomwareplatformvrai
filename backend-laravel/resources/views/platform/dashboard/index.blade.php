@@ -1524,6 +1524,7 @@
                     socActivityChart.data.datasets[2].data = data.actions   || [];
                     socActivityChart.update('active');
                 })
+                .catch(() => { /* réseau indisponible — chart conserve ses données */ })
                 .finally(() => { if (loader) loader.style.display = 'none'; });
             });
         });
