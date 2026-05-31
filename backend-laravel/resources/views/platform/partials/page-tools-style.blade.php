@@ -47,10 +47,12 @@
         color: var(--text-main);
         padding: 0 12px;
         outline: none;
+        transition: border-color .18s ease, box-shadow .18s ease;
     }
 
     .form-control:focus {
         border-color: color-mix(in srgb, var(--accent) 48%, transparent);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent);
     }
 
     .inline-actions {
@@ -66,23 +68,25 @@
         justify-content: center;
         gap: 6px;
         min-height: 36px;
-        padding: 0 14px;
+        padding: 0 15px;
         border-radius: 12px;
         border: 1px solid var(--border-soft);
         color: var(--text-main);
         background: color-mix(in srgb, var(--bg-panel-soft) 78%, transparent);
         cursor: pointer;
         font-size: 13px;
-        font-weight: 850;
+        font-weight: 700;
         text-decoration: none;
         white-space: nowrap;
-        transition: .15s ease;
+        transition: transform .15s ease, border-color .15s ease, background .15s ease, color .15s ease, box-shadow .15s ease;
+        letter-spacing: -.01em;
     }
 
     .action-btn:hover {
         transform: translateY(-1px);
         border-color: color-mix(in srgb, var(--accent) 35%, transparent);
         color: var(--accent);
+        box-shadow: 0 4px 12px color-mix(in srgb, var(--accent) 10%, transparent);
     }
 
     /* ── Variantes couleurs ────────────────────────────────────────────── */

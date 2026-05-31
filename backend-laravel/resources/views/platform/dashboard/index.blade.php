@@ -762,10 +762,10 @@
         {{-- ── SMART STATS ──────────────────────────────────────────────── --}}
         <section class="smart-stats section-gap">
             <div class="smart-stat">
-                <div class="smart-stat-label">
-                    <i class="fa-solid fa-triangle-exclamation" style="color:#ef4444; margin-right:6px;"></i>
-                    Alertes actives
+                <div class="smart-stat-icon" style="background:rgba(239,68,68,.12);color:#ef4444;box-shadow:0 0 0 1px rgba(239,68,68,.2);">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
                 </div>
+                <div class="smart-stat-label">Alertes actives</div>
                 <div class="smart-stat-value" style="{{ $stats['active_alerts'] > 0 ? 'color:#ef4444;' : '' }}">
                     {{ $stats['active_alerts'] }}
                 </div>
@@ -773,10 +773,10 @@
             </div>
 
             <div class="smart-stat">
-                <div class="smart-stat-label">
-                    <i class="fa-solid fa-fire" style="color:#fb923c; margin-right:6px;"></i>
-                    Incidents actifs
+                <div class="smart-stat-icon" style="background:rgba(251,146,60,.12);color:#fb923c;box-shadow:0 0 0 1px rgba(251,146,60,.2);">
+                    <i class="fa-solid fa-fire"></i>
                 </div>
+                <div class="smart-stat-label">Incidents actifs</div>
                 <div class="smart-stat-value" style="{{ $stats['active_incidents'] > 0 ? 'color:#fb923c;' : '' }}">
                     {{ $stats['active_incidents'] }}
                 </div>
@@ -784,10 +784,10 @@
             </div>
 
             <div class="smart-stat">
-                <div class="smart-stat-label">
-                    <i class="fa-solid fa-hourglass-half" style="color:#f59e0b; margin-right:6px;"></i>
-                    Actions en attente
+                <div class="smart-stat-icon" style="background:rgba(245,158,11,.12);color:#f59e0b;box-shadow:0 0 0 1px rgba(245,158,11,.2);">
+                    <i class="fa-solid fa-hourglass-half"></i>
                 </div>
+                <div class="smart-stat-label">Actions en attente</div>
                 <div class="smart-stat-value" style="{{ $stats['pending_actions'] > 0 ? 'color:#f59e0b;' : '' }}">
                     {{ $stats['pending_actions'] }}
                 </div>
@@ -795,10 +795,10 @@
             </div>
 
             <div class="smart-stat">
-                <div class="smart-stat-label">
-                    <i class="fa-solid fa-triangle-exclamation" style="color:#ef4444; margin-right:6px;"></i>
-                    Agents critiques
+                <div class="smart-stat-icon" style="background:rgba(239,68,68,.12);color:#ef4444;box-shadow:0 0 0 1px rgba(239,68,68,.2);">
+                    <i class="fa-solid fa-skull-crossbones"></i>
                 </div>
+                <div class="smart-stat-label">Agents critiques</div>
                 <div class="smart-stat-value" style="{{ $stats['critical_agents'] > 0 ? 'color:#ef4444;' : '' }}">
                     {{ $stats['critical_agents'] }}
                 </div>

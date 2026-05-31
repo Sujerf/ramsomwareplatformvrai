@@ -34,6 +34,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap">
 
     <style>
         :root {
@@ -217,7 +220,8 @@
             place-items: center;
             border-radius: 14px;
             background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 40%, #1d4ed8));
-            box-shadow: 0 8px 24px color-mix(in srgb, var(--accent) 30%, transparent);
+            box-shadow: 0 8px 24px color-mix(in srgb, var(--accent) 38%, transparent),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.18);
             font-size: 18px;
             color: var(--accent-contrast);
             flex-shrink: 0;
@@ -286,10 +290,13 @@
         }
 
         .soc-nav-link.active {
-            color: var(--text-main);
-            background: color-mix(in srgb, var(--accent) 13%, transparent);
-            border-color: color-mix(in srgb, var(--accent) 22%, transparent);
-            box-shadow: inset 3px 0 0 var(--accent);
+            color: var(--accent);
+            background: linear-gradient(135deg,
+                color-mix(in srgb, var(--accent) 17%, transparent),
+                color-mix(in srgb, var(--accent) 7%, transparent));
+            border-color: color-mix(in srgb, var(--accent) 30%, transparent);
+            box-shadow: 0 4px 14px color-mix(in srgb, var(--accent) 12%, transparent);
+            font-weight: 700;
         }
 
         .nav-icon {
@@ -395,9 +402,13 @@
             padding: 15px 16px;
             border: 1px solid var(--border-soft);
             border-radius: var(--radius-lg);
-            background: color-mix(in srgb, var(--bg-panel) 82%, transparent);
-            backdrop-filter: blur(20px);
+            background: color-mix(in srgb, var(--bg-panel) 88%, transparent);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
             box-shadow: var(--shadow-soft);
+            position: sticky;
+            top: 0;
+            z-index: 30;
         }
 
         .topbar-left {
@@ -635,7 +646,9 @@
             align-items: flex-start;
             justify-content: space-between;
             gap: 14px;
-            margin-bottom: 16px;
+            margin-bottom: 18px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid color-mix(in srgb, var(--border-soft) 70%, transparent);
         }
 
         .soc-card-title {
@@ -851,12 +864,18 @@
         }
 
         .empty-state {
-            padding: 22px;
-            border: 1px dashed color-mix(in srgb, var(--text-muted) 28%, transparent);
-            border-radius: 18px;
+            padding: 32px 22px;
+            border: 1px dashed color-mix(in srgb, var(--text-muted) 22%, transparent);
+            border-radius: 20px;
             color: var(--text-muted);
-            background: color-mix(in srgb, var(--bg-panel-soft) 48%, transparent);
+            background: color-mix(in srgb, var(--bg-panel-soft) 38%, transparent);
             line-height: 1.65;
+            text-align: center;
+        }
+
+        .empty-state strong {
+            color: var(--text-main);
+            opacity: .7;
         }
 
         .flash {
@@ -997,6 +1016,82 @@
                 width: 100%;
                 justify-content: center;
             }
+        }
+
+        /* ── Card hover lift + accent stripe ─────────────────────────── */
+        .soc-card {
+            position: relative;
+            transition: transform .22s ease, border-color .22s ease, box-shadow .22s ease;
+        }
+
+        .soc-card::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 18%;
+            right: 18%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--accent), transparent);
+            opacity: 0;
+            transition: opacity .22s ease;
+            pointer-events: none;
+        }
+
+        .soc-card:hover {
+            transform: translateY(-2px);
+            border-color: color-mix(in srgb, var(--accent) 22%, transparent);
+        }
+
+        .soc-card:hover::before {
+            opacity: .55;
+        }
+
+        /* ── Table row hover ─────────────────────────────────────────── */
+        table.soc-table tbody tr {
+            transition: background .14s ease;
+        }
+
+        table.soc-table tbody tr:hover td {
+            background: color-mix(in srgb, var(--accent) 5%, transparent);
+        }
+
+        /* ── User avatar chip ────────────────────────────────────────── */
+        .user-avatar-chip {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #8b5cf6));
+            color: var(--accent-contrast);
+            font-size: 11px;
+            font-weight: 900;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 30%, transparent);
+        }
+
+        /* ── Improved flash messages ──────────────────────────────────── */
+        .flash {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+        }
+
+        /* ── Sidebar nav hover refinement ───────────────────────────── */
+        .soc-nav-link {
+            letter-spacing: -.01em;
+        }
+
+        /* ── Engine status pill ──────────────────────────────────────── */
+        .engine-status.engine-on {
+            animation: enginePulse 3s ease-in-out infinite;
+        }
+
+        @keyframes enginePulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+            50%       { box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.08); }
         }
     </style>
 
@@ -1204,7 +1299,7 @@
                     <button type="button" class="topbar-user-name" id="userMenuTrigger"
                             title="{{ auth()->user()->email }}"
                             style="background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px; padding: 0; color: var(--text-muted);">
-                        <i class="fa-solid {{ auth()->user()->isAdmin() ? 'fa-user-shield' : 'fa-user-magnifying-glass' }}"></i>
+                        <span class="user-avatar-chip">{{ strtoupper(substr(auth()->user()->name, 0, 1)) }}</span>
                         {{ auth()->user()->name }}
                         <i class="fa-solid fa-chevron-down" style="font-size: 10px; opacity: .6;"></i>
                     </button>

@@ -173,17 +173,24 @@
     .smart-stat {
         position: relative;
         overflow: hidden;
-        padding: 18px;
+        padding: 20px;
         border-radius: 24px;
         background: var(--bg-card);
         border: 1px solid var(--border-soft);
         box-shadow: var(--shadow-soft);
         animation: pageFadeUp .55s ease both;
+        transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
     }
 
     .smart-stat:nth-child(2) { animation-delay: .05s; }
     .smart-stat:nth-child(3) { animation-delay: .1s; }
     .smart-stat:nth-child(4) { animation-delay: .15s; }
+
+    .smart-stat:hover {
+        transform: translateY(-3px);
+        border-color: color-mix(in srgb, var(--accent) 28%, transparent);
+        box-shadow: var(--shadow-soft), 0 0 0 1px color-mix(in srgb, var(--accent) 14%, transparent);
+    }
 
     .smart-stat::after {
         content: "";
@@ -194,34 +201,37 @@
         height: 120px;
         border-radius: 999px;
         background: color-mix(in srgb, var(--accent) 11%, transparent);
+        pointer-events: none;
     }
 
     .smart-stat-icon {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        width: 36px;
-        height: 36px;
-        border-radius: 10px;
-        background: color-mix(in srgb, var(--accent) 12%, transparent);
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        background: color-mix(in srgb, var(--accent) 14%, transparent);
         color: var(--accent);
-        font-size: 15px;
-        margin-bottom: 10px;
+        font-size: 17px;
+        margin-bottom: 12px;
+        box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 20%, transparent);
     }
 
     .smart-stat-label {
         color: var(--text-muted);
-        font-size: 12px;
+        font-size: 11px;
         font-weight: 850;
         text-transform: uppercase;
-        letter-spacing: .06em;
+        letter-spacing: .08em;
     }
 
     .smart-stat-value {
         margin-top: 10px;
-        font-size: clamp(26px, 4vw, 38px);
+        font-size: clamp(28px, 4vw, 42px);
         font-weight: 950;
-        letter-spacing: -.06em;
+        letter-spacing: -.07em;
+        line-height: 1;
     }
 
     .smart-stat-hint {
@@ -236,8 +246,14 @@
         background: var(--bg-card);
         border: 1px solid var(--border-soft);
         box-shadow: var(--shadow-soft);
-        padding: 20px;
+        padding: 22px;
         animation: pageFadeUp .55s ease both;
+        transition: transform .22s ease, border-color .22s ease;
+    }
+
+    .smart-card:hover {
+        transform: translateY(-2px);
+        border-color: color-mix(in srgb, var(--accent) 22%, transparent);
     }
 
     .smart-card-title {
