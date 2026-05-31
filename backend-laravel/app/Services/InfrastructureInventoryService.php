@@ -347,9 +347,15 @@ class InfrastructureInventoryService
      */
     private function activeScan(string $cidr): array
     {
+        if (! $this->isValidCidr($cidr)) {
+            return ['invalid_cidr', null];
+        }
+
+        $escapedCidr = escapeshellarg($cidr);
+
         // fping : sortie directe = uniquement les IPs UP, aucun fantôme possible
         if ($this->commandAvailable('fping')) {
-            $result = Process::timeout(15)->run("fping -a -g {$cidr} 2>/dev/null || true");
+            $result = Process::timeout(15)->run("fping -a -g {$escapedCidr} 2>/dev/null || true");
             $output = trim($result->output());
 
             if ($output !== '') {
@@ -366,7 +372,7 @@ class InfrastructureInventoryService
 
         // nmap : peuple l'ARP — on lira ensuite uniquement les entrées REACHABLE
         if ($this->commandAvailable('nmap')) {
-            Process::timeout(30)->run("nmap -sn {$cidr} -T4 --min-parallelism 256 -oG /dev/null 2>/dev/null || true");
+            Process::timeout(30)->run("nmap -sn {$escapedCidr} -T4 --min-parallelism 256 -oG /dev/null 2>/dev/null || true");
 
             return ['nmap', null];
         }
@@ -376,7 +382,8 @@ class InfrastructureInventoryService
 
         if ((int) $prefix >= 24) {
             $parts  = explode('.', explode('/', $cidr)[0]);
-            $subnet = $parts[0].'.'.$parts[1].'.'.$parts[2];
+            // Les octets sont validés par isValidCidr() — safe pour injection shell
+            $subnet = escapeshellarg($parts[0].'.'.$parts[1].'.'.$parts[2]);
 
             Process::timeout(12)->run(
                 "for i in \$(seq 1 254); do ping -c1 -W0.3 {$subnet}.\$i > /dev/null 2>&1 & done; wait"
@@ -387,6 +394,19 @@ class InfrastructureInventoryService
 
         // Réseau trop grand ou aucun outil : table ARP filtrée uniquement
         return ['ip_neigh_only', null];
+    }
+
+    private function isValidCidr(string $cidr): bool
+    {
+        if (! preg_match('/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})\/(\d{1,2})$/', $cidr, $m)) {
+            return false;
+        }
+
+        return (int) $m[1] <= 255
+            && (int) $m[2] <= 255
+            && (int) $m[3] <= 255
+            && (int) $m[4] <= 255
+            && (int) $m[5] <= 32;
     }
 
     private function commandAvailable(string $cmd): bool

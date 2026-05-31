@@ -8,6 +8,7 @@ use App\Models\AttackProfile;
 use App\Models\Event;
 use App\Models\Incident;
 use App\Models\RiskSnapshot;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Orchestre tout le pipeline de détection pour un événement entrant.
@@ -233,55 +234,53 @@ class AgentRiskService
 
     private function createOrUpdateIncident(Event $event, array $analysis): Incident
     {
-        $attackProfileId = AttackProfile::where(
-            'code',
-            $event->is_simulation ? 'controlled_demo_ransomware' : 'ransomware_behavior'
-        )->value('id');
+        return DB::transaction(function () use ($event, $analysis) {
+            $attackProfileId = AttackProfile::where(
+                'code',
+                $event->is_simulation ? 'controlled_demo_ransomware' : 'ransomware_behavior'
+            )->value('id');
 
-        $incident = Incident::query()
-            ->where('agent_id', $event->agent_id)
-            ->whereIn('status', ['open', 'investigating', 'under_review', 'reopened'])
-            ->latest()
-            ->first();
+            $incident = Incident::query()
+                ->where('agent_id', $event->agent_id)
+                ->whereIn('status', ['open', 'investigating', 'under_review', 'reopened'])
+                ->lockForUpdate()
+                ->latest()
+                ->first();
 
-        if (! $incident) {
-            return Incident::create([
-                'incident_uuid'     => (string) \Illuminate\Support\Str::uuid(),
-                'agent_id'          => $event->agent_id,
-                'attack_profile_id' => $attackProfileId,
-                'title'             => 'Suspicion de comportement ransomware',
-                'description'       => 'Un événement suspect a été reçu depuis un agent surveillé.',
-                'status'            => 'open',
-                'risk_level'        => $analysis['risk_level'],
-                'risk_score'        => $analysis['score'],
-                'detected_at'       => now(),
-                'metadata'          => [
-                    'first_event_id' => $event->id,
-                    'is_simulation'  => $event->is_simulation,
-                    'signals'        => $analysis['signals'],
-                    'threshold'      => $analysis['threshold'],
-                    'timeline_message' => 'Incident créé automatiquement après analyse du risque.',
-                ],
+            if (! $incident) {
+                return Incident::create([
+                    'incident_uuid'     => (string) \Illuminate\Support\Str::uuid(),
+                    'agent_id'          => $event->agent_id,
+                    'attack_profile_id' => $attackProfileId,
+                    'title'             => 'Suspicion de comportement ransomware',
+                    'description'       => 'Un événement suspect a été reçu depuis un agent surveillé.',
+                    'status'            => 'open',
+                    'risk_level'        => $analysis['risk_level'],
+                    'risk_score'        => $analysis['score'],
+                    'detected_at'       => now(),
+                    'metadata'          => [
+                        'first_event_id'   => $event->id,
+                        'is_simulation'    => $event->is_simulation,
+                        'signals'          => $analysis['signals'],
+                        'threshold'        => $analysis['threshold'],
+                        'timeline_message' => 'Incident créé automatiquement après analyse du risque.',
+                    ],
+                ]);
+            }
+
+            $incident->update([
+                'risk_level' => $this->higherRisk($incident->risk_level, $analysis['risk_level']),
+                'risk_score' => max((int) $incident->risk_score, (int) $analysis['score']),
+                'metadata'   => array_merge($incident->metadata ?? [], [
+                    'last_event_id'    => $event->id,
+                    'last_update_at'   => now()->toDateTimeString(),
+                    'timeline_message' => 'Incident mis à jour avec un nouvel événement.',
+                    'signals'          => $analysis['signals'],
+                ]),
             ]);
-        }
 
-        $incident->update([
-            'risk_level' => $this->higherRisk($incident->risk_level, $analysis['risk_level']),
-            'risk_score' => max((int) $incident->risk_score, (int) $analysis['score']),
-            'metadata'   => array_merge($incident->metadata ?? [], [
-                'last_event_id'    => $event->id,
-                'last_update_at'   => now()->toDateTimeString(),
-                'timeline_message' => 'Incident mis à jour avec un nouvel événement.',
-                // Mise à jour des signaux avec ceux du dernier événement —
-                // ProtectionDecisionService lit metadata.signals pour les actions
-                // proposées ; conserver des signaux obsolètes (premier événement)
-                // produirait un payload incorrect pour les nouvelles actions créées
-                // sur des politiques nouvellement activées.
-                'signals'          => $analysis['signals'],
-            ]),
-        ]);
-
-        return $incident;
+            return $incident;
+        });
     }
 
     // ──────────────────────────────────────────────────────────────────────────

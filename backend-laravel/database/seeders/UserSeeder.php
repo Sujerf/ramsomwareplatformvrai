@@ -15,7 +15,7 @@ class UserSeeder extends Seeder
             [
                 'name'     => 'Administrateur SOC',
                 'role'     => 'admin',
-                'password' => Hash::make('RansomShield@2026!'),
+                'password' => Hash::make(env('ADMIN_PASSWORD', 'RansomShield@2026!')),
             ]
         );
     }

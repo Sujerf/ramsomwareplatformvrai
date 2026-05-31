@@ -96,16 +96,35 @@ class AgentBootstrapController extends Controller
             ->header('Cache-Control', 'no-store, no-cache');
     }
 
+    /**
+     * Échappe une valeur pour injection dans une chaîne double-quotée Bash.
+     * Neutralise \ " $ ` qui ont une signification dans ce contexte.
+     */
+    private function bashEscape(string $value): string
+    {
+        return str_replace(['\\', '"', '$', '`'], ['\\\\', '\\"', '\\$', '\\`'], $value);
+    }
+
+    /**
+     * Échappe une valeur pour injection dans une chaîne double-quotée PowerShell.
+     * Dans ce contexte, ` $ " ont une signification spéciale.
+     */
+    private function psEscape(string $value): string
+    {
+        return str_replace(['`', '$', '"'], ['``', '`$', '`"'], $value);
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
     //  BASH — Linux / macOS
     // ─────────────────────────────────────────────────────────────────────────
     private function buildBashScript(Agent $agent, string $socUrl, string $apiSecret): string
     {
-        $uuid    = $agent->agent_uuid;
-        $token   = $agent->enrollment_token;
-        $name    = $agent->agent_name;
-        $role    = $agent->host_role ?? 'client';
-        $apiUrl  = $socUrl.'/api';
+        $uuid      = $agent->agent_uuid;
+        $token     = $agent->enrollment_token;
+        $name      = $this->bashEscape($agent->agent_name);
+        $role      = $this->bashEscape($agent->host_role ?? 'client');
+        $apiSecret = $this->bashEscape($apiSecret);
+        $apiUrl    = $socUrl.'/api';
         $expires = optional($agent->enrollment_token_expires_at)->toDateTimeString() ?? 'inconnue';
         $now     = now()->toDateTimeString();
 
@@ -264,11 +283,12 @@ class AgentBootstrapController extends Controller
     // ─────────────────────────────────────────────────────────────────────────
     private function buildMacOsScript(Agent $agent, string $socUrl, string $apiSecret): string
     {
-        $uuid    = $agent->agent_uuid;
-        $token   = $agent->enrollment_token;
-        $name    = $agent->agent_name;
-        $role    = $agent->host_role ?? 'client';
-        $apiUrl  = $socUrl.'/api';
+        $uuid      = $agent->agent_uuid;
+        $token     = $agent->enrollment_token;
+        $name      = $this->bashEscape($agent->agent_name);
+        $role      = $this->bashEscape($agent->host_role ?? 'client');
+        $apiSecret = $this->bashEscape($apiSecret);
+        $apiUrl    = $socUrl.'/api';
         $expires = optional($agent->enrollment_token_expires_at)->toDateTimeString() ?? 'inconnue';
         $now     = now()->toDateTimeString();
 
@@ -440,10 +460,11 @@ class AgentBootstrapController extends Controller
     // ─────────────────────────────────────────────────────────────────────────
     private function buildPowerShellScript(Agent $agent, string $socUrl, string $apiSecret): string
     {
-        $uuid    = $agent->agent_uuid;
-        $token   = $agent->enrollment_token;
-        $name    = addslashes($agent->agent_name);
-        $role    = $agent->host_role ?? 'client';
+        $uuid      = $agent->agent_uuid;
+        $token     = $agent->enrollment_token;
+        $name      = $this->psEscape($agent->agent_name);
+        $role      = $this->psEscape($agent->host_role ?? 'client');
+        $apiSecret = $this->psEscape($apiSecret);
         // $socUrl est transmis par le caller (script()), déjà résolu pour ce réseau
         $apiUrl  = $socUrl.'/api';
         $expires = optional($agent->enrollment_token_expires_at)->toDateTimeString() ?? 'inconnue';

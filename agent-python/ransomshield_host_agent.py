@@ -5,6 +5,7 @@ import re
 import signal
 import socket
 import subprocess
+import threading
 import time
 import uuid
 from collections import defaultdict, deque
@@ -126,7 +127,8 @@ EXCLUDED_PARTS = [
 # ── Chemin racine disque (pour disk_usage) ────────────────────────────────────
 _DISK_ROOT = "C:\\" if IS_WINDOWS else "/"
 
-STATE_FILE = Path(".ransomshield_host_agent_state.json")
+STATE_FILE = Path(__file__).parent / ".ransomshield_host_agent_state.json"
+_state_lock = threading.Lock()
 
 SENSITIVE_EXTENSIONS = {
     "locked",
@@ -197,17 +199,18 @@ process_seen: set[int] = set()
 
 
 def load_state() -> dict[str, Any]:
-    if STATE_FILE.exists():
-        try:
-            return json.loads(STATE_FILE.read_text())
-        except Exception:
-            return {}
-
+    with _state_lock:
+        if STATE_FILE.exists():
+            try:
+                return json.loads(STATE_FILE.read_text())
+            except Exception:
+                return {}
     return {}
 
 
 def save_state(state: dict[str, Any]) -> None:
-    STATE_FILE.write_text(json.dumps(state, indent=2, ensure_ascii=False))
+    with _state_lock:
+        STATE_FILE.write_text(json.dumps(state, indent=2, ensure_ascii=False))
 
 
 def get_local_ip() -> str:
@@ -387,10 +390,11 @@ def heartbeat(agent_uuid: str) -> None:
 
 
 def should_ignore(path: str) -> bool:
-    normalized = str(path)
+    # Sur Windows les chemins sont case-insensitive — normaliser en minuscules
+    normalized = str(path).lower() if IS_WINDOWS else str(path)
 
     for part in EXCLUDED_PARTS:
-        if part and part in normalized:
+        if part and part.lower() in normalized:
             return True
 
     return False
@@ -709,6 +713,12 @@ def execute_isolation(soc_ip: str) -> None:
 
     else:
         # ── Linux : iptables ─────────────────────────────────────────────────
+        # Sauvegarder les règles existantes avant toute modification (Docker, VPN…)
+        _IPTABLES_BACKUP = "/tmp/ransomshield_iptables_backup.rules"
+        backup = subprocess.run(["iptables-save"], capture_output=True, text=True)
+        with open(_IPTABLES_BACKUP, "w") as f:
+            f.write(backup.stdout or "# no existing rules\n")
+
         rules = [
             ["iptables", "-F"],
             ["iptables", "-A", "INPUT", "-i", "lo", "-j", "ACCEPT"],
@@ -723,6 +733,7 @@ def execute_isolation(soc_ip: str) -> None:
         for rule in rules:
             subprocess.run(rule, check=True, capture_output=True)
         print(f"[ISOLATION] Hôte isolé (Linux) — SOC {soc_ip} autorisé uniquement.")
+        print(f"[ISOLATION] Règles iptables originales sauvegardées dans {_IPTABLES_BACKUP}")
 
 
 def execute_rollback_isolation() -> None:
@@ -762,15 +773,21 @@ def execute_rollback_isolation() -> None:
                 pass
 
     else:
-        # Linux : flush toutes les règles et repasser en ACCEPT
-        for cmd in [
-            ["iptables", "-F"],
-            ["iptables", "-P", "INPUT",   "ACCEPT"],
-            ["iptables", "-P", "OUTPUT",  "ACCEPT"],
-            ["iptables", "-P", "FORWARD", "ACCEPT"],
-        ]:
-            subprocess.run(cmd, capture_output=True)
-        print("[ROLLBACK] Isolation levée (Linux) — iptables flushé, politique ACCEPT.")
+        # Linux : restaurer le backup iptables si disponible, sinon flush + ACCEPT
+        _IPTABLES_BACKUP = "/tmp/ransomshield_iptables_backup.rules"
+        if Path(_IPTABLES_BACKUP).exists():
+            subprocess.run(["iptables-restore", _IPTABLES_BACKUP], capture_output=True)
+            Path(_IPTABLES_BACKUP).unlink(missing_ok=True)
+            print("[ROLLBACK] Isolation levée (Linux) — règles iptables originales restaurées.")
+        else:
+            for cmd in [
+                ["iptables", "-F"],
+                ["iptables", "-P", "INPUT",   "ACCEPT"],
+                ["iptables", "-P", "OUTPUT",  "ACCEPT"],
+                ["iptables", "-P", "FORWARD", "ACCEPT"],
+            ]:
+                subprocess.run(cmd, capture_output=True)
+            print("[ROLLBACK] Isolation levée (Linux) — iptables flushé, politique ACCEPT.")
 
 
 def execute_process_kill(pid: int) -> None:
@@ -831,6 +848,26 @@ def execute_self_update(agent_uuid: str, action_id: int) -> tuple[bool, str]:
 
     if len(resp.content) < 1000:
         return False, f"Fichier téléchargé trop petit ({len(resp.content)} octets) — annulé."
+
+    # Valider que le fichier téléchargé est du Python syntaxiquement correct
+    # avant de remplacer le binaire en cours d'exécution.
+    import py_compile, tempfile as _tf
+    try:
+        with _tf.NamedTemporaryFile(suffix=".py", delete=False) as _f:
+            _f.write(resp.content)
+            _validate_path = _f.name
+        py_compile.compile(_validate_path, doraise=True)
+    except py_compile.PyCompileError as exc:
+        try:
+            Path(_validate_path).unlink(missing_ok=True)
+        except Exception:
+            pass
+        return False, f"Fichier téléchargé invalide (erreur de syntaxe Python) : {exc}"
+    finally:
+        try:
+            Path(_validate_path).unlink(missing_ok=True)
+        except Exception:
+            pass
 
     try:
         tmp_path.write_bytes(resp.content)

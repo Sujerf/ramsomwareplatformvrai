@@ -12,10 +12,10 @@ class AgentHeartbeatController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'agent_uuid' => ['required', 'uuid', 'exists:agents,agent_uuid'],
-            'hostname' => ['nullable', 'string', 'max:255'],
+            'agent_uuid' => ['required', 'uuid'],
+            'hostname'   => ['nullable', 'string', 'max:255'],
             'ip_address' => ['nullable', 'ip'],
-            'metadata' => ['nullable', 'array'],
+            'metadata'   => ['nullable', 'array'],
         ]);
 
         $agent = Agent::where('agent_uuid', $validated['agent_uuid'])->firstOrFail();

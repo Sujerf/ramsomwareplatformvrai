@@ -123,6 +123,14 @@ class SocStatusSynchronizerService
                     'updated_at' => now(),
                 ]);
         });
+
+        // Recalcul du risque de l'agent après réouverture (comme pour resolve/falsePositive)
+        if ($incident->agent_id) {
+            $agent = Agent::find($incident->agent_id);
+            if ($agent) {
+                $this->agentRiskService->recalculateAgentRisk($agent);
+            }
+        }
     }
 
     public function resolveAlert(Alert $alert): void

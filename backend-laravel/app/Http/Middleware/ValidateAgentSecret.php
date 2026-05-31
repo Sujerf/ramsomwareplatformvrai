@@ -29,7 +29,7 @@ class ValidateAgentSecret
 {
     public function handle(Request $request, Closure $next): Response
     {
-        $provided = (string) ($request->header('X-Agent-Secret') ?? $request->input('agent_secret', ''));
+        $provided = (string) $request->header('X-Agent-Secret', '');
 
         // ── Niveau 1 : clé per-agent ─────────────────────────────────────────
         $agentUuid = $request->input('agent_uuid');

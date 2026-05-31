@@ -56,7 +56,13 @@ class ManagedNetworkController extends Controller
     {
         $validated = $request->validate([
             'name'           => ['required', 'string', 'max:255'],
-            'cidr'           => ['required', 'string', 'max:50'],
+            'cidr'           => ['required', 'string', 'max:50', function (string $attribute, mixed $value, \Closure $fail) {
+                if (! preg_match('/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})\/(\d{1,2})$/', $value, $m)
+                    || $m[1] > 255 || $m[2] > 255 || $m[3] > 255 || $m[4] > 255 || $m[5] > 32
+                ) {
+                    $fail('Le CIDR doit être au format valide (ex : 192.168.1.0/24).');
+                }
+            }],
             'gateway_ip'     => ['nullable', 'ip'],
             'interface_name' => ['nullable', 'string', 'max:100'],
         ]);

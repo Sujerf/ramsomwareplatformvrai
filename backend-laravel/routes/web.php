@@ -134,6 +134,7 @@ Route::prefix('console')->name('platform.')->middleware('auth')->group(function 
         // Hôtes découverts — gestion complète
         Route::patch('/discovered-hosts/{discoveredHost}/validate', [DiscoveredHostController::class, 'validateHost'])->name('discovered-hosts.validate');
         Route::patch('/discovered-hosts/{discoveredHost}/reset', [DiscoveredHostController::class, 'reset'])->name('discovered-hosts.reset');
+        Route::patch('/discovered-hosts/{discoveredHost}/mark-role', [DiscoveredHostController::class, 'markAs'])->name('discovered-hosts.mark-role');
         Route::patch('/discovered-hosts/{discoveredHost}/mark-client', [DiscoveredHostController::class, 'markClient'])->name('discovered-hosts.mark-client');
         Route::patch('/discovered-hosts/{discoveredHost}/mark-mobile', [DiscoveredHostController::class, 'markMobile'])->name('discovered-hosts.mark-mobile');
         Route::patch('/discovered-hosts/{discoveredHost}/mark-file-server', [DiscoveredHostController::class, 'markFileServer'])->name('discovered-hosts.mark-file-server');

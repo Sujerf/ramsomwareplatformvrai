@@ -99,6 +99,13 @@ class ProtectionActionController extends Controller
 
     public function approve(Request $request, ProtectionAction $protectionAction, SocStatusSynchronizerService $sync): RedirectResponse|JsonResponse
     {
+        if ($protectionAction->approval_status !== 'pending') {
+            $msg = 'Cette action ne peut pas être approuvée (statut : '.$protectionAction->approval_status.').';
+            return $request->expectsJson()
+                ? response()->json(['error' => $msg], 422)
+                : back()->with('error', $msg);
+        }
+
         DB::transaction(function () use ($protectionAction) {
             $protectionAction->update([
                 'approval_status'  => 'approved',
@@ -121,10 +128,17 @@ class ProtectionActionController extends Controller
 
     public function reject(Request $request, ProtectionAction $protectionAction, SocStatusSynchronizerService $sync): RedirectResponse|JsonResponse
     {
+        if (! in_array($protectionAction->approval_status, ['pending', 'approved'], true)) {
+            $msg = 'Cette action ne peut plus être rejetée (statut : '.$protectionAction->approval_status.').';
+            return $request->expectsJson()
+                ? response()->json(['error' => $msg], 422)
+                : back()->with('error', $msg);
+        }
+
         DB::transaction(function () use ($protectionAction) {
             $protectionAction->update([
                 'approval_status'  => 'rejected',
-                'execution_status' => 'failed',
+                'execution_status' => 'cancelled',
             ]);
 
             $this->recordDecision($protectionAction, 'rejected', "Action rejetée depuis la console SOC.");
@@ -141,6 +155,10 @@ class ProtectionActionController extends Controller
 
     public function execute(Request $request, ProtectionAction $protectionAction, SocStatusSynchronizerService $sync): RedirectResponse
     {
+        if ($protectionAction->execution_status === 'executed') {
+            return back()->with('error', 'Cette action a déjà été exécutée.');
+        }
+
         DB::transaction(function () use ($protectionAction) {
             $protectionAction->update([
                 'approval_status' => $protectionAction->approval_status === 'pending'

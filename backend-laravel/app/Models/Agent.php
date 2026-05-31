@@ -27,8 +27,12 @@ class Agent extends Model
         'last_seen_at',
         'enrolled_at',
         'metadata',
-        'agent_api_key',
         'enrollment_short_code',
+    ];
+
+    protected $hidden = [
+        'agent_api_key',
+        'enrollment_token',
     ];
 
     protected $casts = [

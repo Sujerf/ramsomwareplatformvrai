@@ -8,6 +8,7 @@ use App\Models\ProtectionPolicy;
 use App\Models\SensitiveExtension;
 use App\Models\SystemSetting;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
 class DynamicDetectionEngineService
@@ -63,11 +64,7 @@ class DynamicDetectionEngineService
         }
 
         $extension = ltrim(strtolower($extension), '.');
-
-        $sensitive = SensitiveExtension::query()
-            ->where('extension', $extension)
-            ->where('is_enabled', true)
-            ->first();
+        $sensitive = $this->cachedSensitiveExtensions()->get($extension);
 
         if (! $sensitive) {
             return null;
@@ -89,10 +86,22 @@ class DynamicDetectionEngineService
 
     private function activeRules(): Collection
     {
-        return DetectionRule::query()
-            ->where('is_enabled', true)
-            ->orderByDesc('score_weight')
-            ->get();
+        return Cache::remember('detection:active_rules', 60, function () {
+            return DetectionRule::query()
+                ->where('is_enabled', true)
+                ->orderByDesc('score_weight')
+                ->get();
+        });
+    }
+
+    private function cachedSensitiveExtensions(): Collection
+    {
+        return Cache::remember('detection:sensitive_extensions', 60, function () {
+            return SensitiveExtension::query()
+                ->where('is_enabled', true)
+                ->get()
+                ->keyBy('extension');
+        });
     }
 
     private function matchRule(
@@ -176,14 +185,6 @@ class DynamicDetectionEngineService
         return false;
     }
 
-    private function isSensitiveExtension(string $extension): bool
-    {
-        return SensitiveExtension::query()
-            ->where('extension', ltrim(strtolower($extension), '.'))
-            ->where('is_enabled', true)
-            ->exists();
-    }
-
     /**
      * Retourne true si le chemin appartient à un navigateur, un cache système
      * ou une application connue générant de l'I/O légitime intense.
@@ -257,15 +258,15 @@ class DynamicDetectionEngineService
 
     private function matchThreshold(int $score): array
     {
-        $threshold = DetectionThreshold::query()
-            ->where('is_enabled', true)
-            ->where('min_score', '<=', $score)
-            ->where(function ($query) use ($score) {
-                $query->whereNull('max_score')
-                    ->orWhere('max_score', '>=', $score);
-            })
-            ->orderByDesc('min_score')
-            ->first();
+        $threshold = Cache::remember('detection:thresholds', 60, function () {
+            return DetectionThreshold::query()
+                ->where('is_enabled', true)
+                ->orderByDesc('min_score')
+                ->get();
+        })->first(function ($t) use ($score) {
+            return $t->min_score <= $score
+                && ($t->max_score === null || $t->max_score >= $score);
+        });
 
         if (! $threshold) {
             return [
@@ -288,10 +289,11 @@ class DynamicDetectionEngineService
 
     private function matchPolicies(string $riskLevel): Collection
     {
-        return ProtectionPolicy::query()
-            ->where('is_enabled', true)
-            ->where('risk_level', $riskLevel)
-            ->get()
+        return Cache::remember('detection:policies', 60, function () {
+            return ProtectionPolicy::query()
+                ->where('is_enabled', true)
+                ->get();
+        })->where('risk_level', $riskLevel)
             ->map(fn (ProtectionPolicy $policy) => [
                 'id' => $policy->id,
                 'code' => $policy->code,
@@ -301,7 +303,8 @@ class DynamicDetectionEngineService
                 'action_type' => $policy->action_type,
                 'execution_mode' => $policy->execution_mode,
                 'requires_human_validation' => in_array($policy->execution_mode, ['approval_required', 'manual'], true),
-            ]);
+            ])
+            ->values();
     }
 
     private function safetySettings(): array

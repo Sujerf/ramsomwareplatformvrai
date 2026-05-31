@@ -103,6 +103,13 @@ class DashboardController extends Controller
         ]);
     }
 
+    private function dateGroupExpr(string $format): string
+    {
+        return DB::connection()->getDriverName() === 'sqlite'
+            ? "strftime('{$format}', created_at) as period"
+            : "DATE_FORMAT(created_at, '{$format}') as period";
+    }
+
     public function chartData(Request $request): JsonResponse
     {
         $period = in_array($request->input('period'), ['24h', 'week', 'month'])
@@ -115,48 +122,82 @@ class DashboardController extends Controller
     private function buildCharts(string $period = 'week'): array
     {
         if ($period === '24h') {
-            $points = collect(range(23, 0))->map(fn ($h) => now()->subHours($h)->startOfHour());
-            $labels = $points->map(fn (Carbon $h) => $h->format('H\h'))->values();
-            $groupFn = fn (Carbon $p) => [
-                $p->copy()->startOfHour(),
-                $p->copy()->endOfHour(),
-            ];
+            $start     = now()->subHours(23)->startOfHour();
+            $end       = now()->endOfHour();
+            $points    = collect(range(23, 0))->map(fn ($h) => now()->subHours($h)->startOfHour());
+            $labels    = $points->map(fn (Carbon $h) => $h->format('H\h'))->values();
+            $sqlFormat = '%Y-%m-%d %H:00:00';
+            $phpFormat = 'Y-m-d H:00:00';
         } elseif ($period === 'month') {
-            $points = collect(range(29, 0))->map(fn ($d) => now()->subDays($d)->startOfDay());
-            $labels = $points->map(fn (Carbon $d) => $d->format('d/m'))->values();
-            $groupFn = fn (Carbon $p) => [
-                $p->copy()->startOfDay(),
-                $p->copy()->endOfDay(),
-            ];
+            $start     = now()->subDays(29)->startOfDay();
+            $end       = now()->endOfDay();
+            $points    = collect(range(29, 0))->map(fn ($d) => now()->subDays($d)->startOfDay());
+            $labels    = $points->map(fn (Carbon $d) => $d->format('d/m'))->values();
+            $sqlFormat = '%Y-%m-%d';
+            $phpFormat = 'Y-m-d';
         } else {
-            $points = collect(range(6, 0))->map(fn ($d) => now()->subDays($d)->startOfDay());
-            $labels = $points->map(fn (Carbon $d) => $d->isoFormat('ddd'))->values();
-            $groupFn = fn (Carbon $p) => [
-                $p->copy()->startOfDay(),
-                $p->copy()->endOfDay(),
-            ];
+            $start     = now()->subDays(6)->startOfDay();
+            $end       = now()->endOfDay();
+            $points    = collect(range(6, 0))->map(fn ($d) => now()->subDays($d)->startOfDay());
+            $labels    = $points->map(fn (Carbon $d) => $d->isoFormat('ddd'))->values();
+            $sqlFormat = '%Y-%m-%d';
+            $phpFormat = 'Y-m-d';
         }
 
-        $alertSeries = $points->map(fn ($p) => Alert::whereBetween('created_at', $groupFn($p))->count())->values();
-        $incidentSeries = $points->map(fn ($p) => Incident::whereBetween('created_at', $groupFn($p))->count())->values();
-        $actionSeries = $points->map(fn ($p) => ProtectionAction::whereBetween('created_at', $groupFn($p))->count())->values();
+        $groupExpr = $this->dateGroupExpr($sqlFormat);
+
+        // 3 requêtes groupées au lieu de N×3 requêtes par point de série
+        $alertCounts   = DB::table('alerts')
+            ->selectRaw("{$groupExpr}, COUNT(*) as total")
+            ->whereBetween('created_at', [$start, $end])
+            ->groupBy('period')
+            ->pluck('total', 'period');
+
+        $incidentCounts = DB::table('incidents')
+            ->selectRaw("{$groupExpr}, COUNT(*) as total")
+            ->whereBetween('created_at', [$start, $end])
+            ->groupBy('period')
+            ->pluck('total', 'period');
+
+        $actionCounts  = DB::table('protection_actions')
+            ->selectRaw("{$groupExpr}, COUNT(*) as total")
+            ->whereBetween('created_at', [$start, $end])
+            ->groupBy('period')
+            ->pluck('total', 'period');
+
+        $alertSeries    = $points->map(fn (Carbon $p) => (int) ($alertCounts[$p->format($phpFormat)]   ?? 0))->values();
+        $incidentSeries = $points->map(fn (Carbon $p) => (int) ($incidentCounts[$p->format($phpFormat)] ?? 0))->values();
+        $actionSeries   = $points->map(fn (Carbon $p) => (int) ($actionCounts[$p->format($phpFormat)]  ?? 0))->values();
+
+        // 2 requêtes groupées pour les distributions (au lieu de 8 counts séparés)
+        $riskByAlert = Alert::query()
+            ->selectRaw('risk_level, COUNT(*) as total')
+            ->groupBy('risk_level')
+            ->pluck('total', 'risk_level')
+            ->toArray();
+
+        $actionsByStatus = ProtectionAction::query()
+            ->selectRaw('approval_status, COUNT(*) as total')
+            ->groupBy('approval_status')
+            ->pluck('total', 'approval_status')
+            ->toArray();
 
         return [
-            'labels'           => $labels,
-            'alerts'           => $alertSeries,
-            'incidents'        => $incidentSeries,
-            'actions'          => $actionSeries,
-            'risk_by_alert'    => [
-                'normal'   => Alert::where('risk_level', 'normal')->count(),
-                'suspect'  => Alert::where('risk_level', 'suspect')->count(),
-                'high'     => Alert::where('risk_level', 'high')->count(),
-                'critical' => Alert::where('risk_level', 'critical')->count(),
+            'labels'            => $labels,
+            'alerts'            => $alertSeries,
+            'incidents'         => $incidentSeries,
+            'actions'           => $actionSeries,
+            'risk_by_alert'     => [
+                'normal'   => (int) ($riskByAlert['normal']   ?? 0),
+                'suspect'  => (int) ($riskByAlert['suspect']  ?? 0),
+                'high'     => (int) ($riskByAlert['high']     ?? 0),
+                'critical' => (int) ($riskByAlert['critical'] ?? 0),
             ],
             'actions_by_status' => [
-                'pending'   => ProtectionAction::where('approval_status', 'pending')->count(),
-                'approved'  => ProtectionAction::where('approval_status', 'approved')->count(),
-                'rejected'  => ProtectionAction::where('approval_status', 'rejected')->count(),
-                'cancelled' => ProtectionAction::where('approval_status', 'cancelled')->count(),
+                'pending'   => (int) ($actionsByStatus['pending']   ?? 0),
+                'approved'  => (int) ($actionsByStatus['approved']  ?? 0),
+                'rejected'  => (int) ($actionsByStatus['rejected']  ?? 0),
+                'cancelled' => (int) ($actionsByStatus['cancelled'] ?? 0),
             ],
         ];
     }

@@ -10,6 +10,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class DiscoveredHostController extends Controller
 {
@@ -94,48 +95,46 @@ class DiscoveredHostController extends Controller
         return back()->with('success', 'Statut de l\'hôte réinitialisé.');
     }
 
-    public function markClient(DiscoveredHost $discoveredHost): RedirectResponse
+    public function markAs(Request $request, DiscoveredHost $discoveredHost): RedirectResponse
     {
+        $validated = $request->validate([
+            'role' => ['required', Rule::in(['client', 'mobile_device', 'file_server', 'soc_server', 'attacker_demo', 'gateway'])],
+        ]);
+
         DB::table('discovered_hosts')
             ->where('id', $discoveredHost->id)
-            ->update(['host_role' => 'client', 'updated_at' => now()]);
+            ->update(['host_role' => $validated['role'], 'updated_at' => now()]);
 
+        return back()->with('success', 'Rôle de l\'hôte mis à jour.');
+    }
+
+    public function markClient(DiscoveredHost $discoveredHost): RedirectResponse
+    {
+        DB::table('discovered_hosts')->where('id', $discoveredHost->id)->update(['host_role' => 'client', 'updated_at' => now()]);
         return back()->with('success', 'Hôte marqué comme client.');
     }
 
     public function markFileServer(DiscoveredHost $discoveredHost): RedirectResponse
     {
-        DB::table('discovered_hosts')
-            ->where('id', $discoveredHost->id)
-            ->update(['host_role' => 'file_server', 'updated_at' => now()]);
-
+        DB::table('discovered_hosts')->where('id', $discoveredHost->id)->update(['host_role' => 'file_server', 'updated_at' => now()]);
         return back()->with('success', 'Hôte marqué comme serveur de fichiers.');
     }
 
     public function markSocServer(DiscoveredHost $discoveredHost): RedirectResponse
     {
-        DB::table('discovered_hosts')
-            ->where('id', $discoveredHost->id)
-            ->update(['host_role' => 'soc_server', 'updated_at' => now()]);
-
+        DB::table('discovered_hosts')->where('id', $discoveredHost->id)->update(['host_role' => 'soc_server', 'updated_at' => now()]);
         return back()->with('success', 'Hôte marqué comme serveur SOC.');
     }
 
     public function markAttackerDemo(DiscoveredHost $discoveredHost): RedirectResponse
     {
-        DB::table('discovered_hosts')
-            ->where('id', $discoveredHost->id)
-            ->update(['host_role' => 'attacker_demo', 'updated_at' => now()]);
-
+        DB::table('discovered_hosts')->where('id', $discoveredHost->id)->update(['host_role' => 'attacker_demo', 'updated_at' => now()]);
         return back()->with('success', 'Hôte marqué comme attaquant démo.');
     }
 
     public function markMobile(DiscoveredHost $discoveredHost): RedirectResponse
     {
-        DB::table('discovered_hosts')
-            ->where('id', $discoveredHost->id)
-            ->update(['host_role' => 'mobile_device', 'updated_at' => now()]);
-
+        DB::table('discovered_hosts')->where('id', $discoveredHost->id)->update(['host_role' => 'mobile_device', 'updated_at' => now()]);
         return back()->with('success', 'Hôte marqué comme mobile / tablette.');
     }
 
