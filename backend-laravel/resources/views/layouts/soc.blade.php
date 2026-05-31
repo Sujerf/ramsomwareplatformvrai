@@ -474,6 +474,19 @@
             animation: pulse-ring 2s ease infinite;
         }
 
+        .pulse-dot-off {
+            background: var(--text-muted);
+            box-shadow: none;
+            animation: none;
+            opacity: .5;
+        }
+
+        .soc-pill-off {
+            background: color-mix(in srgb, var(--text-muted) 10%, transparent);
+            border-color: color-mix(in srgb, var(--text-muted) 18%, transparent);
+            color: var(--text-muted);
+        }
+
         @keyframes pulse-ring {
             0%, 100% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent-2) 18%, transparent); }
             50%       { box-shadow: 0 0 0 7px color-mix(in srgb, var(--accent-2) 8%, transparent); }
@@ -1290,9 +1303,9 @@
                     <noscript><button type="submit">OK</button></noscript>
                 </form>
 
-                <div class="soc-status-pill" title="Thème actuel : {{ $themeLabel }}">
-                    <span class="pulse-dot"></span>
-                    {{ $themeLabel }}
+                <div class="soc-status-pill {{ $engineActive ? '' : 'soc-pill-off' }}" title="Moteur {{ $engineActive ? 'actif' : 'en pause' }}">
+                    <span class="pulse-dot {{ $engineActive ? '' : 'pulse-dot-off' }}"></span>
+                    SOC {{ $engineActive ? 'actif' : 'en pause' }}
                 </div>
 
                 <div class="topbar-user" style="position: relative;" id="userMenuWrap">
