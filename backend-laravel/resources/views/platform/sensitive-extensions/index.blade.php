@@ -432,6 +432,7 @@
                                 </p>
                             @endif
 
+                            @if(auth()->user()->isAdmin())
                             {{-- Formulaire édition --}}
                             <form method="POST"
                                   action="{{ route('platform.sensitive-extensions.update', $ext) }}"
@@ -481,6 +482,7 @@
                                     <i class="fa-solid fa-trash-can"></i> Supprimer
                                 </button>
                             </form>
+                            @endif
 
                         </article>
                     @endforeach

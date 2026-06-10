@@ -282,12 +282,14 @@
                d'enrôlement.</p>
 
             <div class="btn-row" style="margin-top:18px;">
+                @if(auth()->user()->isAdmin())
                 <button type="button" id="btn-detect-all" class="btn btn-primary"
                         data-url="{{ route('platform.networks.detect') }}"
                         data-csrf="{{ csrf_token() }}">
                     <i class="fa-solid fa-magnifying-glass-location" id="detect-icon"></i>
                     <span id="detect-label">Détecter réseaux locaux</span>
                 </button>
+                @endif
                 <a href="{{ route('platform.discovered-hosts.index') }}" class="btn btn-soft">
                     <i class="fa-solid fa-desktop"></i> Hôtes découverts
                 </a>

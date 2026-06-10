@@ -347,6 +347,7 @@
                                 <span>{{ $maxScore }}</span>
                             </div>
 
+                            @if(auth()->user()->isAdmin())
                             {{-- Formulaire --}}
                             <form method="POST"
                                   action="{{ route('platform.detection-rules.update', $rule) }}"
@@ -381,6 +382,7 @@
                                     </button>
                                 </div>
                             </form>
+                            @endif
                         </div>
                     </div>
                 </article>
@@ -471,6 +473,7 @@
                                             <span>{{ $maxScore }}</span>
                                         </div>
 
+                                        @if(auth()->user()->isAdmin())
                                         <form method="POST"
                                               action="{{ route('platform.detection-rules.update', $rule) }}"
                                               class="config-form">
@@ -504,6 +507,7 @@
                                                 </button>
                                             </div>
                                         </form>
+                                        @endif
                                     </div>
                                 </div>
                             </article>

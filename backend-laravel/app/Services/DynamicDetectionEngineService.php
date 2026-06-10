@@ -64,7 +64,7 @@ class DynamicDetectionEngineService
         }
 
         $extension = ltrim(strtolower($extension), '.');
-        $sensitive = $this->cachedSensitiveExtensions()->get($extension);
+        $sensitive = $this->cachedSensitiveExtensions()[$extension] ?? null;
 
         if (! $sensitive) {
             return null;
@@ -74,83 +74,57 @@ class DynamicDetectionEngineService
             'type' => 'sensitive_extension',
             'code' => 'sensitive_extension_'.$extension,
             'label' => 'Extension sensible détectée : .'.$extension,
-            'risk_level' => $sensitive->risk_level,
-            'score' => (int) $sensitive->score_weight,
+            'risk_level' => $sensitive['risk_level'],
+            'score' => (int) $sensitive['score_weight'],
             'source' => 'sensitive_extensions',
             'metadata' => [
                 'extension' => $extension,
-                'description' => $sensitive->description,
+                'description' => $sensitive['description'],
             ],
         ];
     }
 
     private function activeRules(): Collection
     {
-        return Cache::remember('detection:active_rules', 60, function () {
+        $rows = Cache::remember('detection:active_rules', 60, function () {
             return DetectionRule::query()
                 ->where('is_enabled', true)
                 ->orderByDesc('score_weight')
-                ->get();
+                ->get()
+                ->map->toArray()
+                ->values()
+                ->all();
         });
+
+        return collect($rows)->map(fn ($attrs) => (object) $attrs);
     }
 
-    private function cachedSensitiveExtensions(): Collection
+    private function cachedSensitiveExtensions(): array
     {
         return Cache::remember('detection:sensitive_extensions', 60, function () {
             return SensitiveExtension::query()
                 ->where('is_enabled', true)
-                ->get()
-                ->keyBy('extension');
+                ->get(['extension', 'risk_level', 'score_weight', 'description'])
+                ->keyBy('extension')
+                ->map(fn ($e) => [
+                    'risk_level'   => $e->risk_level,
+                    'score_weight' => $e->score_weight,
+                    'description'  => $e->description,
+                ])
+                ->all();
         });
     }
 
     private function matchRule(
-        DetectionRule $rule,
+        object $rule,
         array $payload,
         string $eventType,
         string $path,
         ?string $extension
     ): ?array {
-        $code = $rule->code;
+        $conditions = is_array($rule->conditions) ? $rule->conditions : [];
 
-        $matched = match ($code) {
-            // NOTE : rule_sensitive_extension est intentionnellement absent ici.
-            // analyzeSensitiveExtension() gère déjà le scoring par extension avec
-            // des poids granulaires depuis la table sensitive_extensions.
-            // Un case hardcodé ici provoquerait un double comptage sur chaque
-            // événement portant une extension sensible.
-
-            // Bug G : 'mass_rename_detected' ajouté — l'agent l'envoie après ≥10
-            // renommages en 30 s (track_rename). C'est le signal de dernier recours
-            // quand les événements individuels sont étouffés par le rate-limiter.
-            //
-            // Bug J : 'file_encrypted_extension' ajouté — l'agent envoie ce type
-            // quand un fichier est renommé vers une extension sensible (.locked,
-            // .encrypted…). C'est bien un renommage → rule_mass_rename doit s'appliquer.
-            'rule_mass_rename'        => in_array($eventType, [
-                'file_moved', 'file_renamed', 'moved', 'renamed',
-                'file_encrypted_extension',  // Bug J — rename vers ext sensible
-                'mass_rename_detected',      // Bug G — burst ≥10 renames/30s
-            ], true)
-                && ! $this->isBrowserOrSystemPath($path),
-            'rule_ransom_note'        => $this->looksLikeRansomNote($path),
-
-            // Bug N fix — 'file_created' et 'created' retirés.
-            // Avant : tout file_created (+30) dépassait seul le seuil suspect (25)
-            // → chaque création de .py/.json/.txt générait une fausse alerte.
-            // La création de fichiers chiffrés est couverte par analyzeSensitiveExtension()
-            // (extension scoring) et par rule_mass_rename (file_encrypted_extension).
-            // On conserve uniquement file_modified / modified, mais en excluant les
-            // chemins de navigateurs et caches système (I/O légitime à haute fréquence).
-            'rule_fast_write_activity'=> in_array($eventType, ['file_modified', 'modified'], true)
-                && ! $this->isBrowserOrSystemPath($path),
-            'rule_simulation_marker'  => (bool) ($payload['is_simulation'] ?? false),
-            // Processus suspects (openssl, gpg, cryptsetup, rclone…) — scorés via
-            // la règle rule_suspicious_process en base, capturés par genericRuleMatch.
-            default => $this->genericRuleMatch($rule, $payload, $eventType, $path),
-        };
-
-        if (! $matched) {
+        if (! $this->evaluateConditions($conditions, $rule, $payload, $eventType, $path)) {
             return null;
         }
 
@@ -168,21 +142,86 @@ class DynamicDetectionEngineService
         ];
     }
 
-    private function genericRuleMatch(DetectionRule $rule, array $payload, string $eventType, string $path): bool
-    {
-        if ($rule->event_type && $rule->event_type === $eventType) {
-            return true;
+    /**
+     * Évalue les conditions d'une règle de façon générique.
+     *
+     * Les conditions sont stockées en JSON dans detection_rules.conditions.
+     * Champs supportés :
+     *   event_types[]           — l'event_type doit être dans cette liste
+     *   filename_keywords[]     — au moins un mot-clé doit apparaître dans le nom de fichier
+     *   path_excludes[]         — "browser_or_system" exclus via isBrowserOrSystemPath()
+     *   require_simulation_flag — déclenche uniquement si is_simulation=true
+     *   path_contains           — le chemin doit contenir cette sous-chaîne
+     *
+     * Rétro-compat : si conditions est vide, on se replie sur event_type et path_contains
+     * issus du record DB (comportement d'origine de genericRuleMatch).
+     */
+    private function evaluateConditions(
+        array $conditions,
+        object $rule,
+        array $payload,
+        string $eventType,
+        string $path
+    ): bool {
+        // ── Filtre sur le type d'événement ────────────────────────────────────
+        if (isset($conditions['event_types'])) {
+            if (! in_array($eventType, $conditions['event_types'], true)) {
+                return false;
+            }
+        } elseif ($rule->event_type) {
+            // Rétro-compat : règles sans conditions mais avec event_type en colonne
+            if ($rule->event_type !== $eventType) {
+                return false;
+            }
         }
 
-        $metadata = $rule->metadata ?? [];
+        // ── Mots-clés dans le nom de fichier ──────────────────────────────────
+        if (! empty($conditions['filename_keywords'])) {
+            $filename  = strtolower(basename($path));
+            $hasKeyword = false;
 
-        $contains = data_get($metadata, 'path_contains');
+            foreach ($conditions['filename_keywords'] as $kw) {
+                if (str_contains($filename, strtolower((string) $kw))) {
+                    $hasKeyword = true;
+                    break;
+                }
+            }
 
-        if ($contains && Str::contains(strtolower($path), strtolower($contains))) {
-            return true;
+            if (! $hasKeyword) {
+                return false;
+            }
         }
 
-        return false;
+        // ── Exclusions de chemin ──────────────────────────────────────────────
+        foreach ($conditions['path_excludes'] ?? [] as $exclude) {
+            if ($exclude === 'browser_or_system' && $this->isBrowserOrSystemPath($path)) {
+                return false;
+            }
+        }
+
+        // ── Drapeau simulation ────────────────────────────────────────────────
+        if (! empty($conditions['require_simulation_flag'])) {
+            if (! (bool) ($payload['is_simulation'] ?? false)) {
+                return false;
+            }
+        }
+
+        // ── Sous-chaîne dans le chemin (rétro-compat) ─────────────────────────
+        if (! empty($conditions['path_contains'])) {
+            if (! Str::contains(strtolower($path), strtolower((string) $conditions['path_contains']))) {
+                return false;
+            }
+        }
+
+        // Si aucune condition n'a rejeté et qu'il n'y avait aucun filtre actif,
+        // on refuse quand même les règles sans critères discriminants pour éviter
+        // les faux positifs globaux sur des règles partiellement configurées.
+        $hasActiveCriteria = isset($conditions['event_types'])
+            || ! empty($conditions['filename_keywords'])
+            || ! empty($conditions['require_simulation_flag'])
+            || $rule->event_type;
+
+        return $hasActiveCriteria;
     }
 
     /**
@@ -241,70 +280,59 @@ class DynamicDetectionEngineService
         return false;
     }
 
-    private function looksLikeRansomNote(string $path): bool
-    {
-        $name = strtolower(basename($path));
-
-        return Str::contains($name, [
-            'readme',
-            'recover',
-            'decrypt',
-            'how_to_decrypt',
-            'ransom',
-            'restore_files',
-            'instructions',
-        ]);
-    }
-
     private function matchThreshold(int $score): array
     {
-        $threshold = Cache::remember('detection:thresholds', 60, function () {
+        $thresholds = Cache::remember('detection:thresholds', 60, function () {
             return DetectionThreshold::query()
                 ->where('is_enabled', true)
                 ->orderByDesc('min_score')
-                ->get();
-        })->first(function ($t) use ($score) {
-            return $t->min_score <= $score
-                && ($t->max_score === null || $t->max_score >= $score);
+                ->get()
+                ->map(fn ($t) => [
+                    'code'       => $t->code,
+                    'label'      => $t->label ?? $t->name,
+                    'risk_level' => $t->risk_level,
+                    'min_score'  => $t->min_score,
+                    'max_score'  => $t->max_score,
+                ])
+                ->values()
+                ->all();
         });
 
-        if (! $threshold) {
-            return [
-                'code' => 'threshold_normal_fallback',
-                'label' => 'Normal fallback',
-                'risk_level' => 'normal',
-                'min_score' => 0,
-                'max_score' => null,
-            ];
-        }
+        $threshold = collect($thresholds)->first(function ($t) use ($score) {
+            return $t['min_score'] <= $score
+                && ($t['max_score'] === null || $t['max_score'] >= $score);
+        });
 
-        return [
-            'code' => $threshold->code,
-            'label' => $threshold->label ?? $threshold->name,
-            'risk_level' => $threshold->risk_level,
-            'min_score' => $threshold->min_score,
-            'max_score' => $threshold->max_score,
+        return $threshold ?? [
+            'code'       => 'threshold_normal_fallback',
+            'label'      => 'Normal fallback',
+            'risk_level' => 'normal',
+            'min_score'  => 0,
+            'max_score'  => null,
         ];
     }
 
     private function matchPolicies(string $riskLevel): Collection
     {
-        return Cache::remember('detection:policies', 60, function () {
+        $policies = Cache::remember('detection:policies', 60, function () {
             return ProtectionPolicy::query()
                 ->where('is_enabled', true)
-                ->get();
-        })->where('risk_level', $riskLevel)
-            ->map(fn (ProtectionPolicy $policy) => [
-                'id' => $policy->id,
-                'code' => $policy->code,
-                'name' => $policy->name,
-                'scope' => $policy->scope,
-                'risk_level' => $policy->risk_level,
-                'action_type' => $policy->action_type,
-                'execution_mode' => $policy->execution_mode,
-                'requires_human_validation' => in_array($policy->execution_mode, ['approval_required', 'manual'], true),
-            ])
-            ->values();
+                ->get()
+                ->map(fn ($p) => [
+                    'id'                        => $p->id,
+                    'code'                      => $p->code,
+                    'name'                      => $p->name,
+                    'scope'                     => $p->scope,
+                    'risk_level'                => $p->risk_level,
+                    'action_type'               => $p->action_type,
+                    'execution_mode'            => $p->execution_mode,
+                    'requires_human_validation' => in_array($p->execution_mode, ['approval_required', 'manual'], true),
+                ])
+                ->values()
+                ->all();
+        });
+
+        return collect($policies)->where('risk_level', $riskLevel)->values();
     }
 
     private function safetySettings(): array

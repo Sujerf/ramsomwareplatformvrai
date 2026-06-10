@@ -93,8 +93,8 @@
         .dashboard-hero h2 {
             margin: 0;
             font-size: clamp(40px, 5vw, 72px);
-            line-height: .92;
-            letter-spacing: -.08em;
+            line-height: 1.08;
+            letter-spacing: -.06em;
             font-weight: 950;
         }
 

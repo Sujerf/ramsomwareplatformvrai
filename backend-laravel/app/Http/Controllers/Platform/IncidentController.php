@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Platform;
 
 use App\Http\Controllers\Controller;
 use App\Models\Incident;
+use App\Services\AuditLogService;
 use App\Services\SocStatusSynchronizerService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -96,12 +97,16 @@ class IncidentController extends Controller
     {
         $sync->resolveIncident($incident, 'Incident résolu manuellement depuis la console SOC.');
 
+        app(AuditLogService::class)->incidentResolved($incident->id, 'resolved');
+
         return back()->with('success', 'Incident résolu. Les alertes liées ont été clôturées.');
     }
 
     public function falsePositive(Request $request, Incident $incident, SocStatusSynchronizerService $sync): RedirectResponse
     {
         $sync->falsePositiveIncident($incident);
+
+        app(AuditLogService::class)->incidentResolved($incident->id, 'false_positive');
 
         return back()->with('success', 'Incident classé faux positif. Alertes et actions liées synchronisées.');
     }

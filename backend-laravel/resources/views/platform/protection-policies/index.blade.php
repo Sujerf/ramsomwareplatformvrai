@@ -377,6 +377,7 @@
                                         </span>
                                     </div>
 
+                                    @if(auth()->user()->isAdmin())
                                     {{-- Formulaire --}}
                                     <form method="POST"
                                           action="{{ route('platform.protection-policies.update', $policy) }}"
@@ -417,6 +418,7 @@
                                             </button>
                                         </div>
                                     </form>
+                                    @endif
                                 </div>
                             </div>
                         </article>

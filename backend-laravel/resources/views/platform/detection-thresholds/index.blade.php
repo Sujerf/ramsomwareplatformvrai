@@ -493,6 +493,7 @@
                                 <p style="color:#ef4444; font-size:.78rem; margin-top:.3rem">{{ $message }}</p>
                             @enderror
 
+                            @if(auth()->user()->isAdmin())
                             {{-- Formulaire --}}
                             <form method="POST"
                                   action="{{ route('platform.detection-thresholds.update', $threshold) }}"
@@ -555,6 +556,7 @@
                                     </button>
                                 </div>
                             </form>
+                            @endif
                         </div>
                     </div>
                 </article>

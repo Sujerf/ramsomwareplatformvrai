@@ -211,24 +211,26 @@
                 L'IP principale et les interfaces sont lues directement depuis le système d'exploitation.</p>
 
             <div class="btn-row">
-                @if($isReady)
-                    <form method="POST" action="{{ route('platform.local-host.push-to-networks') }}" style="display:contents"
-                          data-loading="Détection des réseaux et hôtes en cours…"
-                          data-loading-hint="Scan ARP + fping sur toutes les interfaces actives. Cette opération peut prendre 10 à 20 secondes.">
+                @if(auth()->user()->isAdmin())
+                    @if($isReady)
+                        <form method="POST" action="{{ route('platform.local-host.push-to-networks') }}" style="display:contents"
+                              data-loading="Détection des réseaux et hôtes en cours…"
+                              data-loading-hint="Scan ARP + fping sur toutes les interfaces actives. Cette opération peut prendre 10 à 20 secondes.">
+                            @csrf
+                            <button class="action-btn lg primary" type="submit">
+                                <i class="fa-solid fa-satellite-dish"></i> Détecter réseaux et hôtes
+                            </button>
+                        </form>
+                    @endif
+                    <form method="POST" action="{{ route('platform.local-host.detect') }}" style="display:contents"
+                          data-loading="Analyse de la machine SOC en cours…"
+                          data-loading-hint="Lecture des interfaces réseau, routes et adresses IP. Quelques secondes…">
                         @csrf
-                        <button class="action-btn lg primary" type="submit">
-                            <i class="fa-solid fa-satellite-dish"></i> Détecter réseaux et hôtes
+                        <button class="action-btn lg {{ $isReady ? '' : 'primary' }}" type="submit">
+                            <i class="fa-solid fa-rotate"></i> Actualiser
                         </button>
                     </form>
                 @endif
-                <form method="POST" action="{{ route('platform.local-host.detect') }}" style="display:contents"
-                      data-loading="Analyse de la machine SOC en cours…"
-                      data-loading-hint="Lecture des interfaces réseau, routes et adresses IP. Quelques secondes…">
-                    @csrf
-                    <button class="action-btn lg {{ $isReady ? '' : 'primary' }}" type="submit">
-                        <i class="fa-solid fa-rotate"></i> Actualiser
-                    </button>
-                </form>
                 <a href="{{ route('platform.networks.index') }}" class="action-btn">
                     <i class="fa-solid fa-network-wired"></i> Voir les réseaux
                 </a>
@@ -302,6 +304,7 @@
                         L'interface <code>{{ $localHost['primary_interface'] ?? '—' }}</code> est active sur
                         <code>{{ $networks->first() }}</code>. Clique sur le bouton ci-dessous pour détecter et surveiller les réseaux et hôtes en une seule action.
 
+                        @if(auth()->user()->isAdmin())
                         <form method="POST" action="{{ route('platform.local-host.push-to-networks') }}" style="margin-top:14px"
                               data-loading="Détection des réseaux et hôtes en cours…"
                               data-loading-hint="Scan ARP + fping sur toutes les interfaces actives. Cette opération peut prendre 10 à 20 secondes.">
@@ -310,6 +313,7 @@
                                 <i class="fa-solid fa-satellite-dish"></i> Détecter réseaux et hôtes maintenant
                             </button>
                         </form>
+                        @endif
                     @else
                         <div class="rec-title" style="color:#ef4444">
                             <i class="fa-solid fa-triangle-exclamation" style="margin-right:6px"></i>Réseau non exploitable automatiquement.

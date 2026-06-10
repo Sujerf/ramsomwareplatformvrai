@@ -5,6 +5,7 @@
 @section('page_subtitle', 'Génère des événements contrôlés pour tester le pipeline de détection')
 
 @section('content')
+@include('platform.partials.network-visual-style')
 @include('platform.partials.page-tools-style')
 
 <style>

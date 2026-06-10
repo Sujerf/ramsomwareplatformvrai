@@ -9,6 +9,7 @@ use App\Models\Event;
 use App\Models\Incident;
 use App\Models\RiskSnapshot;
 use Illuminate\Support\Facades\DB;
+use App\Services\AuditLogService;
 
 /**
  * Orchestre tout le pipeline de détection pour un événement entrant.
@@ -27,6 +28,7 @@ class AgentRiskService
         private readonly DynamicDetectionEngineService $detectionEngine,
         private readonly NotificationService $notificationService,
         private readonly ProtectionDecisionService $protectionDecisionService,
+        private readonly AuditLogService $auditLog,
     ) {}
 
     // ──────────────────────────────────────────────────────────────────────────
@@ -110,14 +112,20 @@ class AgentRiskService
         $actions         = collect();
 
         // ── Incident : créé seulement si le risque atteint le seuil configuré ──
-        // Le moteur calcule should_create_incident via min_risk_level_for_incident
-        // (réglé dans Settings → Détection). Les événements en-dessous du seuil
-        // sont quand même enregistrés comme events bruts, mais sans incident.
         if ($analysis['should_create_incident']) {
-            $incident = $this->createOrUpdateIncident($event, $analysis);
+            $isNewIncident = false;
+            $incident = $this->createOrUpdateIncident($event, $analysis, $isNewIncident);
 
             $event->update(['incident_id' => $incident->id]);
             $riskSnapshot->update(['incident_id' => $incident->id]);
+
+            if ($isNewIncident) {
+                $this->auditLog->incidentCreated(
+                    $incident->id,
+                    $event->agent->agent_uuid,
+                    $analysis['risk_level']
+                );
+            }
         }
 
         // ── Alerte : créée pour tout événement non-normal (suspect → critical) ─
@@ -232,9 +240,9 @@ class AgentRiskService
     //  INCIDENT
     // ──────────────────────────────────────────────────────────────────────────
 
-    private function createOrUpdateIncident(Event $event, array $analysis): Incident
+    private function createOrUpdateIncident(Event $event, array $analysis, bool &$isNew = false): Incident
     {
-        return DB::transaction(function () use ($event, $analysis) {
+        return DB::transaction(function () use ($event, $analysis, &$isNew) {
             $attackProfileId = AttackProfile::where(
                 'code',
                 $event->is_simulation ? 'controlled_demo_ransomware' : 'ransomware_behavior'
@@ -248,6 +256,8 @@ class AgentRiskService
                 ->first();
 
             if (! $incident) {
+                $isNew = true;
+
                 return Incident::create([
                     'incident_uuid'     => (string) \Illuminate\Support\Str::uuid(),
                     'agent_id'          => $event->agent_id,

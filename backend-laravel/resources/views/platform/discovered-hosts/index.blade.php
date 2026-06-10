@@ -385,7 +385,7 @@
                 <a href="{{ route('platform.local-host.index') }}" class="btn btn-soft">
                     <i class="fa-solid fa-server"></i> Machine SOC
                 </a>
-                @if(($stats['retired'] ?? 0) > 0)
+                @if(auth()->user()->isAdmin() && ($stats['retired'] ?? 0) > 0)
                     <form method="POST" action="{{ route('platform.discovered-hosts.purge-retired') }}"
                           data-confirm="Supprimer définitivement {{ $stats['retired'] }} hôte(s) retiré(s) ? Action irréversible."
                           onsubmit="return confirm(this.dataset.confirm)">
@@ -743,8 +743,8 @@
                             </div>
                         @endif
 
-                        {{-- ── ROLE PICKER ──────────────────────────────── --}}
-                        @if($host->is_monitored)
+                        {{-- ── ROLE PICKER — admin uniquement ──────────── --}}
+                        @if(auth()->user()->isAdmin() && $host->is_monitored)
                             <div class="role-picker">
                                 <div class="role-picker-label">
                                     <i class="fa-solid fa-tag" style="margin-right:4px;"></i>Qualifier le rôle

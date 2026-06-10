@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Platform;
 use App\Http\Controllers\Controller;
 use App\Models\ProtectionAction;
 use App\Models\ProtectionActionDecision;
+use App\Services\AuditLogService;
 use App\Services\SocStatusSynchronizerService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
@@ -117,6 +118,12 @@ class ProtectionActionController extends Controller
             $this->recordDecision($protectionAction, 'approved', "Action approuvée depuis la console SOC.");
         });
 
+        app(AuditLogService::class)->protectionActionApproved(
+            $protectionAction->id,
+            $protectionAction->action_type,
+            $protectionAction->incident_id
+        );
+
         $sync->syncAfterAction($protectionAction);
 
         if ($request->expectsJson()) {
@@ -172,6 +179,12 @@ class ProtectionActionController extends Controller
             $this->recordDecision($protectionAction, 'executed', 'Exécution contrôlée depuis la console SOC.');
         });
 
+        app(AuditLogService::class)->protectionActionExecuted(
+            $protectionAction->id,
+            $protectionAction->action_type,
+            true
+        );
+
         $sync->syncAfterAction($protectionAction);
 
         return back()->with('success', 'Action exécutée et statut synchronisé.');
@@ -188,6 +201,11 @@ class ProtectionActionController extends Controller
 
             $this->recordDecision($protectionAction, 'rollback', 'Rollback enregistré depuis la console SOC.');
         });
+
+        app(AuditLogService::class)->protectionActionRolledBack(
+            $protectionAction->id,
+            $protectionAction->action_type
+        );
 
         $sync->syncAfterAction($protectionAction);
 

@@ -174,11 +174,39 @@ class DetectionPipelineTest extends TestCase
 
         // ── Règles de détection ───────────────────────────────────────────────
         $rules = [
-            ['code' => 'rule_mass_rename',        'name' => 'Mass rename',         'event_type' => null,                         'risk_level' => 'high',     'score_weight' => 55],
-            ['code' => 'rule_ransom_note',         'name' => 'Ransom note',         'event_type' => null,                         'risk_level' => 'critical', 'score_weight' => 90],
-            ['code' => 'rule_fast_write_activity', 'name' => 'Fast write activity', 'event_type' => 'file_modified',              'risk_level' => 'suspect',  'score_weight' => 30],
-            ['code' => 'rule_simulation_marker',   'name' => 'Simulation marker',   'event_type' => null,                         'risk_level' => 'suspect',  'score_weight' => 20],
-            ['code' => 'rule_suspicious_process',  'name' => 'Suspicious process',  'event_type' => 'suspicious_process_detected', 'risk_level' => 'suspect',  'score_weight' => 35],
+            [
+                'code' => 'rule_mass_rename', 'name' => 'Mass rename',
+                'event_type' => null, 'risk_level' => 'high', 'score_weight' => 55,
+                'conditions' => [
+                    'event_types'   => ['file_moved', 'file_renamed', 'moved', 'renamed', 'file_encrypted_extension', 'mass_rename_detected'],
+                    'path_excludes' => ['browser_or_system'],
+                ],
+            ],
+            [
+                'code' => 'rule_ransom_note', 'name' => 'Ransom note',
+                'event_type' => null, 'risk_level' => 'critical', 'score_weight' => 90,
+                'conditions' => [
+                    'filename_keywords' => ['readme', 'decrypt', 'recover', 'how_to_decrypt', 'ransom', 'restore_files', 'instructions'],
+                ],
+            ],
+            [
+                'code' => 'rule_fast_write_activity', 'name' => 'Fast write activity',
+                'event_type' => null, 'risk_level' => 'suspect', 'score_weight' => 30,
+                'conditions' => [
+                    'event_types'   => ['file_modified', 'modified'],
+                    'path_excludes' => ['browser_or_system'],
+                ],
+            ],
+            [
+                'code' => 'rule_simulation_marker', 'name' => 'Simulation marker',
+                'event_type' => null, 'risk_level' => 'suspect', 'score_weight' => 20,
+                'conditions' => ['require_simulation_flag' => true],
+            ],
+            [
+                'code' => 'rule_suspicious_process', 'name' => 'Suspicious process',
+                'event_type' => 'suspicious_process_detected', 'risk_level' => 'suspect', 'score_weight' => 35,
+                'conditions' => [],
+            ],
         ];
 
         foreach ($rules as $r) {

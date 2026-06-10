@@ -5,6 +5,7 @@
 @section('page_subtitle', 'Comptes SOC — administrateurs et analystes')
 
 @section('content')
+    @include('platform.partials.network-visual-style')
 
     @php
         $roleClass = fn($r) => match($r) {

@@ -295,16 +295,27 @@ class AgentRiskPipelineTest extends TestCase
             ]);
         }
 
-        // Règles
-        foreach ([
-            ['rule_mass_rename',        null,                          'high',     55],
-            ['rule_ransom_note',         null,                          'critical', 90],
-            ['rule_fast_write_activity', 'file_modified',               'suspect',  30],
-            ['rule_simulation_marker',   null,                          'suspect',  20],
-        ] as [$code, $event, $level, $score]) {
+        // Règles — conditions obligatoires depuis la refacto data-driven
+        $rules = [
+            ['rule_mass_rename', null, 'high', 55, [
+                'event_types'   => ['file_moved', 'file_renamed', 'moved', 'renamed', 'file_encrypted_extension', 'mass_rename_detected'],
+                'path_excludes' => ['browser_or_system'],
+            ]],
+            ['rule_ransom_note', null, 'critical', 90, [
+                'filename_keywords' => ['readme', 'decrypt', 'recover', 'how_to_decrypt', 'ransom', 'restore_files', 'instructions'],
+            ]],
+            ['rule_fast_write_activity', null, 'suspect', 30, [
+                'event_types'   => ['file_modified', 'modified'],
+                'path_excludes' => ['browser_or_system'],
+            ]],
+            ['rule_simulation_marker', null, 'suspect', 20, ['require_simulation_flag' => true]],
+        ];
+
+        foreach ($rules as [$code, $event, $level, $score, $conditions]) {
             DetectionRule::updateOrCreate(['code' => $code], [
                 'name' => $code, 'event_type' => $event,
-                'risk_level' => $level, 'score_weight' => $score, 'is_enabled' => true,
+                'risk_level' => $level, 'score_weight' => $score,
+                'is_enabled' => true, 'conditions' => $conditions,
             ]);
         }
 

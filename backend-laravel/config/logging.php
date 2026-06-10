@@ -127,6 +127,24 @@ return [
             'path' => storage_path('logs/laravel.log'),
         ],
 
+        // Événements SOC — détection, incidents, alertes (rotation 30 jours)
+        'soc' => [
+            'driver' => 'daily',
+            'path'   => storage_path('logs/soc.log'),
+            'level'  => 'debug',
+            'days'   => 30,
+            'replace_placeholders' => true,
+        ],
+
+        // Piste d'audit des actions admin (rotation 90 jours)
+        'audit' => [
+            'driver' => 'daily',
+            'path'   => storage_path('logs/audit.log'),
+            'level'  => 'info',
+            'days'   => 90,
+            'replace_placeholders' => true,
+        ],
+
     ],
 
 ];

@@ -427,4 +427,39 @@
             display: none;
         }
     }
+
+    /* ── Universal hero polish (all pages) ───────────────────────────────── */
+    .al-hero, .al-show-hero, .inc-hero, .inc-show-hero,
+    .pa-hero, .pa-show-hero, .net-hero, .dh-hero,
+    .agent-hero, .agent-show-hero, .ev-hero, .ev-show-hero,
+    .soc-machine-hero, .users-hero, .aq-hero, .timeline-hero,
+    .dashboard-hero, .sim-hero, .config-hero, .analysis-hero {
+        border-color: color-mix(in srgb, var(--accent) 22%, var(--border-soft)) !important;
+        box-shadow:
+            var(--shadow-soft),
+            0 0 0 1px color-mix(in srgb, var(--accent) 8%, transparent),
+            inset 0 1px 0 color-mix(in srgb, #fff 6%, transparent) !important;
+    }
+
+    .al-hero h2, .al-show-hero h2, .inc-hero h2, .inc-show-hero h2,
+    .pa-hero h2, .pa-show-hero h2, .net-hero h2, .dh-hero h2,
+    .agent-hero h2, .agent-show-hero h2, .ev-hero h2, .ev-show-hero h2,
+    .soc-machine-hero h2, .users-hero h2, .aq-hero h2, .timeline-hero h2,
+    .dashboard-hero h2, .sim-hero h2, .config-hero h2, .analysis-hero h2 {
+        line-height: 1.08 !important;
+        letter-spacing: -.055em !important;
+    }
+
+    .al-hero p, .al-show-hero p, .inc-hero p, .inc-show-hero p,
+    .pa-hero p, .pa-show-hero p, .net-hero p, .dh-hero p,
+    .agent-hero p, .agent-show-hero p, .ev-hero p, .ev-show-hero p,
+    .soc-machine-hero p, .users-hero p, .aq-hero p, .timeline-hero p,
+    .dashboard-hero p, .sim-hero p, .config-hero p, .analysis-hero p {
+        line-height: 1.75 !important;
+        color: var(--text-muted) !important;
+    }
+
+    .analysis-kicker {
+        box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 8%, transparent);
+    }
 </style>

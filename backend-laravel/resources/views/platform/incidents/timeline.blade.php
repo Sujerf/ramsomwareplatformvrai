@@ -5,6 +5,7 @@
 @section('page_subtitle', $incident->title)
 
 @section('content')
+    @include('platform.partials.network-visual-style')
     @include('platform.partials.page-tools-style')
 
     @php
