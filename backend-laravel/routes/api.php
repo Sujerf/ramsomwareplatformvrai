@@ -36,8 +36,8 @@ Route::post('/agent/enroll', [AgentEnrollmentController::class, 'store'])
 //
 // Le middleware ValiderAgentSecret valide la clé per-agent (fallback: secret global).
 Route::prefix('agent')->name('api.agent.')->middleware('agent.secret')->group(function () {
-    Route::post('/heartbeat',               [AgentHeartbeatController::class, 'store'])->name('heartbeat');
-    Route::post('/events',                  [AgentEventController::class, 'store'])->name('events.store');
+    Route::post('/heartbeat',               [AgentHeartbeatController::class, 'store'])->name('heartbeat')->middleware('throttle:agent-heartbeat');
+    Route::post('/events',                  [AgentEventController::class, 'store'])->name('events.store')->middleware('throttle:agent-events');
     Route::get('/pending-commands',         [AgentCommandController::class, 'pending'])->name('commands.pending');
     Route::post('/actions/{action}/result', [AgentCommandController::class, 'result'])->name('commands.result');
 });

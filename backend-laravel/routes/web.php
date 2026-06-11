@@ -6,6 +6,7 @@ use App\Http\Controllers\Platform\AlertController;
 use App\Http\Controllers\Platform\AppearanceController;
 use App\Http\Controllers\Platform\ApprovalQueueController;
 use App\Http\Controllers\Platform\Auth\LoginController;
+use App\Http\Controllers\Platform\Auth\TwoFactorController;
 use App\Http\Controllers\Platform\DashboardController;
 use App\Http\Controllers\Platform\DetectionRuleController;
 use App\Http\Controllers\Platform\DetectionThresholdController;
@@ -32,6 +33,10 @@ Route::get('/e/{code}', [AgentBootstrapController::class, 'scriptByShortCode'])
 Route::get('/login', [LoginController::class, 'showForm'])->name('platform.login')->middleware('guest');
 Route::post('/login', [LoginController::class, 'login'])->name('platform.login.post')->middleware('guest');
 Route::post('/logout', [LoginController::class, 'logout'])->name('platform.logout')->middleware('auth');
+
+// ── Challenge 2FA (après password OK, avant session complète) ────────────────
+Route::get('/2fa/challenge',  [TwoFactorController::class, 'showChallenge'])->name('platform.2fa.challenge');
+Route::post('/2fa/challenge', [TwoFactorController::class, 'verifyChallenge'])->name('platform.2fa.verify')->middleware('throttle:two-factor');
 
 Route::get('/', HomeController::class)->name('platform.home');
 
@@ -112,6 +117,11 @@ Route::prefix('console')->name('platform.')->middleware('auth')->group(function 
     Route::patch('/users/{user}', [UserController::class, 'update'])->name('users.update');
     Route::patch('/users/{user}/password', [UserController::class, 'updatePassword'])->name('users.update-password');
     Route::get('/profile', fn () => redirect()->route('platform.users.edit', auth()->user()))->name('profile');
+
+    // ── Configuration 2FA (profil) ───────────────────────────────────────────
+    Route::get('/two-factor',         [TwoFactorController::class, 'showSetup'])->name('two-factor.setup');
+    Route::post('/two-factor/enable', [TwoFactorController::class, 'enable'])->name('two-factor.enable');
+    Route::post('/two-factor/disable',[TwoFactorController::class, 'disable'])->name('two-factor.disable');
 
     // ════════════════════════════════════════════════════════════════════════
     //  Routes réservées aux ADMINISTRATEURS uniquement

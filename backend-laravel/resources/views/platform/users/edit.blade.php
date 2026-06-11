@@ -355,6 +355,29 @@
         </form>
     </div>
 
+    {{-- ── AUTHENTIFICATION À DEUX FACTEURS (profil propre uniquement) ── --}}
+    @if($isOwnProfile)
+    <div class="profile-section">
+        <h3 class="profile-section-title">
+            <i class="fa-solid fa-mobile-screen-button"></i>
+            Authentification à deux facteurs (2FA)
+        </h3>
+        <p style="color: var(--text-muted); font-size: 13px; margin: 0 0 16px; line-height: 1.6;">
+            @if(auth()->user()->hasTwoFactorEnabled())
+                <span style="color:#22c55e; font-weight:600;"><i class="fa-solid fa-circle-check" style="margin-right:6px;"></i>Active</span>
+                — Votre compte est protégé par une application TOTP.
+            @else
+                <span style="color:#f59e0b; font-weight:600;"><i class="fa-solid fa-triangle-exclamation" style="margin-right:6px;"></i>Désactivée</span>
+                — Renforcez la sécurité de votre compte en activant la vérification en deux étapes.
+            @endif
+        </p>
+        <a href="{{ route('platform.two-factor.setup') }}" class="btn" style="min-width: 200px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-shield-halved"></i>
+            {{ auth()->user()->hasTwoFactorEnabled() ? 'Gérer la 2FA' : 'Activer la 2FA' }}
+        </a>
+    </div>
+    @endif
+
     {{-- ── ZONE DANGER (admin seulement, pas pour soi-même) ───────────── --}}
     @if($isAdmin && !$isOwnProfile)
     <div class="profile-section" style="border-color: rgba(239,68,68,0.25); background: color-mix(in srgb, rgba(239,68,68,0.05) 100%, var(--bg-card));">
