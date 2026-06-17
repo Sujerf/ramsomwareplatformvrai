@@ -19,6 +19,12 @@ return Application::configure(basePath: dirname(__DIR__))
                  ->withoutOverlapping()
                  ->runInBackground()
                  ->appendOutputTo(storage_path('logs/network-scan.log'));
+
+        $schedule->command('ransomshield:check-offline-agents')
+                 ->everyFiveMinutes()
+                 ->withoutOverlapping()
+                 ->runInBackground()
+                 ->appendOutputTo(storage_path('logs/agent-health.log'));
     })
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([

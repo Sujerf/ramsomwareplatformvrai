@@ -194,6 +194,9 @@ class RansomShieldDefaultConfigurationService
             ['group' => 'notifications', 'key' => 'notification_mail_recipient',               'label' => 'Destinataire mail alerte',             'value_type' => 'string',  'value' => '',     'description' => "Adresse mail de l'administrateur à notifier."],
             ['group' => 'notifications', 'key' => 'notification_min_risk_level',               'label' => 'Niveau minimum de notification',       'value_type' => 'string',  'value' => 'high', 'description' => 'Niveau minimum de risque déclenchant les notifications importantes.'],
 
+            // ── Surveillance agents ───────────────────────────────────────────
+            ['group' => 'monitoring', 'key' => 'agent_offline_threshold_seconds', 'label' => 'Seuil hors-ligne agent (secondes)', 'value_type' => 'integer', 'value' => '300', 'description' => "Durée en secondes sans heartbeat avant qu'un agent soit considéré hors-ligne et qu'une alerte haute soit déclenchée. Défaut : 300 (5 min)."],
+
             // ── Interface ─────────────────────────────────────────────────────
             // Corrigé : 'soc_dark' est le thème par défaut réel (soc.blade.php + SystemSettingSeeder).
             // L'ancienne valeur 'light' n'existe pas dans le sélecteur et produisait un thème inconnu.

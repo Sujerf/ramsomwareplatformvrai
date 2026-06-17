@@ -86,6 +86,85 @@ Artisan::command('ransomshield:scan-networks {--cidr= : Scanner uniquement ce CI
 })->purpose('Scanne activement tous les réseaux surveillés et met à jour les hôtes découverts.');
 
 
+/**
+ * Surveillance de la santé des agents.
+ *
+ * Détecte les agents silencieux (plus de heartbeat depuis N secondes) et génère
+ * une alerte haute. Gère aussi la récupération automatique quand un agent repulse.
+ *
+ * Usage :
+ *   php artisan ransomshield:check-offline-agents
+ *
+ * Planifié automatiquement toutes les 5 minutes via le scheduler Laravel.
+ */
+Artisan::command('ransomshield:check-offline-agents', function () {
+    $threshold = (int) (\App\Models\SystemSetting::getCached('agent_offline_threshold_seconds') ?? 300);
+    $cutoff    = now()->subSeconds($threshold);
+
+    // ── Récupération : agents offline revenus en ligne ────────────────────────
+    $recovered = \App\Models\Agent::where('status', 'offline')
+        ->whereNotNull('last_seen_at')
+        ->where('last_seen_at', '>=', $cutoff)
+        ->get();
+
+    foreach ($recovered as $agent) {
+        $agent->update([
+            'status'   => 'active',
+            'metadata' => array_merge($agent->metadata ?? [], [
+                'recovered_at' => now()->toDateTimeString(),
+            ]),
+        ]);
+        $this->line("  ↑ <info>{$agent->agent_name}</info> revenu en ligne.");
+    }
+
+    // ── Détection : agents actifs silencieux depuis trop longtemps ────────────
+    $gone = \App\Models\Agent::whereIn('status', ['active', 'compromised'])
+        ->whereNotNull('last_seen_at')
+        ->where('last_seen_at', '<', $cutoff)
+        ->get();
+
+    foreach ($gone as $agent) {
+        // Transition active → offline (la clé anti-doublon : on n'alerte que lors
+        // de ce changement de statut, pas à chaque run tant qu'il reste offline)
+        $agent->update(['status' => 'offline']);
+
+        $silenceMin = (int) $agent->last_seen_at->diffInMinutes(now());
+        $agentIp    = $agent->ip_address ?? 'IP inconnue';
+        $lastSeen   = $agent->last_seen_at->format('d/m/Y H:i:s');
+
+        $alert = \App\Models\Alert::create([
+            'alert_uuid'  => (string) \Illuminate\Support\Str::uuid(),
+            'agent_id'    => $agent->id,
+            'incident_id' => null,
+            'event_id'    => null,
+            'title'       => "Agent hors-ligne : {$agent->agent_name}",
+            'message'     => "L'agent {$agent->agent_name} ({$agentIp}) n'a pas envoyé de heartbeat depuis {$silenceMin} min. Dernier contact : {$lastSeen}.",
+            'status'      => 'open',
+            'risk_level'  => 'high',
+            'score'       => 75,
+            'detected_at' => now(),
+            'metadata'    => [
+                'alert_type'        => 'agent_offline',
+                'last_seen_at'      => $agent->last_seen_at->toDateTimeString(),
+                'silence_minutes'   => $silenceMin,
+                'threshold_seconds' => $threshold,
+                'timeline_message'  => 'Agent détecté hors-ligne — heartbeat manquant.',
+            ],
+        ]);
+
+        app(\App\Services\NotificationService::class)->notifyAlert($alert);
+
+        $this->warn("  ✗ {$agent->agent_name} hors-ligne depuis {$silenceMin} min.");
+    }
+
+    if ($recovered->isEmpty() && $gone->isEmpty()) {
+        $this->info('  ✓ Tous les agents actifs sont en ligne.');
+    }
+
+    return 0;
+})->purpose('Vérifie les agents silencieux et génère des alertes hautes pour ceux hors-ligne.');
+
+
 Artisan::command('ransomshield:reactivate-infrastructure', function () {
     $networks = \App\Models\ManagedNetwork::query()
         ->where('status', 'retired')

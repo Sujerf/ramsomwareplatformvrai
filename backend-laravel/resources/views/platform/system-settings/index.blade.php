@@ -43,6 +43,7 @@
                 'notification_mail_enabled' => "Active l'envoi d'emails réels à chaque nouvelle alerte dont le niveau dépasse le seuil configuré.",
                 'notification_mail_recipient' => "Adresse email qui reçoit les alertes RansomShield. Laissez vide pour désactiver.",
                 'notification_min_risk_level' => "Niveau de risque minimum à partir duquel un email est envoyé (suspect / high / critical).",
+                'agent_offline_threshold_seconds' => "Nombre de secondes sans heartbeat avant qu'un agent soit déclaré hors-ligne et qu'une alerte haute soit déclenchée. Défaut : 300 (5 min). L'intervalle heartbeat agent est 30 s.",
                 'ui_theme' => 'Définit le thème par défaut de la console.',
                 default => 'Paramètre global utilisé par la plateforme RansomShield.',
             };
