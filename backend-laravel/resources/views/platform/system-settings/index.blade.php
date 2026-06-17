@@ -40,6 +40,9 @@
                 'min_risk_level_for_action' => 'Détermine à partir de quel niveau une action de protection est proposée.',
                 'notification_ui_enabled' => "Active ou désactive les notifications visibles dans l'interface.",
                 'notification_sound_enabled' => "Active ou désactive l'alarme sonore navigateur.",
+                'notification_mail_enabled' => "Active l'envoi d'emails réels à chaque nouvelle alerte dont le niveau dépasse le seuil configuré.",
+                'notification_mail_recipient' => "Adresse email qui reçoit les alertes RansomShield. Laissez vide pour désactiver.",
+                'notification_min_risk_level' => "Niveau de risque minimum à partir duquel un email est envoyé (suspect / high / critical).",
                 'ui_theme' => 'Définit le thème par défaut de la console.',
                 default => 'Paramètre global utilisé par la plateforme RansomShield.',
             };
@@ -381,13 +384,17 @@
                                         <option value="cyber_blue" @selected($setting->value === 'cyber_blue')>🔵 Cyber Blue</option>
                                         <option value="oled_black" @selected($setting->value === 'oled_black')>⬛ OLED Black</option>
                                     </select>
-                                @elseif(in_array($setting->key, ['min_risk_level_for_incident', 'min_risk_level_for_action'], true))
+                                @elseif(in_array($setting->key, ['min_risk_level_for_incident', 'min_risk_level_for_action', 'notification_min_risk_level'], true))
                                     <select name="value" class="form-control">
                                         <option value="normal" @selected($setting->value === 'normal')>normal</option>
                                         <option value="suspect" @selected($setting->value === 'suspect')>suspect</option>
                                         <option value="high" @selected($setting->value === 'high')>high</option>
                                         <option value="critical" @selected($setting->value === 'critical')>critical</option>
                                     </select>
+                                @elseif($setting->key === 'notification_mail_recipient')
+                                    <input class="form-control" type="email" name="value"
+                                           value="{{ $setting->value }}"
+                                           placeholder="soc@votre-domaine.fr">
                                 @elseif($type === 'integer')
                                     <input class="form-control" type="number" name="value" value="{{ $setting->value }}">
                                 @elseif($type === 'json')

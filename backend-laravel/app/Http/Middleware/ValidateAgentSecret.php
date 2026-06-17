@@ -29,7 +29,7 @@ class ValidateAgentSecret
 {
     public function handle(Request $request, Closure $next): Response
     {
-        $provided = (string) $request->header('X-Agent-Secret', '');
+        $provided = trim((string) $request->header('X-Agent-Secret', ''));
 
         // ── Niveau 1 : clé per-agent ─────────────────────────────────────────
         $agentUuid = $request->input('agent_uuid');
@@ -60,7 +60,6 @@ class ValidateAgentSecret
                 'reason' => 'api_not_configured',
             ], 401);
         }
-
         if (! hash_equals($globalSecret, $provided)) {
             return response()->json([
                 'error'  => 'Unauthorized.',
