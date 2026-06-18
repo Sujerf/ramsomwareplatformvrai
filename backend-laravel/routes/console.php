@@ -346,3 +346,30 @@ Artisan::command('ransomshield:executive-report {--period=auto}', function () {
 
     return 0;
 })->purpose('Génère et envoie par e-mail le rapport exécutif SOC (hebdomadaire ou mensuel).');
+
+Artisan::command('ransomshield:archive-incidents {--days=30}', function () {
+    $days = max(1, (int) $this->option('days'));
+    $cutoff = now()->subDays($days);
+
+    $query = \App\Models\Incident::notArchived()
+        ->whereIn('status', ['resolved', 'false_positive'])
+        ->where('resolved_at', '<', $cutoff);
+
+    $count = $query->count();
+
+    if ($count === 0) {
+        $this->info("Aucun incident résolu depuis plus de {$days} jours à archiver.");
+        return 0;
+    }
+
+    $query->update(['archived_at' => now()]);
+
+    \App\Models\AuditLog::write('incident.auto_archived', 'audit', [
+        'count'   => $count,
+        'days'    => $days,
+        'cutoff'  => $cutoff->toDateString(),
+    ]);
+
+    $this->info("{$count} incident(s) archivé(s) (résolus depuis plus de {$days} jours).");
+    return 0;
+})->purpose('Archive automatiquement les incidents résolus/faux positifs depuis plus de N jours (défaut : 30).');

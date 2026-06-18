@@ -68,6 +68,7 @@
             'active'         => ['label' => 'Actifs',        'icon' => 'fa-fire-flame-curved'],
             'resolved'       => ['label' => 'Résolus',       'icon' => 'fa-circle-check'],
             'false_positive' => ['label' => 'Faux positifs', 'icon' => 'fa-ban'],
+            'archived'       => ['label' => 'Archivés',      'icon' => 'fa-box-archive'],
             'all'            => ['label' => 'Tous',          'icon' => 'fa-list'],
         ];
 
@@ -627,32 +628,72 @@
                                 <i class="fa-solid fa-magnifying-glass"></i> Voir
                             </a>
 
-                            @if(!$isDone)
-                                <form method="POST" action="{{ route('platform.incidents.resolve', $incident) }}" style="display:contents;">
+                            @if($incident->isArchived())
+                                <form method="POST" action="{{ route('platform.incidents.unarchive', $incident) }}" style="display:contents;">
                                     @csrf @method('PATCH')
-                                    <button type="submit" class="action-btn success">
-                                        <i class="fa-solid fa-circle-check"></i> Résoudre
-                                    </button>
-                                </form>
-
-                                <form method="POST" action="{{ route('platform.incidents.false-positive', $incident) }}" style="display:contents;">
-                                    @csrf @method('PATCH')
-                                    <button type="submit" class="action-btn warning">
-                                        <i class="fa-solid fa-ban"></i> Faux positif
+                                    <button type="submit" class="action-btn">
+                                        <i class="fa-solid fa-box-open"></i> Restaurer
                                     </button>
                                 </form>
                             @else
-                                <form method="POST" action="{{ route('platform.incidents.reopen', $incident) }}" style="display:contents;">
-                                    @csrf @method('PATCH')
-                                    <button type="submit" class="action-btn primary">
-                                        <i class="fa-solid fa-rotate-right"></i> Réouvrir
-                                    </button>
-                                </form>
+                                @if(!$isDone)
+                                    <form method="POST" action="{{ route('platform.incidents.resolve', $incident) }}" style="display:contents;">
+                                        @csrf @method('PATCH')
+                                        <button type="submit" class="action-btn success">
+                                            <i class="fa-solid fa-circle-check"></i> Résoudre
+                                        </button>
+                                    </form>
+
+                                    <form method="POST" action="{{ route('platform.incidents.false-positive', $incident) }}" style="display:contents;">
+                                        @csrf @method('PATCH')
+                                        <button type="submit" class="action-btn warning">
+                                            <i class="fa-solid fa-ban"></i> Faux positif
+                                        </button>
+                                    </form>
+                                @else
+                                    <form method="POST" action="{{ route('platform.incidents.reopen', $incident) }}" style="display:contents;">
+                                        @csrf @method('PATCH')
+                                        <button type="submit" class="action-btn primary">
+                                            <i class="fa-solid fa-rotate-right"></i> Réouvrir
+                                        </button>
+                                    </form>
+
+                                    <form method="POST" action="{{ route('platform.incidents.archive', $incident) }}" style="display:contents;">
+                                        @csrf @method('PATCH')
+                                        <button type="submit" class="action-btn"
+                                            style="color:var(--text-muted);border-color:var(--border-color);"
+                                            title="Archiver cet incident">
+                                            <i class="fa-solid fa-box-archive"></i>
+                                        </button>
+                                    </form>
+                                @endif
                             @endif
                         </div>
                     </article>
                 @endforeach
             </div>
+
+            {{-- Bouton purge (admin, onglet archivés seulement) --}}
+            @if($activeStatus === 'archived' && $filterCounts['status']['archived'] > 0 && auth()->user()->isAdmin())
+            <div style="margin-top:16px; padding:14px 18px; background:rgba(239,68,68,.06);
+                border:1px solid rgba(239,68,68,.2); border-radius:12px;
+                display:flex; align-items:center; gap:12px;">
+                <i class="fa-solid fa-triangle-exclamation" style="color:#ef4444;"></i>
+                <span style="font-size:13px; color:var(--text-primary); flex:1;">
+                    <strong>{{ $filterCounts['status']['archived'] }} incident(s) archivé(s)</strong>
+                    — la suppression est irréversible et effacera toutes les données associées.
+                </span>
+                <form method="POST" action="{{ route('platform.incidents.purge') }}"
+                      onsubmit="return confirm('Supprimer définitivement les {{ $filterCounts['status']['archived'] }} incident(s) archivé(s) ? Cette action est IRRÉVERSIBLE.')">
+                    @csrf @method('DELETE')
+                    <button type="submit" class="action-btn"
+                        style="background:rgba(239,68,68,.12);color:#ef4444;border-color:rgba(239,68,68,.3);">
+                        <i class="fa-solid fa-trash-can"></i>
+                        Purger {{ $filterCounts['status']['archived'] }} incident(s)
+                    </button>
+                </form>
+            </div>
+            @endif
 
             <div class="pagination-wrap">{{ $incidents->links() }}</div>
 

@@ -26,6 +26,12 @@ return Application::configure(basePath: dirname(__DIR__))
                  ->runInBackground()
                  ->appendOutputTo(storage_path('logs/agent-health.log'));
 
+        // Archivage automatique des incidents résolus depuis plus de 30 jours — chaque dimanche à 02:00
+        $schedule->command('ransomshield:archive-incidents', ['--days' => '30'])
+                 ->weeklyOn(0, '02:00')
+                 ->withoutOverlapping()
+                 ->appendOutputTo(storage_path('logs/archive-incidents.log'));
+
         // Rapport exécutif hebdomadaire — chaque lundi à 08:00
         $schedule->command('ransomshield:executive-report', ['--period' => 'weekly'])
                  ->weeklyOn(1, '08:00')

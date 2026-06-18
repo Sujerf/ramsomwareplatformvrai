@@ -18,32 +18,38 @@ class IncidentController extends Controller
     public function index(Request $request): View
     {
         $status = $request->query('status', 'active');
-        $risk = $request->query('risk');
+        $risk   = $request->query('risk');
 
         $query = Incident::with(['agent', 'attackProfile'])
             ->withCount('alerts')
             ->latest('detected_at')
             ->latest();
 
-        if ($status === 'active') {
-            $query->whereIn('status', ['open', 'investigating', 'under_review', 'reopened']);
-        } elseif ($status === 'resolved') {
-            $query->where('status', 'resolved');
-        } elseif ($status === 'false_positive') {
-            $query->where('status', 'false_positive');
+        if ($status === 'archived') {
+            $query->archived();
+        } else {
+            $query->notArchived();
+            if ($status === 'active') {
+                $query->whereIn('status', ['open', 'investigating', 'under_review', 'reopened']);
+            } elseif ($status === 'resolved') {
+                $query->where('status', 'resolved');
+            } elseif ($status === 'false_positive') {
+                $query->where('status', 'false_positive');
+            }
         }
 
         if ($risk && in_array($risk, ['normal', 'suspect', 'high', 'critical'], true)) {
             $query->where('risk_level', $risk);
         }
 
-        $cntActive   = Incident::whereIn('status', ['open', 'investigating', 'under_review', 'reopened'])->count();
-        $cntResolved = Incident::where('status', 'resolved')->count();
-        $cntFalsePos = Incident::where('status', 'false_positive')->count();
-        $cntTotal    = Incident::count();
+        $cntActive   = Incident::notArchived()->whereIn('status', ['open', 'investigating', 'under_review', 'reopened'])->count();
+        $cntResolved = Incident::notArchived()->where('status', 'resolved')->count();
+        $cntFalsePos = Incident::notArchived()->where('status', 'false_positive')->count();
+        $cntArchived = Incident::archived()->count();
+        $cntTotal    = Incident::notArchived()->count();
 
-        // Compteurs par risque parmi les incidents actifs (pour onglets filtre)
-        $riskCounts = Incident::whereIn('status', ['open', 'investigating', 'under_review', 'reopened'])
+        $riskCounts = Incident::notArchived()
+            ->whereIn('status', ['open', 'investigating', 'under_review', 'reopened'])
             ->selectRaw('risk_level, COUNT(*) as cnt')
             ->groupBy('risk_level')
             ->pluck('cnt', 'risk_level')
@@ -52,13 +58,14 @@ class IncidentController extends Controller
         return view('platform.incidents.index', [
             'incidents'    => $query->paginate(25)->withQueryString(),
             'activeStatus' => $status,
-            'activeRisk'   => $risk ?? '',   // '' = tous risques (jamais null côté vue)
+            'activeRisk'   => $risk ?? '',
             'stats'        => [
                 'active'         => $cntActive,
                 'resolved'       => $cntResolved,
                 'false_positive' => $cntFalsePos,
-                'critical'       => Incident::where('risk_level', 'critical')->count(),
-                'high'           => Incident::where('risk_level', 'high')->count(),
+                'archived'       => $cntArchived,
+                'critical'       => Incident::notArchived()->where('risk_level', 'critical')->count(),
+                'high'           => Incident::notArchived()->where('risk_level', 'high')->count(),
                 'total'          => $cntTotal,
             ],
             'filterCounts' => [
@@ -66,10 +73,11 @@ class IncidentController extends Controller
                     'active'         => $cntActive,
                     'resolved'       => $cntResolved,
                     'false_positive' => $cntFalsePos,
+                    'archived'       => $cntArchived,
                     'all'            => $cntTotal,
                 ],
                 'risk' => [
-                    ''         => $cntActive,           // '' = tous risques actifs
+                    ''         => $cntActive,
                     'critical' => $riskCounts['critical'] ?? 0,
                     'high'     => $riskCounts['high']     ?? 0,
                     'suspect'  => $riskCounts['suspect']  ?? 0,
@@ -77,6 +85,58 @@ class IncidentController extends Controller
                 ],
             ],
         ]);
+    }
+
+    public function archive(Incident $incident): RedirectResponse
+    {
+        $incident->update(['archived_at' => now()]);
+
+        app(AuditLogService::class)->action(
+            'incident.archived',
+            "Incident archivé : {$incident->title}",
+            ['incident_id' => $incident->id, 'status' => $incident->status]
+        );
+
+        return back()->with('success', 'Incident archivé.');
+    }
+
+    public function unarchive(Incident $incident): RedirectResponse
+    {
+        $incident->update(['archived_at' => null]);
+
+        app(AuditLogService::class)->action(
+            'incident.unarchived',
+            "Incident désarchivé : {$incident->title}",
+            ['incident_id' => $incident->id]
+        );
+
+        return back()->with('success', 'Incident restauré.');
+    }
+
+    public function purge(Request $request): RedirectResponse
+    {
+        abort_unless(auth()->user()?->isAdmin(), 403);
+
+        $count = Incident::archived()->count();
+
+        if ($count === 0) {
+            return back()->with('success', 'Aucun incident archivé à supprimer.');
+        }
+
+        // Supprimer dans l'ordre pour respecter les FK (comments, notifs, etc.)
+        $ids = Incident::archived()->pluck('id');
+        \App\Models\IncidentComment::whereIn('incident_id', $ids)->delete();
+        \App\Models\AlertNotification::whereIn('incident_id', $ids)->whereNotNull('incident_id')->delete();
+        Incident::archived()->delete();
+
+        app(AuditLogService::class)->action(
+            'incident.purged',
+            "{$count} incident(s) archivé(s) supprimés définitivement.",
+            ['count' => $count]
+        );
+
+        return redirect()->route('platform.incidents.index', ['status' => 'active'])
+            ->with('success', "{$count} incident(s) archivé(s) supprimés définitivement.");
     }
 
     public function show(Incident $incident): View

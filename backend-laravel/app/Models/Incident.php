@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Incident extends Model
 {
     protected $fillable = [
-        'incident_uuid',   // Bug L fix — colonne ajoutée par migration 110001
+        'incident_uuid',
         'agent_id',
         'attack_profile_id',
         'title',
@@ -23,17 +23,34 @@ class Incident extends Model
         'resolved_at',
         'reopened_at',
         'resolved_by',
+        'archived_at',
         'metadata',
     ];
 
     protected $casts = [
-        'risk_score' => 'integer',
+        'risk_score'  => 'integer',
         'detected_at' => 'datetime',
-        'contained_at' => 'datetime',
+        'contained_at'=> 'datetime',
         'resolved_at' => 'datetime',
         'reopened_at' => 'datetime',
-        'metadata' => 'array',
+        'archived_at' => 'datetime',
+        'metadata'    => 'array',
     ];
+
+    public function isArchived(): bool
+    {
+        return $this->archived_at !== null;
+    }
+
+    public function scopeNotArchived($query)
+    {
+        return $query->whereNull('archived_at');
+    }
+
+    public function scopeArchived($query)
+    {
+        return $query->whereNotNull('archived_at');
+    }
 
     public function agent(): BelongsTo
     {

@@ -373,7 +373,14 @@
                     <i class="fa-solid fa-file-pdf"></i> PDF
                 </a>
 
-                @if(!$isDone)
+                @if($incident->isArchived())
+                    <form method="POST" action="{{ route('platform.incidents.unarchive', $incident) }}" style="display:contents;">
+                        @csrf @method('PATCH')
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fa-solid fa-box-open"></i> Restaurer l'incident
+                        </button>
+                    </form>
+                @elseif(!$isDone)
                     <form method="POST" action="{{ route('platform.incidents.resolve', $incident) }}" style="display:contents;">
                         @csrf @method('PATCH')
                         <button type="submit" class="btn btn-primary">
@@ -392,6 +399,15 @@
                         @csrf @method('PATCH')
                         <button type="submit" class="action-btn">
                             <i class="fa-solid fa-rotate-right"></i> Réouvrir
+                        </button>
+                    </form>
+
+                    <form method="POST" action="{{ route('platform.incidents.archive', $incident) }}" style="display:contents;">
+                        @csrf @method('PATCH')
+                        <button type="submit" class="action-btn"
+                            style="color:var(--text-muted);border-color:var(--border-color);"
+                            title="Archiver cet incident résolu">
+                            <i class="fa-solid fa-box-archive"></i> Archiver
                         </button>
                     </form>
                 @endif

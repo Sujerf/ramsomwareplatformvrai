@@ -85,6 +85,9 @@ Route::prefix('console')->name('platform.')->middleware('auth')->group(function 
     Route::patch('/incidents/{incident}/resolve', [IncidentController::class, 'resolve'])->name('incidents.resolve');
     Route::patch('/incidents/{incident}/false-positive', [IncidentController::class, 'falsePositive'])->name('incidents.false-positive');
     Route::patch('/incidents/{incident}/reopen', [IncidentController::class, 'reopen'])->name('incidents.reopen');
+    Route::patch('/incidents/{incident}/archive', [IncidentController::class, 'archive'])->name('incidents.archive');
+    Route::patch('/incidents/{incident}/unarchive', [IncidentController::class, 'unarchive'])->name('incidents.unarchive');
+    Route::delete('/incidents/purge', [IncidentController::class, 'purge'])->name('incidents.purge');
     Route::get('/incidents/{incident}/timeline', IncidentTimelineController::class)->name('incidents.timeline');
     Route::post('/incidents/{incident}/comments', [\App\Http\Controllers\Platform\IncidentCommentController::class, 'store'])->name('incidents.comments.store');
     Route::delete('/incidents/{incident}/comments/{comment}', [\App\Http\Controllers\Platform\IncidentCommentController::class, 'destroy'])->name('incidents.comments.destroy');
