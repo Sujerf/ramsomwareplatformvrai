@@ -109,6 +109,11 @@ Route::prefix('console')->name('platform.')->middleware('auth')->group(function 
     // Journal d'audit — admin uniquement (contrôlé via policy dans le controller)
     Route::get('/audit-log', [\App\Http\Controllers\Platform\AuditLogController::class, 'index'])->name('audit-log.index');
 
+    // Rapports exécutifs — admin uniquement
+    Route::get('/reports',                        [\App\Http\Controllers\Platform\ReportController::class, 'index'])->name('reports.index');
+    Route::post('/reports/generate',              [\App\Http\Controllers\Platform\ReportController::class, 'generate'])->name('reports.generate');
+    Route::get('/reports/download/{filename}',    [\App\Http\Controllers\Platform\ReportController::class, 'download'])->name('reports.download');
+
     // Événements
     Route::get('/events', [\App\Http\Controllers\Platform\EventController::class, 'index'])->name('events.index');
     Route::get('/events/{event}', [\App\Http\Controllers\Platform\EventController::class, 'show'])->name('events.show');

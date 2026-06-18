@@ -25,6 +25,18 @@ return Application::configure(basePath: dirname(__DIR__))
                  ->withoutOverlapping()
                  ->runInBackground()
                  ->appendOutputTo(storage_path('logs/agent-health.log'));
+
+        // Rapport exécutif hebdomadaire — chaque lundi à 08:00
+        $schedule->command('ransomshield:executive-report', ['--period' => 'weekly'])
+                 ->weeklyOn(1, '08:00')
+                 ->withoutOverlapping()
+                 ->appendOutputTo(storage_path('logs/executive-report.log'));
+
+        // Rapport exécutif mensuel — le 1er de chaque mois à 08:00
+        $schedule->command('ransomshield:executive-report', ['--period' => 'monthly'])
+                 ->monthlyOn(1, '08:00')
+                 ->withoutOverlapping()
+                 ->appendOutputTo(storage_path('logs/executive-report.log'));
     })
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([

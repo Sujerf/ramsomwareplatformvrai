@@ -208,3 +208,141 @@ Artisan::command('ransomshield:reactivate-infrastructure', function () {
     return 0;
 })->purpose('Réactive les réseaux et hôtes retirés lorsqu’ils doivent être remis sous surveillance.');
 
+
+Artisan::command('ransomshield:executive-report {--period=auto}', function () {
+    $setting = fn(string $k, mixed $d = null) => \App\Models\SystemSetting::getCached($k) ?? $d;
+
+    if (! in_array((string) $setting('report_executive_enabled', '0'), ['1', 'true'], true)) {
+        $this->info('Rapport exécutif désactivé (report_executive_enabled=0). Rien à faire.');
+        return 0;
+    }
+
+    $recipient = trim((string) $setting('report_executive_recipient', ''));
+    if ($recipient === '' || ! filter_var($recipient, FILTER_VALIDATE_EMAIL)) {
+        $this->error('Aucun destinataire valide configuré (report_executive_recipient).');
+        return 1;
+    }
+
+    $frequency = $setting('report_executive_frequency', 'weekly');
+    $period    = $this->option('period') === 'auto' ? $frequency : $this->option('period');
+
+    if ($period === 'monthly') {
+        $start = now()->subDays(29)->startOfDay();
+        $end   = now()->endOfDay();
+        $label = now()->subDays(14)->format('F Y');
+    } else {
+        $start = now()->subDays(6)->startOfDay();
+        $end   = now()->endOfDay();
+        $label = 'Semaine du '.$start->format('d/m').' au '.$end->format('d/m/Y');
+    }
+
+    $this->info("Génération du rapport « {$label }» ...");
+
+    // ── Collecte des données ───────────────────────────────────────────────
+    $incidents = \App\Models\Incident::whereBetween('detected_at', [$start, $end]);
+    $alerts    = \App\Models\Alert::whereBetween('detected_at', [$start, $end]);
+    $actions   = \App\Models\ProtectionAction::whereBetween('created_at', [$start, $end]);
+    $auditLogs = \App\Models\AuditLog::whereBetween('created_at', [$start, $end]);
+
+    $mttr = \App\Models\Incident::whereBetween('detected_at', [$start, $end])
+        ->whereNotNull('resolved_at')
+        ->selectRaw('AVG(TIMESTAMPDIFF(HOUR, detected_at, resolved_at)) as avg_hours')
+        ->value('avg_hours');
+
+    $offlineAgents = \App\Models\Agent::whereIn('status', ['offline', 'compromised'])->get()
+        ->map(fn($a) => [
+            'name'      => $a->agent_name,
+            'ip'        => $a->ip_address ?? '—',
+            'last_seen' => $a->last_seen_at?->format('d/m/Y H:i') ?? 'jamais',
+        ])->take(10)->values()->toArray();
+
+    $data = [
+        'incidents' => [
+            'total'         => (clone $incidents)->count(),
+            'critical'      => (clone $incidents)->where('risk_level', 'critical')->count(),
+            'high'          => (clone $incidents)->where('risk_level', 'high')->count(),
+            'suspect'       => (clone $incidents)->where('risk_level', 'suspect')->count(),
+            'normal'        => (clone $incidents)->where('risk_level', 'normal')->count(),
+            'resolved'      => (clone $incidents)->where('status', 'resolved')->count(),
+            'open'          => (clone $incidents)->whereIn('status', ['open','investigating','under_review','reopened'])->count(),
+            'false_positive'=> (clone $incidents)->where('status', 'false_positive')->count(),
+            'mttr_hours'    => $mttr ? round($mttr, 1) : null,
+            'recent'        => (clone $incidents)->with('agent')->latest('detected_at')->limit(8)->get()
+                ->map(fn($i) => ['title' => $i->title, 'risk_level' => $i->risk_level, 'status' => $i->status, 'detected_at' => $i->detected_at?->format('d/m/Y H:i')])
+                ->toArray(),
+        ],
+        'alerts' => [
+            'total'         => (clone $alerts)->count(),
+            'critical'      => (clone $alerts)->where('risk_level', 'critical')->count(),
+            'high'          => (clone $alerts)->where('risk_level', 'high')->count(),
+            'suspect'       => (clone $alerts)->where('risk_level', 'suspect')->count(),
+            'normal'        => (clone $alerts)->where('risk_level', 'normal')->count(),
+            'resolved'      => (clone $alerts)->where('status', 'resolved')->count(),
+            'active'        => (clone $alerts)->whereIn('status', ['open','acknowledged','investigating'])->count(),
+            'false_positive'=> (clone $alerts)->where('status', 'false_positive')->count(),
+        ],
+        'agents' => [
+            'total'        => \App\Models\Agent::count(),
+            'online'       => \App\Models\Agent::where('status', 'active')->count(),
+            'offline'      => \App\Models\Agent::where('status', 'offline')->count(),
+            'compromised'  => \App\Models\Agent::where('status', 'compromised')->count(),
+            'risk_critical'=> \App\Models\Agent::where('risk_level', 'critical')->count(),
+            'risk_high'    => \App\Models\Agent::where('risk_level', 'high')->count(),
+            'risk_normal'  => \App\Models\Agent::whereIn('risk_level', ['normal','suspect'])->count(),
+            'offline_list' => $offlineAgents,
+        ],
+        'actions' => [
+            'total'    => (clone $actions)->count(),
+            'approved' => (clone $actions)->where('approval_status', 'approved')->count(),
+            'executed' => (clone $actions)->where('execution_status', 'executed')->count(),
+            'rejected' => (clone $actions)->where('approval_status', 'rejected')->count(),
+            'pending'  => (clone $actions)->where('approval_status', 'pending')->count(),
+        ],
+        'audit' => [
+            'total'           => (clone $auditLogs)->count(),
+            'logins'          => (clone $auditLogs)->where('action', 'user.login')->count(),
+            'operator_actions'=> (clone $auditLogs)->where('channel', 'audit')->count(),
+            'settings_changes'=> (clone $auditLogs)->where('action', 'setting.updated')->count(),
+            'active_users'    => (clone $auditLogs)->whereNotNull('user_id')->distinct('user_id')->count('user_id'),
+        ],
+    ];
+
+    // ── Génération PDF ─────────────────────────────────────────────────────
+    $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('platform.reports.executive-pdf', [
+        'data'        => $data,
+        'periodLabel' => $label,
+        'frequency'   => $frequency,
+        'start'       => $start,
+        'end'         => $end,
+    ])->setPaper('a4', 'portrait');
+
+    $filename  = 'rapport-soc-'.now()->format('Ymd-His').'.pdf';
+    $storagePath = storage_path('app/reports/'.$filename);
+    file_put_contents($storagePath, $pdf->output());
+    $this->info("PDF généré : {$storagePath}");
+
+    // ── Envoi e-mail ───────────────────────────────────────────────────────
+    $summary = [
+        'incidents_total'    => $data['incidents']['total'],
+        'incidents_critical' => $data['incidents']['critical'],
+        'alerts_total'       => $data['alerts']['total'],
+        'agents_online'      => $data['agents']['online'],
+        'actions_executed'   => $data['actions']['executed'],
+    ];
+
+    \Illuminate\Support\Facades\Mail::to($recipient)
+        ->send(new \App\Mail\ExecutiveReportMail($storagePath, $label, $summary));
+
+    $this->info("Rapport envoyé à : {$recipient}");
+
+    // ── Audit ──────────────────────────────────────────────────────────────
+    \App\Models\AuditLog::write('report.executive_generated', 'audit', [
+        'period'    => $label,
+        'frequency' => $frequency,
+        'recipient' => $recipient,
+        'incidents' => $data['incidents']['total'],
+        'file'      => $filename,
+    ]);
+
+    return 0;
+})->purpose('Génère et envoie par e-mail le rapport exécutif SOC (hebdomadaire ou mensuel).');

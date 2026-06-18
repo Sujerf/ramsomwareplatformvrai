@@ -1213,6 +1213,10 @@
                         <span class="nav-icon"><i class="fa-solid fa-shield-halved"></i></span>
                         <span class="nav-label">Journal d'audit</span>
                     </a>
+                    <a href="{{ route('platform.reports.index') }}" class="soc-nav-link {{ request()->routeIs('platform.reports.*') ? 'active' : '' }}">
+                        <span class="nav-icon"><i class="fa-solid fa-file-chart-column"></i></span>
+                        <span class="nav-label">Rapports exécutifs</span>
+                    </a>
                     @endif
                     <a href="{{ route('platform.configuration.index') }}" class="soc-nav-link {{ request()->routeIs('platform.configuration.*') ? 'active' : '' }}">
                         <span class="nav-icon"><i class="fa-solid fa-table-cells-large"></i></span>
