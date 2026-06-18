@@ -366,6 +366,12 @@
                 <a href="{{ route('platform.incidents.timeline', $incident) }}" class="btn btn-soft">
                     <i class="fa-solid fa-clock-rotate-left"></i> Timeline
                 </a>
+                <a href="{{ route('platform.incidents.export', [$incident, 'csv']) }}" class="btn btn-soft">
+                    <i class="fa-solid fa-file-csv"></i> CSV
+                </a>
+                <a href="{{ route('platform.incidents.export', [$incident, 'pdf']) }}" class="btn btn-soft">
+                    <i class="fa-solid fa-file-pdf"></i> PDF
+                </a>
 
                 @if(!$isDone)
                     <form method="POST" action="{{ route('platform.incidents.resolve', $incident) }}" style="display:contents;">

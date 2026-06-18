@@ -6,9 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Models\Incident;
 use App\Services\AuditLogService;
 use App\Services\SocStatusSynchronizerService;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class IncidentController extends Controller
 {
@@ -91,6 +94,144 @@ class IncidentController extends Controller
         return view('platform.incidents.show', [
             'incident' => $incident,
         ]);
+    }
+
+    public function export(Incident $incident, string $format): Response|StreamedResponse
+    {
+        $incident->load([
+            'agent',
+            'attackProfile',
+            'alerts.event',
+            'events',
+            'protectionActions.protectionPolicy',
+        ]);
+
+        $slug = 'incident-'.$incident->id.'-'.now()->format('Ymd-His');
+
+        if ($format === 'pdf') {
+            $pdf = Pdf::loadView('platform.incidents.export-pdf', ['incident' => $incident])
+                ->setPaper('a4', 'portrait');
+
+            return $pdf->download("{$slug}.pdf");
+        }
+
+        // CSV
+        $filename = "{$slug}.csv";
+
+        return response()->streamDownload(function () use ($incident) {
+            $out = fopen('php://output', 'w');
+            fputs($out, "\xEF\xBB\xBF"); // BOM UTF-8 pour Excel
+
+            // ── En-tête incident ─────────────────────────────────────────────
+            fputcsv($out, ['=== INCIDENT ===']);
+            fputcsv($out, ['ID', 'UUID', 'Titre', 'Statut', 'Niveau de risque', 'Score', 'Agent', 'IP agent', 'Détecté le', 'Résolu le']);
+            fputcsv($out, [
+                $incident->id,
+                $incident->incident_uuid ?? '',
+                $incident->title,
+                $incident->status,
+                $incident->risk_level,
+                $incident->risk_score ?? 0,
+                $incident->agent?->agent_name ?? '',
+                $incident->agent?->ip_address ?? '',
+                optional($incident->detected_at)->format('d/m/Y H:i:s') ?? '',
+                optional($incident->resolved_at)->format('d/m/Y H:i:s') ?? '',
+            ]);
+            fputcsv($out, []);
+
+            // ── Alertes ───────────────────────────────────────────────────────
+            fputcsv($out, ['=== ALERTES ('.$incident->alerts->count().')  ===']);
+            fputcsv($out, ['ID', 'Titre', 'Niveau de risque', 'Score', 'Statut', 'Détectée le']);
+            foreach ($incident->alerts as $alert) {
+                fputcsv($out, [
+                    $alert->id,
+                    $alert->title,
+                    $alert->risk_level,
+                    $alert->score ?? 0,
+                    $alert->status,
+                    optional($alert->detected_at)->format('d/m/Y H:i:s') ?? '',
+                ]);
+            }
+            fputcsv($out, []);
+
+            // ── Événements ────────────────────────────────────────────────────
+            fputcsv($out, ['=== ÉVÉNEMENTS ('.$incident->events->count().')  ===']);
+            fputcsv($out, ['ID', 'Type', 'Chemin', 'Extension', 'Niveau de risque', 'Score', 'Observé le']);
+            foreach ($incident->events as $event) {
+                fputcsv($out, [
+                    $event->id,
+                    $event->event_type,
+                    $event->path ?? '',
+                    $event->file_extension ?? '',
+                    $event->risk_level,
+                    $event->score ?? 0,
+                    optional($event->observed_at)->format('d/m/Y H:i:s') ?? '',
+                ]);
+            }
+            fputcsv($out, []);
+
+            // ── Actions de protection ─────────────────────────────────────────
+            fputcsv($out, ['=== ACTIONS DE PROTECTION ('.$incident->protectionActions->count().')  ===']);
+            fputcsv($out, ['ID', 'Type', 'Politique', 'Statut', 'Approbation requise', 'Créée le']);
+            foreach ($incident->protectionActions as $action) {
+                fputcsv($out, [
+                    $action->id,
+                    $action->action_type,
+                    $action->protectionPolicy?->name ?? '',
+                    $action->status,
+                    $action->human_approval_required ? 'Oui' : 'Non',
+                    optional($action->created_at)->format('d/m/Y H:i:s') ?? '',
+                ]);
+            }
+
+            fclose($out);
+        }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
+    public function exportList(Request $request): StreamedResponse
+    {
+        $status = $request->query('status', 'active');
+        $risk   = $request->query('risk');
+
+        $query = Incident::with('agent')->latest('detected_at');
+
+        if ($status === 'active') {
+            $query->whereIn('status', ['open', 'investigating', 'under_review', 'reopened']);
+        } elseif ($status === 'resolved') {
+            $query->where('status', 'resolved');
+        } elseif ($status === 'false_positive') {
+            $query->where('status', 'false_positive');
+        }
+
+        if ($risk && in_array($risk, ['normal', 'suspect', 'high', 'critical'], true)) {
+            $query->where('risk_level', $risk);
+        }
+
+        $incidents = $query->limit(5000)->get();
+        $filename  = 'incidents-'.now()->format('Ymd-His').'.csv';
+
+        return response()->streamDownload(function () use ($incidents) {
+            $out = fopen('php://output', 'w');
+            fputs($out, "\xEF\xBB\xBF");
+
+            fputcsv($out, ['ID', 'Titre', 'Statut', 'Niveau de risque', 'Score', 'Agent', 'IP agent', 'Détecté le', 'Résolu le']);
+
+            foreach ($incidents as $incident) {
+                fputcsv($out, [
+                    $incident->id,
+                    $incident->title,
+                    $incident->status,
+                    $incident->risk_level,
+                    $incident->risk_score ?? 0,
+                    $incident->agent?->agent_name ?? '',
+                    $incident->agent?->ip_address ?? '',
+                    optional($incident->detected_at)->format('d/m/Y H:i:s') ?? '',
+                    optional($incident->resolved_at)->format('d/m/Y H:i:s') ?? '',
+                ]);
+            }
+
+            fclose($out);
+        }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 
     public function resolve(Request $request, Incident $incident, SocStatusSynchronizerService $sync): RedirectResponse

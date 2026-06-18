@@ -76,6 +76,8 @@ Route::prefix('console')->name('platform.')->middleware('auth')->group(function 
 
     // Incidents — lecture + actions opérationnelles pour analyst
     Route::get('/incidents', [IncidentController::class, 'index'])->name('incidents.index');
+    Route::get('/incidents/export/list', [IncidentController::class, 'exportList'])->name('incidents.export-list');
+    Route::get('/incidents/{incident}/export/{format}', [IncidentController::class, 'export'])->name('incidents.export')->where('format', 'csv|pdf');
     Route::get('/incidents/{incident}', [IncidentController::class, 'show'])->name('incidents.show');
     Route::patch('/incidents/{incident}/resolve', [IncidentController::class, 'resolve'])->name('incidents.resolve');
     Route::patch('/incidents/{incident}/false-positive', [IncidentController::class, 'falsePositive'])->name('incidents.false-positive');

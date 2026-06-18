@@ -420,6 +420,9 @@
                 <a href="{{ route('platform.approval-queue.index') }}" class="btn btn-soft">
                     <i class="fa-solid fa-circle-dot"></i> File d'approbation
                 </a>
+                <a href="{{ route('platform.incidents.export-list', array_filter(['status' => $activeStatus, 'risk' => $activeRisk])) }}" class="btn btn-soft">
+                    <i class="fa-solid fa-file-csv"></i> Export CSV
+                </a>
             </div>
         </section>
 
