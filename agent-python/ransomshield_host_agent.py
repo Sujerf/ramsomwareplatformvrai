@@ -1147,12 +1147,77 @@ def poll_commands(agent_uuid: str) -> None:
             elif action_type == "update_agent":
                 success, message = execute_self_update(agent_uuid, action_id)
                 break
+            elif action_type == "force_scan":
+                success, message = execute_force_scan(agent_uuid, payload)
             else:
                 message = f"Type d'action non supporté localement : {action_type}"
         except Exception as exc:
             message = str(exc)
 
         report_command_result(agent_uuid, action_id, success, message)
+
+
+def execute_force_scan(agent_uuid: str, payload: dict) -> tuple[bool, str]:
+    """
+    Scan actif déclenché depuis la console SOC.
+    Parcourt les chemins surveillés, détecte extensions suspectes et ransom notes,
+    envoie un événement par fichier suspect, retourne un résumé.
+    """
+    scan_type   = payload.get("scan_type", "quick")   # quick | full
+    extra_paths = payload.get("paths") or []           # chemins supplémentaires optionnels
+
+    # Chemins à scanner
+    paths_to_scan = list(MONITOR_PATHS)
+    for p in extra_paths:
+        resolved = Path(p).expanduser()
+        if resolved.exists() and resolved not in paths_to_scan:
+            paths_to_scan.append(resolved)
+
+    files_scanned  = 0
+    suspicious     = 0
+    events_sent    = 0
+    max_depth      = None if scan_type == "full" else 3
+
+    def _walk(root: pathlib.Path, depth: int = 0):
+        nonlocal files_scanned, suspicious, events_sent
+        if max_depth is not None and depth > max_depth:
+            return
+        try:
+            for entry in os.scandir(root):
+                if should_ignore(entry.path):
+                    continue
+                if entry.is_dir(follow_symlinks=False):
+                    _walk(Path(entry.path), depth + 1)
+                elif entry.is_file(follow_symlinks=False):
+                    files_scanned += 1
+                    ext           = file_extension(entry.path)
+                    is_sensitive  = bool(ext and ext in SENSITIVE_EXTENSIONS)
+                    is_ransom     = looks_like_ransom_note(entry.path)
+
+                    if is_sensitive or is_ransom:
+                        suspicious += 1
+                        etype = "ransom_note_detected" if is_ransom else "extension_detected"
+                        send_event(
+                            agent_uuid,
+                            etype,
+                            entry.path,
+                            extra_metadata={"scan_type": scan_type, "triggered_by": "force_scan"},
+                        )
+                        events_sent += 1
+        except PermissionError:
+            pass
+
+    logger.info(f"[FORCE-SCAN] Démarrage scan {scan_type} sur {len(paths_to_scan)} chemin(s)…")
+    for p in paths_to_scan:
+        if p.exists():
+            _walk(p)
+
+    msg = (
+        f"Scan {scan_type} terminé — {files_scanned} fichier(s) analysé(s), "
+        f"{suspicious} suspect(s), {events_sent} événement(s) envoyé(s)."
+    )
+    logger.info(f"[FORCE-SCAN] {msg}")
+    return True, msg
 
 
 def main() -> None:

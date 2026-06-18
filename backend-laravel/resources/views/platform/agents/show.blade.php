@@ -1299,6 +1299,7 @@
                                         ['kill_process',      'fa-ban',               '#f59e0b', 'Tuer un process',      'Nécessite un PID'],
                                         ['rollback_isolation','fa-plug-circle-check', '#22c55e', 'Lever l\'isolation',   'Restaure le trafic réseau'],
                                         ['update_agent',      'fa-cloud-arrow-down',  '#38bdf8', 'Mettre à jour',        'Télécharge et redémarre avec la dernière version'],
+                                        ['force_scan',        'fa-magnifying-glass-chart', '#a855f7', 'Scan actif',      'Analyse immédiate des fichiers surveillés'],
                                     ] as [$val, $icon, $color, $label, $desc])
                                     <label style="cursor:pointer;">
                                         <input type="radio" name="action_type" value="{{ $val }}" class="cmd-type-radio"
@@ -1315,6 +1316,32 @@
                                 @error('action_type')
                                     <p style="color:#ef4444; font-size:12px; margin-top:4px;">{{ $message }}</p>
                                 @enderror
+                            </div>
+
+                            {{-- Options scan actif (affiché seulement pour force_scan) --}}
+                            <div id="scan-options-field" style="display:none;">
+                                <label style="font-size:12px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:.05em; display:block; margin-bottom:6px;">
+                                    Type de scan
+                                </label>
+                                <div style="display:flex; gap:10px; margin-bottom:10px;">
+                                    <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;">
+                                        <input type="radio" name="scan_type" value="quick" checked> Rapide
+                                        <span style="color:var(--text-muted);font-size:11px;">(3 niveaux de profondeur)</span>
+                                    </label>
+                                    <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;">
+                                        <input type="radio" name="scan_type" value="full"> Complet
+                                        <span style="color:var(--text-muted);font-size:11px;">(récursif, peut être long)</span>
+                                    </label>
+                                </div>
+                                <label style="font-size:12px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:.05em; display:block; margin-bottom:6px;">
+                                    Chemins supplémentaires <span style="font-weight:400;text-transform:none;">(optionnel — un par ligne)</span>
+                                </label>
+                                <textarea name="scan_paths" rows="3"
+                                    placeholder="/home/user/Documents&#10;C:\Users\Public"
+                                    style="width:100%;padding:9px 12px;border-radius:8px;border:1.5px solid var(--border);background:var(--card-bg);color:var(--text-main);font-size:13px;font-family:monospace;box-sizing:border-box;resize:vertical;"></textarea>
+                                <p style="font-size:11px;color:var(--text-muted);margin-top:4px;">
+                                    Les chemins par défaut (<code>{{ implode(', ', ['/home', '/tmp', 'C:\Users']) }}</code> etc.) sont toujours inclus.
+                                </p>
                             </div>
 
                             {{-- PID (affiché seulement pour kill_process) --}}
@@ -1369,6 +1396,7 @@
                             $aIcon = match(true) {
                                 str_contains($action->action_type, 'isolat')  => 'fa-plug-circle-xmark',
                                 str_contains($action->action_type, 'kill')    => 'fa-ban',
+                                str_contains($action->action_type, 'scan')    => 'fa-magnifying-glass-chart',
                                 str_contains($action->action_type, 'backup')  => 'fa-cloud-arrow-up',
                                 str_contains($action->action_type, 'block')   => 'fa-shield-halved',
                                 str_contains($action->action_type, 'alert')   => 'fa-bell',
@@ -1481,8 +1509,9 @@
     (function () {
         const radios   = document.querySelectorAll('.cmd-type-radio');
         const btns     = document.querySelectorAll('.cmd-type-btn');
-        const pidField = document.getElementById('pid-field');
-        const sendBtn  = document.getElementById('send-cmd-btn');
+        const pidField      = document.getElementById('pid-field');
+        const scanField     = document.getElementById('scan-options-field');
+        const sendBtn       = document.getElementById('send-cmd-btn');
 
         function selectAction(value) {
             // Visual state
@@ -1492,8 +1521,9 @@
                 b.style.background   = isActive ? 'color-mix(in srgb, #6366f1 10%, var(--card-bg))' : 'var(--card-bg)';
             });
 
-            // Show/hide PID field
-            if (pidField) pidField.style.display = (value === 'kill_process') ? 'block' : 'none';
+            // Show/hide contextual fields
+            if (pidField)  pidField.style.display  = (value === 'kill_process') ? 'block' : 'none';
+            if (scanField) scanField.style.display = (value === 'force_scan')   ? 'block' : 'none';
 
             // Enable send button
             if (sendBtn) {

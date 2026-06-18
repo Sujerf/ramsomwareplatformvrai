@@ -111,8 +111,10 @@ class AgentController extends Controller
     public function sendCommand(Request $request, Agent $agent): RedirectResponse
     {
         $validated = $request->validate([
-            'action_type' => ['required', 'string', 'in:isolate_host,kill_process,rollback_isolation,update_agent'],
+            'action_type' => ['required', 'string', 'in:isolate_host,kill_process,rollback_isolation,update_agent,force_scan'],
             'pid'         => ['nullable', 'integer', 'min:1'],
+            'scan_type'   => ['nullable', 'string', 'in:quick,full'],
+            'scan_paths'  => ['nullable', 'string', 'max:1000'],
             'note'        => ['nullable', 'string', 'max:255'],
         ]);
 
@@ -125,10 +127,18 @@ class AgentController extends Controller
         }
 
         if ($validated['action_type'] === 'isolate_host') {
-            // Fournir l'IP du SOC pour que l'agent garde la communication ouverte
             $socUrl = config('app.soc_url', config('app.url'));
             $socIp  = gethostbyname(parse_url($socUrl, PHP_URL_HOST) ?? '127.0.0.1');
             $payload['soc_ip'] = $socIp;
+        }
+
+        if ($validated['action_type'] === 'force_scan') {
+            $payload['scan_type'] = $validated['scan_type'] ?? 'quick';
+            if (! empty($validated['scan_paths'])) {
+                $payload['paths'] = array_values(array_filter(
+                    array_map('trim', explode("\n", $validated['scan_paths']))
+                ));
+            }
         }
 
         $action = ProtectionAction::create([
