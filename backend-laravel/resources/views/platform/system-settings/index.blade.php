@@ -44,6 +44,9 @@
                 'notification_mail_recipient' => "Adresse email qui reçoit les alertes RansomShield. Laissez vide pour désactiver.",
                 'notification_min_risk_level' => "Niveau de risque minimum à partir duquel un email est envoyé (suspect / high / critical).",
                 'agent_offline_threshold_seconds' => "Nombre de secondes sans heartbeat avant qu'un agent soit déclaré hors-ligne et qu'une alerte haute soit déclenchée. Défaut : 300 (5 min). L'intervalle heartbeat agent est 30 s.",
+                'notification_webhook_enabled' => "Active l'envoi d'alertes vers un webhook Slack, Teams ou générique à chaque nouvelle alerte dépassant le seuil de risque.",
+                'notification_webhook_url' => "URL complète du webhook entrant. Pour Slack : https://hooks.slack.com/services/… Pour Teams : URL du connecteur ou Power Automate.",
+                'notification_webhook_type' => "Format du payload envoyé au webhook : Slack (attachments), Teams (MessageCard), ou Generic (JSON brut compatible n8n / Zapier).",
                 'ui_theme' => 'Définit le thème par défaut de la console.',
                 default => 'Paramètre global utilisé par la plateforme RansomShield.',
             };
@@ -392,6 +395,16 @@
                                         <option value="high" @selected($setting->value === 'high')>high</option>
                                         <option value="critical" @selected($setting->value === 'critical')>critical</option>
                                     </select>
+                                @elseif($setting->key === 'notification_webhook_type')
+                                    <select name="value" class="form-control">
+                                        <option value="slack"   @selected($setting->value === 'slack')>Slack (Incoming Webhook)</option>
+                                        <option value="teams"   @selected($setting->value === 'teams')>Microsoft Teams (MessageCard)</option>
+                                        <option value="generic" @selected($setting->value === 'generic')>Generic JSON (n8n, Zapier…)</option>
+                                    </select>
+                                @elseif($setting->key === 'notification_webhook_url')
+                                    <input class="form-control" type="url" name="value"
+                                           value="{{ $setting->value }}"
+                                           placeholder="https://hooks.slack.com/services/…">
                                 @elseif($setting->key === 'notification_mail_recipient')
                                     <input class="form-control" type="email" name="value"
                                            value="{{ $setting->value }}"

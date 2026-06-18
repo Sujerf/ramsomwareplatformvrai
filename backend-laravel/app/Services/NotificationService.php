@@ -7,6 +7,7 @@ use App\Models\Alert;
 use App\Models\AlertNotification;
 use App\Models\Incident;
 use App\Models\SystemSetting;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 
 class NotificationService
@@ -91,6 +92,73 @@ class NotificationService
                 }
             }
         }
+
+        // ── Notification webhook (Slack / Teams / Generic) ───────────────────
+        if (
+            $this->settingBool('notification_webhook_enabled', false)
+            && $this->riskIsAtLeast($alert->risk_level, $this->settingValue('notification_min_risk_level', 'high'))
+        ) {
+            $webhookUrl = trim((string) $this->settingValue('notification_webhook_url', ''));
+
+            if ($webhookUrl !== '' && filter_var($webhookUrl, FILTER_VALIDATE_URL)) {
+                $type = $this->settingValue('notification_webhook_type', 'slack');
+
+                $notification = $this->createNotification(
+                    alert: $alert,
+                    incident: $alert->incident,
+                    channel: 'webhook',
+                    subject: $alert->title,
+                    message: $alert->message,
+                    recipient: $webhookUrl,
+                    metadata: [
+                        'risk_level'       => $alert->risk_level,
+                        'score'            => $alert->score,
+                        'webhook_type'     => $type,
+                        'timeline_message' => 'Envoi webhook en cours.',
+                    ]
+                );
+
+                try {
+                    $payload = match ($type) {
+                        'teams'   => $this->buildTeamsPayload($alert),
+                        'generic' => $this->buildGenericPayload($alert),
+                        default   => $this->buildSlackPayload($alert),
+                    };
+
+                    $response = Http::timeout(10)
+                        ->withHeaders(['Content-Type' => 'application/json'])
+                        ->post($webhookUrl, $payload);
+
+                    if ($response->successful()) {
+                        $notification->update([
+                            'status'   => 'sent',
+                            'sent_at'  => now(),
+                            'metadata' => array_merge($notification->metadata ?? [], [
+                                'timeline_message' => 'Webhook envoyé avec succès.',
+                                'http_status'      => $response->status(),
+                            ]),
+                        ]);
+                    } else {
+                        $notification->update([
+                            'status'   => 'failed',
+                            'metadata' => array_merge($notification->metadata ?? [], [
+                                'timeline_message' => 'Webhook rejeté — HTTP '.$response->status().'.',
+                                'http_status'      => $response->status(),
+                                'response_body'    => substr($response->body(), 0, 500),
+                            ]),
+                        ]);
+                    }
+                } catch (\Throwable $e) {
+                    $notification->update([
+                        'status'   => 'failed',
+                        'metadata' => array_merge($notification->metadata ?? [], [
+                            'timeline_message' => 'Échec webhook : '.$e->getMessage(),
+                            'error'            => $e->getMessage(),
+                        ]),
+                    ]);
+                }
+            }
+        }
     }
 
     public function notifyIncident(Incident $incident, string $message): void
@@ -112,6 +180,95 @@ class NotificationService
                 'timeline_message' => 'Notification UI générée pour mise à jour incident.',
             ]
         );
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    //  PAYLOADS WEBHOOK
+    // ──────────────────────────────────────────────────────────────────────────
+
+    private function buildSlackPayload(Alert $alert): array
+    {
+        $agentName  = $alert->agent?->agent_name ?? 'Agent inconnu';
+        $consoleUrl = url('/console/alerts/'.$alert->id);
+        $color      = $this->riskColor($alert->risk_level);
+
+        return [
+            'attachments' => [[
+                'color'   => $color,
+                'title'   => $alert->title,
+                'text'    => $alert->message,
+                'fields'  => [
+                    ['title' => 'Agent',      'value' => $agentName,                          'short' => true],
+                    ['title' => 'Niveau',     'value' => strtoupper($alert->risk_level),      'short' => true],
+                    ['title' => 'Score',      'value' => ($alert->score ?? 0).'/100',         'short' => true],
+                    ['title' => 'Détecté le', 'value' => now()->format('d/m/Y H:i'),          'short' => true],
+                ],
+                'actions' => [[
+                    'type' => 'button',
+                    'text' => 'Voir dans la console →',
+                    'url'  => $consoleUrl,
+                ]],
+                'footer'  => 'RansomShield SOC',
+                'ts'      => now()->timestamp,
+            ]],
+        ];
+    }
+
+    private function buildTeamsPayload(Alert $alert): array
+    {
+        $agentName  = $alert->agent?->agent_name ?? 'Agent inconnu';
+        $consoleUrl = url('/console/alerts/'.$alert->id);
+        $color      = ltrim($this->riskColor($alert->risk_level), '#');
+
+        return [
+            '@type'           => 'MessageCard',
+            '@context'        => 'http://schema.org/extensions',
+            'themeColor'      => $color,
+            'summary'         => $alert->title,
+            'sections'        => [[
+                'activityTitle'    => '🛡 RansomShield SOC — '.strtoupper($alert->risk_level),
+                'activitySubtitle' => $alert->title,
+                'activityText'     => $alert->message,
+                'facts'            => [
+                    ['name' => 'Agent',      'value' => $agentName],
+                    ['name' => 'Niveau',     'value' => strtoupper($alert->risk_level)],
+                    ['name' => 'Score',      'value' => ($alert->score ?? 0).'/100'],
+                    ['name' => 'Détecté le', 'value' => now()->format('d/m/Y H:i')],
+                ],
+                'markdown' => true,
+            ]],
+            'potentialAction' => [[
+                '@type'   => 'OpenUri',
+                'name'    => 'Voir dans la console',
+                'targets' => [['os' => 'default', 'uri' => $consoleUrl]],
+            ]],
+        ];
+    }
+
+    private function buildGenericPayload(Alert $alert): array
+    {
+        return [
+            'event'       => 'ransomshield.alert',
+            'title'       => $alert->title,
+            'message'     => $alert->message,
+            'risk_level'  => $alert->risk_level,
+            'score'       => $alert->score ?? 0,
+            'agent_name'  => $alert->agent?->agent_name,
+            'agent_ip'    => $alert->agent?->ip_address,
+            'alert_id'    => $alert->id,
+            'detected_at' => now()->toIso8601String(),
+            'console_url' => url('/console/alerts/'.$alert->id),
+        ];
+    }
+
+    private function riskColor(string $riskLevel): string
+    {
+        return match ($riskLevel) {
+            'critical' => '#ef4444',
+            'high'     => '#f97316',
+            'suspect'  => '#eab308',
+            default    => '#22c55e',
+        };
     }
 
     private function createNotification(
