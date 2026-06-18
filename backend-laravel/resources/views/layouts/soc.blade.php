@@ -1111,6 +1111,7 @@
     @stack('styles')
     @include('platform.partials.ui-stability-fixes')
     @include('platform.partials.table-form-link-fix')
+    @vite('resources/js/app.js')
 </head>
 <body class="{{ $themeClass }}">
 <div class="mobile-overlay" data-close-sidebar></div>

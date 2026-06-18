@@ -1433,10 +1433,12 @@
 
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
     <script>
     document.addEventListener('DOMContentLoaded', function () {
+        if (typeof Chart === 'undefined') {
+            console.warn('[RansomShield] Chart.js non disponible — graphiques désactivés.');
+            return;
+        }
 
         /* ── Charts ──────────────────────────────────────────────────────── */
         const chartData            = @json($dashboardCharts);
