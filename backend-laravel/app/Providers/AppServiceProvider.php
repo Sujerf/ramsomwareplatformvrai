@@ -2,7 +2,9 @@
 
 namespace App\Providers;
 
+use App\Models\AuditLog;
 use App\Models\User;
+use App\Policies\AuditLogPolicy;
 use App\Policies\UserPolicy;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -17,6 +19,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Gate::policy(User::class, UserPolicy::class);
+        Gate::policy(AuditLog::class, AuditLogPolicy::class);
 
         // 100 events/minute par agent (keyed by agent_uuid pour ignorer NAT)
         RateLimiter::for('agent-events', function (Request $request) {

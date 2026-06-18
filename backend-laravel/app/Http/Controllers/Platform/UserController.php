@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Platform;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\AuditLogService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -48,12 +49,14 @@ class UserController extends Controller
             'email.unique'       => 'Cette adresse e-mail est déjà utilisée.',
         ]);
 
-        User::create([
+        $newUser = User::create([
             'name'     => $validated['name'],
             'email'    => $validated['email'],
             'role'     => $validated['role'],
             'password' => Hash::make($validated['password']),
         ]);
+
+        app(AuditLogService::class)->userCreated($newUser->id, $newUser->email, $newUser->role);
 
         return redirect()
             ->route('platform.users.index')
@@ -110,6 +113,8 @@ class UserController extends Controller
 
         $user->update($validated);
 
+        app(AuditLogService::class)->userUpdated($user->id, $user->email);
+
         $backRoute = Auth::id() === $user->id
             ? 'platform.users.edit'
             : 'platform.users.index';
@@ -142,6 +147,8 @@ class UserController extends Controller
 
         $user->update(['password' => Hash::make($request->new_password)]);
 
+        app(AuditLogService::class)->userPasswordChanged($user->id, $user->email);
+
         // Régénérer la session si l'utilisateur change son propre mot de passe
         if (Auth::id() === $user->id) {
             $request->session()->regenerate();
@@ -164,8 +171,11 @@ class UserController extends Controller
             return back()->withErrors(['delete' => 'Impossible de supprimer le dernier administrateur.']);
         }
 
-        $name = $user->name;
+        $name  = $user->name;
+        $email = $user->email;
         $user->delete();
+
+        app(AuditLogService::class)->userDeleted($user->id, $email);
 
         return redirect()
             ->route('platform.users.index')

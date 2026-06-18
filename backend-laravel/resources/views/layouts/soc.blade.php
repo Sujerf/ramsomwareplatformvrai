@@ -1209,6 +1209,10 @@
                         <span class="nav-icon"><i class="fa-solid fa-users-gear"></i></span>
                         <span class="nav-label">Utilisateurs</span>
                     </a>
+                    <a href="{{ route('platform.audit-log.index') }}" class="soc-nav-link {{ request()->routeIs('platform.audit-log.*') ? 'active' : '' }}">
+                        <span class="nav-icon"><i class="fa-solid fa-shield-halved"></i></span>
+                        <span class="nav-label">Journal d'audit</span>
+                    </a>
                     @endif
                     <a href="{{ route('platform.configuration.index') }}" class="soc-nav-link {{ request()->routeIs('platform.configuration.*') ? 'active' : '' }}">
                         <span class="nav-icon"><i class="fa-solid fa-table-cells-large"></i></span>

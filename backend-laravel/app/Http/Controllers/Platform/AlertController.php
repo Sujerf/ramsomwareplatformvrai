@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Platform;
 
 use App\Http\Controllers\Controller;
 use App\Models\Alert;
+use App\Services\AuditLogService;
 use App\Services\SocStatusSynchronizerService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -87,6 +88,7 @@ class AlertController extends Controller
     public function resolve(Request $request, Alert $alert, SocStatusSynchronizerService $sync): RedirectResponse
     {
         $sync->resolveAlert($alert);
+        app(AuditLogService::class)->alertResolved($alert->id, 'resolved');
 
         return back()->with('success', 'Alerte résolue et incident synchronisé.');
     }
@@ -94,6 +96,7 @@ class AlertController extends Controller
     public function falsePositive(Request $request, Alert $alert, SocStatusSynchronizerService $sync): RedirectResponse
     {
         $sync->falsePositiveAlert($alert);
+        app(AuditLogService::class)->alertResolved($alert->id, 'false_positive');
 
         return back()->with('success', 'Alerte classée faux positif.');
     }
@@ -101,6 +104,7 @@ class AlertController extends Controller
     public function reopen(Request $request, Alert $alert, SocStatusSynchronizerService $sync): RedirectResponse
     {
         $sync->reopenAlert($alert);
+        app(AuditLogService::class)->alertResolved($alert->id, 'reopened');
 
         return back()->with('success', 'Alerte réouverte.');
     }

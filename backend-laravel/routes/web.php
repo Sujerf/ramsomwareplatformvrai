@@ -104,6 +104,9 @@ Route::prefix('console')->name('platform.')->middleware('auth')->group(function 
     Route::resource('/sensitive-extensions', SensitiveExtensionController::class)->only(['index']);
     Route::get('/configuration', \App\Http\Controllers\Platform\ConfigurationCenterController::class)->name('configuration.index');
 
+    // Journal d'audit — admin uniquement (contrôlé via policy dans le controller)
+    Route::get('/audit-log', [\App\Http\Controllers\Platform\AuditLogController::class, 'index'])->name('audit-log.index');
+
     // Événements
     Route::get('/events', [\App\Http\Controllers\Platform\EventController::class, 'index'])->name('events.index');
     Route::get('/events/{event}', [\App\Http\Controllers\Platform\EventController::class, 'show'])->name('events.show');

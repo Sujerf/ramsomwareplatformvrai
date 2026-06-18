@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Platform;
 
 use App\Http\Controllers\Controller;
 use App\Models\SystemSetting;
+use App\Services\AuditLogService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -57,10 +58,13 @@ class SystemSettingController extends Controller
         $value = $validated['value'] ?? null;
 
         $normalized = $this->normalizeValue($systemSetting, $value);
+        $old = (string) $systemSetting->value;
 
         $systemSetting->update([
             'value' => $normalized,
         ]);
+
+        app(AuditLogService::class)->settingUpdated($systemSetting->key, $old, $normalized);
 
         return back()->with('success', 'Paramètre enregistré : '.$systemSetting->key);
     }

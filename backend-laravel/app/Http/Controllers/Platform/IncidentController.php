@@ -256,6 +256,8 @@ class IncidentController extends Controller
     {
         $sync->reopenIncident($incident);
 
+        app(AuditLogService::class)->incidentReopened($incident->id);
+
         return back()->with('success', 'Incident réouvert.');
     }
 }
