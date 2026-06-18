@@ -1293,6 +1293,30 @@
             </div>
 
             <div class="topbar-actions">
+                {{-- ── Recherche globale ── --}}
+                <div id="globalSearchWrap" style="position:relative;">
+                    <div style="display:flex;align-items:center;gap:6px;background:var(--input-bg,rgba(255,255,255,.06));border:1px solid var(--border-color);border-radius:8px;padding:5px 10px;transition:border-color .15s;" id="searchInputWrap">
+                        <i class="fa-solid fa-magnifying-glass" style="color:var(--text-muted);font-size:12px;flex-shrink:0;"></i>
+                        <input
+                            type="text"
+                            id="globalSearchInput"
+                            placeholder="Rechercher… (/ pour ouvrir)"
+                            autocomplete="off"
+                            style="background:transparent;border:none;outline:none;color:var(--text-primary);font-size:12px;width:200px;font-family:inherit;"
+                        >
+                        <kbd id="searchKbd" style="font-size:10px;color:var(--text-muted);background:rgba(255,255,255,.06);border:1px solid var(--border-color);border-radius:4px;padding:1px 5px;font-family:inherit;flex-shrink:0;">/</kbd>
+                    </div>
+
+                    {{-- Dropdown résultats --}}
+                    <div id="searchDropdown" style="
+                        display:none;position:absolute;top:calc(100% + 6px);right:0;
+                        width:380px;background:var(--card-bg);border:1px solid var(--border-color);
+                        border-radius:12px;box-shadow:0 12px 40px rgba(0,0,0,.4);
+                        z-index:9999;overflow:hidden;">
+                        <div id="searchResults" style="max-height:420px;overflow-y:auto;"></div>
+                    </div>
+                </div>
+
                 @if($navPendingActions > 0)
                 <a href="{{ route('platform.approval-queue.index') }}" class="topbar-alert-btn" title="{{ $navPendingActions }} action(s) en attente">
                     <i class="fa-solid fa-list-check"></i>
@@ -1614,6 +1638,175 @@
     // Exposé globalement pour les appels manuels depuis d'autres scripts
     window.rsShowLoader = showOverlay;
     window.rsHideLoader = function () { overlay.style.display = 'none'; };
+})();
+</script>
+
+<script>
+(function initGlobalSearch() {
+    const input    = document.getElementById('globalSearchInput');
+    const wrap     = document.getElementById('searchInputWrap');
+    const dropdown = document.getElementById('searchDropdown');
+    const results  = document.getElementById('searchResults');
+    const kbd      = document.getElementById('searchKbd');
+
+    if (!input) return;
+
+    const SEARCH_URL = '{{ route('platform.search') }}';
+    const ACCENT     = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#6366f1';
+
+    const RISK_COLOR = { critical: '#ef4444', high: '#f97316', suspect: '#eab308', normal: '#22c55e' };
+    const TYPE_LABEL = { incident: 'Incident', alert: 'Alerte', agent: 'Agent' };
+    const TYPE_COLOR = { incident: '#ef4444', alert: '#f59e0b', agent: '#38bdf8' };
+
+    let timer = null;
+    let lastQ = '';
+
+    function esc(s) {
+        return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function highlight(text, q) {
+        if (!q) return esc(text);
+        const re = new RegExp('('+q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')', 'gi');
+        return esc(text).replace(re, '<mark style="background:rgba(99,102,241,.35);color:inherit;border-radius:2px;padding:0 1px;">$1</mark>');
+    }
+
+    function renderEmpty(q) {
+        results.innerHTML = `<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:12px;">
+            <i class="fa-solid fa-magnifying-glass" style="font-size:20px;display:block;margin-bottom:8px;opacity:.3;"></i>
+            Aucun résultat pour <strong>${esc(q)}</strong>
+        </div>`;
+    }
+
+    function renderResults(data) {
+        if (!data.results.length) { renderEmpty(data.query); return; }
+
+        const groups = {};
+        data.results.forEach(r => { (groups[r.type] = groups[r.type] || []).push(r); });
+
+        let html = '';
+        for (const [type, items] of Object.entries(groups)) {
+            const color = TYPE_COLOR[type] || '#64748b';
+            html += `<div style="padding:8px 14px 4px;font-size:10px;font-weight:700;text-transform:uppercase;
+                letter-spacing:.6px;color:${color};border-bottom:1px solid var(--border-color);">
+                ${esc(TYPE_LABEL[type] || type)}s (${items.length})
+            </div>`;
+            items.forEach(r => {
+                const riskColor = RISK_COLOR[r.risk] || '#64748b';
+                html += `<a href="${esc(r.url)}" class="search-result-item"
+                    style="display:flex;align-items:center;gap:10px;padding:10px 14px;
+                    text-decoration:none;color:var(--text-primary);border-bottom:1px solid var(--border-color);
+                    transition:background .12s;">
+                    <div style="width:30px;height:30px;border-radius:8px;flex-shrink:0;
+                        background:${color}18;color:${color};display:grid;place-items:center;font-size:13px;">
+                        <i class="fa-solid ${esc(r.icon)}"></i>
+                    </div>
+                    <div style="flex:1;min-width:0;">
+                        <div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                            ${highlight(r.label, data.query)}
+                        </div>
+                        <div style="font-size:10.5px;color:var(--text-muted);margin-top:1px;">
+                            <span style="color:${riskColor};font-weight:700;">${esc(r.sub.split('·')[0].trim())}</span>
+                            · ${esc(r.sub.split('·').slice(1).join('·').trim())}
+                        </div>
+                    </div>
+                    <i class="fa-solid fa-arrow-right" style="color:var(--text-muted);font-size:11px;flex-shrink:0;"></i>
+                </a>`;
+            });
+        }
+
+        html += `<div style="padding:8px 14px;text-align:right;border-top:1px solid var(--border-color);">
+            <a href="${SEARCH_URL}?q=${encodeURIComponent(data.query)}&full=1"
+               style="font-size:11px;color:var(--text-muted);text-decoration:none;">
+               Voir tous les résultats →
+            </a>
+        </div>`;
+
+        results.innerHTML = html;
+
+        results.querySelectorAll('.search-result-item').forEach(el => {
+            el.addEventListener('mouseenter', () => el.style.background = 'rgba(255,255,255,.04)');
+            el.addEventListener('mouseleave', () => el.style.background = '');
+        });
+    }
+
+    function renderLoading() {
+        results.innerHTML = `<div style="padding:16px;text-align:center;color:var(--text-muted);font-size:12px;">
+            <i class="fa-solid fa-spinner fa-spin"></i> Recherche…
+        </div>`;
+    }
+
+    async function search(q) {
+        if (q === lastQ) return;
+        lastQ = q;
+        renderLoading();
+        try {
+            const resp = await fetch(`${SEARCH_URL}?q=${encodeURIComponent(q)}`, {
+                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+            });
+            const data = await resp.json();
+            if (input.value.trim() === q) renderResults(data);
+        } catch {
+            results.innerHTML = `<div style="padding:16px;text-align:center;color:#ef4444;font-size:12px;">
+                Erreur de connexion.</div>`;
+        }
+    }
+
+    function open() {
+        dropdown.style.display = 'block';
+        wrap.style.borderColor = 'var(--accent)';
+        kbd.style.display = 'none';
+        input.style.width = '240px';
+    }
+
+    function close() {
+        dropdown.style.display = 'none';
+        wrap.style.borderColor = '';
+        kbd.style.display = '';
+        input.style.width = '';
+        lastQ = '';
+    }
+
+    input.addEventListener('focus', () => { open(); if (input.value.trim().length >= 2) search(input.value.trim()); });
+
+    input.addEventListener('input', () => {
+        const q = input.value.trim();
+        clearTimeout(timer);
+        if (q.length < 2) { results.innerHTML = ''; return; }
+        timer = setTimeout(() => search(q), 220);
+    });
+
+    input.addEventListener('keydown', e => {
+        if (e.key === 'Escape') { input.blur(); close(); }
+        if (e.key === 'Enter') {
+            const q = input.value.trim();
+            if (q.length >= 2) window.location.href = `${SEARCH_URL}?q=${encodeURIComponent(q)}&full=1`;
+        }
+        // Navigation clavier dans les résultats
+        if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+            e.preventDefault();
+            const items = [...results.querySelectorAll('.search-result-item')];
+            if (!items.length) return;
+            const current = results.querySelector('.search-result-item:focus');
+            const idx = items.indexOf(current);
+            const next = e.key === 'ArrowDown' ? items[idx + 1] || items[0] : items[idx - 1] || items[items.length - 1];
+            next?.focus();
+        }
+    });
+
+    // Raccourci clavier global /
+    document.addEventListener('keydown', e => {
+        if (e.key === '/' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+            e.preventDefault();
+            input.focus();
+            input.select();
+        }
+    });
+
+    // Fermer en cliquant en dehors
+    document.addEventListener('mousedown', e => {
+        if (!document.getElementById('globalSearchWrap').contains(e.target)) close();
+    });
 })();
 </script>
 

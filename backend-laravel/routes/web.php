@@ -50,6 +50,7 @@ Route::prefix('console')->name('platform.')->middleware('auth')->group(function 
 
     Route::post('/appearance/theme', [AppearanceController::class, 'updateTheme'])->name('appearance.theme');
 
+    Route::get('/search', \App\Http\Controllers\Platform\SearchController::class)->name('search');
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::get('/dashboard/chart-data', [DashboardController::class, 'chartData'])->name('dashboard.chart-data');
     Route::get('/dashboard/live-stats', [DashboardController::class, 'liveStats'])->name('dashboard.live-stats');
