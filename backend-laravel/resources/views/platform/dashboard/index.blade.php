@@ -760,13 +760,13 @@
         </section>
 
         {{-- ── SMART STATS ──────────────────────────────────────────────── --}}
-        <section class="smart-stats section-gap">
+        <section class="smart-stats section-gap" id="smart-stats-section">
             <div class="smart-stat">
                 <div class="smart-stat-icon" style="background:rgba(239,68,68,.12);color:#ef4444;box-shadow:0 0 0 1px rgba(239,68,68,.2);">
                     <i class="fa-solid fa-triangle-exclamation"></i>
                 </div>
                 <div class="smart-stat-label">Alertes actives</div>
-                <div class="smart-stat-value" style="{{ $stats['active_alerts'] > 0 ? 'color:#ef4444;' : '' }}">
+                <div id="stat-active-alerts" class="smart-stat-value" style="{{ $stats['active_alerts'] > 0 ? 'color:#ef4444;' : '' }}">
                     {{ $stats['active_alerts'] }}
                 </div>
                 <div class="smart-stat-hint">Ouvertes, reconnues ou en cours.</div>
@@ -777,7 +777,7 @@
                     <i class="fa-solid fa-fire"></i>
                 </div>
                 <div class="smart-stat-label">Incidents actifs</div>
-                <div class="smart-stat-value" style="{{ $stats['active_incidents'] > 0 ? 'color:#fb923c;' : '' }}">
+                <div id="stat-active-incidents" class="smart-stat-value" style="{{ $stats['active_incidents'] > 0 ? 'color:#fb923c;' : '' }}">
                     {{ $stats['active_incidents'] }}
                 </div>
                 <div class="smart-stat-hint">Ouverts, analysés ou réouverts.</div>
@@ -788,7 +788,7 @@
                     <i class="fa-solid fa-hourglass-half"></i>
                 </div>
                 <div class="smart-stat-label">Actions en attente</div>
-                <div class="smart-stat-value" style="{{ $stats['pending_actions'] > 0 ? 'color:#f59e0b;' : '' }}">
+                <div id="stat-pending-actions" class="smart-stat-value" style="{{ $stats['pending_actions'] > 0 ? 'color:#f59e0b;' : '' }}">
                     {{ $stats['pending_actions'] }}
                 </div>
                 <div class="smart-stat-hint">Décisions SOC à approuver.</div>
@@ -799,7 +799,7 @@
                     <i class="fa-solid fa-skull-crossbones"></i>
                 </div>
                 <div class="smart-stat-label">Agents critiques</div>
-                <div class="smart-stat-value" style="{{ $stats['critical_agents'] > 0 ? 'color:#ef4444;' : '' }}">
+                <div id="stat-critical-agents" class="smart-stat-value" style="{{ $stats['critical_agents'] > 0 ? 'color:#ef4444;' : '' }}">
                     {{ $stats['critical_agents'] }}
                 </div>
                 <div class="smart-stat-hint">Machines à risque critique.</div>
@@ -1309,7 +1309,7 @@
                     <a href="{{ route('platform.alerts.index', ['status' => 'all']) }}" class="action-btn primary">Historique</a>
                 </div>
 
-                <div class="activity-list">
+                <div id="list-recent-alerts" class="activity-list">
                     @forelse($recentAlerts as $alert)
                         @php
                             $aIconClass = match($alert->risk_level) {
@@ -1353,7 +1353,7 @@
                     <a href="{{ route('platform.incidents.index', ['status' => 'all']) }}" class="action-btn primary">Historique</a>
                 </div>
 
-                <div class="activity-list">
+                <div id="list-recent-incidents" class="activity-list">
                     @forelse($recentIncidents as $incident)
                         @php
                             $iIconClass = match($incident->risk_level) {
@@ -1685,6 +1685,129 @@
                 }
             });
         });
+
+    });
+
+    // ── Auto-refresh des stats SOC (toutes les 30 s) ──────────────────────
+    (function initLiveStats() {
+        const INTERVAL   = 30_000;
+        const statsRoute = '{{ route("platform.dashboard.live-stats") }}';
+
+        const colorMap   = { critical: '#ef4444', high: '#fb923c', suspect: '#eab308', normal: '#22c55e' };
+        const riskBadge  = { critical: 'badge-critical', high: 'badge-high', suspect: 'badge-suspect', normal: 'badge-normal' };
+
+        // Inject animation style once
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes statFlash { 0%,100%{opacity:1} 40%{opacity:.35} }
+            .stat-flash { animation: statFlash .5s ease; }
+            #live-refresh-badge { display:inline-flex; align-items:center; gap:5px;
+                font-size:10px; color:var(--text-muted); margin-left:12px; vertical-align:middle; }
+            #live-refresh-badge .live-dot { width:6px; height:6px; border-radius:50%;
+                background:#22c55e; animation:none; }
+            #live-refresh-badge.refreshing .live-dot { animation:statFlash .6s ease infinite; }
+        `;
+        document.head.appendChild(style);
+
+        // Badge "mis à jour à HH:MM:SS" après la section
+        const statsSection = document.getElementById('smart-stats-section');
+        if (statsSection) {
+            const badge = document.createElement('div');
+            badge.id = 'live-refresh-badge';
+            badge.innerHTML = '<span class="live-dot"></span> <span id="live-refresh-ts">chargement…</span>';
+            statsSection.after(badge);
+        }
+
+        function setStat(id, value, alertColor) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            const old = parseInt(el.textContent.trim(), 10);
+            if (old === value) return;
+            el.style.color = value > 0 ? alertColor : '';
+            el.textContent = value;
+            el.classList.remove('stat-flash');
+            void el.offsetWidth;
+            el.classList.add('stat-flash');
+        }
+
+        function escHtml(s) {
+            return String(s)
+                .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+                .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        }
+
+        function alertItem(a) {
+            const color = a.risk_level === 'critical' ? 'red' : a.risk_level === 'high' ? 'orange' : a.risk_level === 'suspect' ? 'yellow' : 'green';
+            const badge = riskBadge[a.risk_level] || 'badge-normal';
+            return `<div class="activity-item">
+                <div class="activity-icon ${color}"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                <div>
+                    <p class="activity-title">${escHtml(a.title)}</p>
+                    <div class="activity-subtitle">${escHtml(a.agent_name)} — ${escHtml(a.detected_at)}</div>
+                </div>
+                <span class="badge ${badge}">${escHtml(a.risk_level)}</span>
+            </div>`;
+        }
+
+        function incidentItem(i) {
+            const color = i.risk_level === 'critical' ? 'red' : i.risk_level === 'high' ? 'orange' : i.risk_level === 'suspect' ? 'yellow' : 'green';
+            return `<div class="activity-item">
+                <div class="activity-icon ${color}"><i class="fa-solid fa-fire"></i></div>
+                <div>
+                    <p class="activity-title">${escHtml(i.title)}</p>
+                    <div class="activity-subtitle">${escHtml(i.agent_name)} — statut : ${escHtml(i.status)}</div>
+                </div>
+                <a href="${escHtml(i.url)}" class="action-btn">Voir</a>
+            </div>`;
+        }
+
+        async function refresh() {
+            const badge = document.getElementById('live-refresh-badge');
+            if (badge) badge.classList.add('refreshing');
+
+            try {
+                const resp = await fetch(statsRoute, {
+                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                if (!resp.ok) return;
+                const data = await resp.json();
+
+                setStat('stat-active-alerts',    data.stats.active_alerts,    '#ef4444');
+                setStat('stat-active-incidents', data.stats.active_incidents, '#fb923c');
+                setStat('stat-pending-actions',  data.stats.pending_actions,  '#f59e0b');
+                setStat('stat-critical-agents',  data.stats.critical_agents,  '#ef4444');
+
+                const alertList = document.getElementById('list-recent-alerts');
+                if (alertList && data.recent_alerts.length) {
+                    alertList.innerHTML = data.recent_alerts.map(alertItem).join('');
+                }
+
+                const incList = document.getElementById('list-recent-incidents');
+                if (incList && data.recent_incidents.length) {
+                    incList.innerHTML = data.recent_incidents.map(incidentItem).join('');
+                }
+
+                const ts = document.getElementById('live-refresh-ts');
+                if (ts) ts.textContent = 'mis à jour ' + data.updated_at;
+
+            } catch (_) { /* réseau indisponible */ }
+            finally {
+                if (badge) badge.classList.remove('refreshing');
+            }
+        }
+
+        // Premier refresh au chargement de la page pour initialiser l'horodatage
+        refresh();
+
+        setInterval(refresh, INTERVAL);
+
+        // Rafraîchir quand l'onglet redevient visible après >30 s d'absence
+        let hiddenAt = 0;
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) { hiddenAt = Date.now(); }
+            else if (Date.now() - hiddenAt > INTERVAL) { refresh(); }
+        });
+    })();
 
     });
     </script>

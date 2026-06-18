@@ -51,6 +51,7 @@ Route::prefix('console')->name('platform.')->middleware('auth')->group(function 
 
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::get('/dashboard/chart-data', [DashboardController::class, 'chartData'])->name('dashboard.chart-data');
+    Route::get('/dashboard/live-stats', [DashboardController::class, 'liveStats'])->name('dashboard.live-stats');
 
     // Hôte local — lecture seule pour analyst
     Route::get('/local-host', [LocalHostController::class, 'index'])->name('local-host.index');

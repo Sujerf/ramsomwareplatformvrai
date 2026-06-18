@@ -110,6 +110,46 @@ class DashboardController extends Controller
             : "DATE_FORMAT(created_at, '{$format}') as period";
     }
 
+    public function liveStats(): JsonResponse
+    {
+        $activeAlerts    = Alert::whereIn('status', ['open', 'acknowledged', 'investigating'])->count();
+        $activeIncidents = Incident::whereIn('status', ['open', 'investigating', 'under_review', 'reopened'])->count();
+        $pendingActions  = ProtectionAction::where('approval_status', 'pending')
+            ->whereIn('execution_status', ['waiting_approval', 'pending'])->count();
+        $criticalAgents  = Agent::where('risk_level', 'critical')->count();
+
+        $recentAlerts = Alert::with('agent')
+            ->latest('detected_at')->latest()->limit(6)->get()
+            ->map(fn ($a) => [
+                'title'      => $a->title,
+                'risk_level' => $a->risk_level,
+                'agent_name' => $a->agent?->agent_name ?? 'Agent inconnu',
+                'detected_at'=> optional($a->detected_at ?? $a->created_at)->format('d/m H:i') ?? '—',
+            ]);
+
+        $recentIncidents = Incident::with('agent')
+            ->latest('detected_at')->latest()->limit(6)->get()
+            ->map(fn ($i) => [
+                'title'      => $i->title,
+                'risk_level' => $i->risk_level,
+                'status'     => $i->status,
+                'agent_name' => $i->agent?->agent_name ?? 'Agent inconnu',
+                'url'        => route('platform.incidents.show', $i->id),
+            ]);
+
+        return response()->json([
+            'stats' => [
+                'active_alerts'    => $activeAlerts,
+                'active_incidents' => $activeIncidents,
+                'pending_actions'  => $pendingActions,
+                'critical_agents'  => $criticalAgents,
+            ],
+            'recent_alerts'    => $recentAlerts,
+            'recent_incidents' => $recentIncidents,
+            'updated_at'       => now()->format('H:i:s'),
+        ]);
+    }
+
     public function chartData(Request $request): JsonResponse
     {
         $period = in_array($request->input('period'), ['24h', 'week', 'month'])
