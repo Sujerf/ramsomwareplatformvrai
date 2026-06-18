@@ -405,6 +405,21 @@
                                     <input class="form-control" type="url" name="value"
                                            value="{{ $setting->value }}"
                                            placeholder="https://hooks.slack.com/services/…">
+                                    @if($setting->value && auth()->user()->isAdmin())
+                                    <div style="margin-top:8px; display:flex; align-items:center; gap:10px;">
+                                        <button type="button" id="webhookTestBtn" onclick="testWebhook()"
+                                            class="action-btn"
+                                            style="background:rgba(56,189,248,.12);color:#38bdf8;border:1px solid rgba(56,189,248,.25);gap:6px;">
+                                            <i class="fa-solid fa-bolt" id="webhookTestIcon"></i>
+                                            <span id="webhookTestLabel">Tester la connexion</span>
+                                        </button>
+                                        <a href="{{ route('platform.webhook-history.index') }}" class="action-btn"
+                                           style="background:transparent;color:var(--text-muted);border:1px solid var(--border-color);">
+                                            <i class="fa-solid fa-clock-rotate-left"></i> Historique
+                                        </a>
+                                        <span id="webhookTestResult" style="font-size:12px;font-weight:600;display:none;"></span>
+                                    </div>
+                                    @endif
                                 @elseif($setting->key === 'notification_mail_recipient')
                                     <input class="form-control" type="email" name="value"
                                            value="{{ $setting->value }}"
@@ -443,4 +458,64 @@
             @endif
         </section>
     </div>
+
+<script>
+async function testWebhook() {
+    const btn   = document.getElementById('webhookTestBtn');
+    const icon  = document.getElementById('webhookTestIcon');
+    const label = document.getElementById('webhookTestLabel');
+    const result = document.getElementById('webhookTestResult');
+
+    btn.disabled = true;
+    icon.className = 'fa-solid fa-spinner fa-spin';
+    label.textContent = 'Test en cours…';
+    result.style.display = 'none';
+
+    try {
+        const resp = await fetch('{{ route('platform.system-settings.webhook-test') }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json',
+            },
+        });
+        const data = await resp.json();
+
+        if (data.success) {
+            icon.className = 'fa-solid fa-circle-check';
+            label.textContent = 'Connexion OK';
+            btn.style.background = 'rgba(34,197,94,.12)';
+            btn.style.color = '#22c55e';
+            btn.style.borderColor = 'rgba(34,197,94,.25)';
+            result.style.color = '#22c55e';
+            result.textContent = data.http_status ? 'HTTP '+data.http_status : '';
+        } else {
+            icon.className = 'fa-solid fa-circle-xmark';
+            label.textContent = 'Échec';
+            btn.style.background = 'rgba(239,68,68,.12)';
+            btn.style.color = '#ef4444';
+            btn.style.borderColor = 'rgba(239,68,68,.25)';
+            result.style.color = '#ef4444';
+            result.textContent = data.error || 'Erreur inconnue';
+        }
+        result.style.display = 'inline';
+    } catch (e) {
+        icon.className = 'fa-solid fa-circle-xmark';
+        label.textContent = 'Erreur réseau';
+        result.style.color = '#ef4444';
+        result.textContent = e.message;
+        result.style.display = 'inline';
+    } finally {
+        btn.disabled = false;
+        setTimeout(() => {
+            icon.className = 'fa-solid fa-bolt';
+            label.textContent = 'Tester la connexion';
+            btn.style.background = '';
+            btn.style.color = '';
+            btn.style.borderColor = '';
+        }, 5000);
+    }
+}
+</script>
 @endsection

@@ -1217,6 +1217,10 @@
                         <span class="nav-icon"><i class="fa-solid fa-file-chart-column"></i></span>
                         <span class="nav-label">Rapports exécutifs</span>
                     </a>
+                    <a href="{{ route('platform.webhook-history.index') }}" class="soc-nav-link {{ request()->routeIs('platform.webhook-history.*') ? 'active' : '' }}">
+                        <span class="nav-icon"><i class="fa-solid fa-webhook"></i></span>
+                        <span class="nav-label">Historique webhooks</span>
+                    </a>
                     @endif
                     <a href="{{ route('platform.configuration.index') }}" class="soc-nav-link {{ request()->routeIs('platform.configuration.*') ? 'active' : '' }}">
                         <span class="nav-icon"><i class="fa-solid fa-table-cells-large"></i></span>

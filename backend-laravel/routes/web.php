@@ -184,6 +184,8 @@ Route::prefix('console')->name('platform.')->middleware('auth')->group(function 
         Route::patch('/system-settings/{systemSetting}/reset', [SystemSettingController::class, 'resetOne'])->name('system-settings.reset-one');
         Route::patch('/system-settings/{systemSetting}/toggle', [SystemSettingController::class, 'toggle'])->name('system-settings.toggle');
         Route::patch('/system-settings/{systemSetting}/set-value', [SystemSettingController::class, 'setValue'])->name('system-settings.set-value');
+        Route::post('/system-settings/webhook-test', [SystemSettingController::class, 'testWebhook'])->name('system-settings.webhook-test');
+        Route::get('/webhook-history', [\App\Http\Controllers\Platform\WebhookHistoryController::class, 'index'])->name('webhook-history.index');
         Route::resource('/sensitive-extensions', SensitiveExtensionController::class)->only(['store', 'update', 'destroy']);
         Route::post('/configuration/reset-defaults', \App\Http\Controllers\Platform\ConfigurationResetController::class)->name('configuration.reset-defaults');
 

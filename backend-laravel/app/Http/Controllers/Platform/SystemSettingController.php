@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Platform;
 use App\Http\Controllers\Controller;
 use App\Models\SystemSetting;
 use App\Services\AuditLogService;
+use App\Services\NotificationService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -101,6 +102,22 @@ class SystemSettingController extends Controller
             'value' => $newValue,
             'active' => $newValue === '1',
         ]);
+    }
+
+    public function testWebhook(Request $request): JsonResponse
+    {
+        abort_unless(auth()->user()?->isAdmin(), 403);
+
+        $url  = trim((string) SystemSetting::getCached('notification_webhook_url'));
+        $type = SystemSetting::getCached('notification_webhook_type') ?? 'slack';
+
+        if ($url === '' || ! filter_var($url, FILTER_VALIDATE_URL)) {
+            return response()->json(['success' => false, 'error' => 'URL webhook invalide ou non configurée.'], 422);
+        }
+
+        $result = app(NotificationService::class)->sendTestWebhook($url, $type);
+
+        return response()->json($result, $result['success'] ? 200 : 502);
     }
 
     public function setValue(Request $request, SystemSetting $systemSetting): JsonResponse

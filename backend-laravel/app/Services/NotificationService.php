@@ -183,6 +183,115 @@ class NotificationService
     }
 
     // ──────────────────────────────────────────────────────────────────────────
+    //  TEST WEBHOOK (depuis l'UI)
+    // ──────────────────────────────────────────────────────────────────────────
+
+    public function sendTestWebhook(string $webhookUrl, string $type): array
+    {
+        $payload = match ($type) {
+            'teams'   => $this->buildTeamsTestPayload(),
+            'generic' => $this->buildGenericTestPayload(),
+            default   => $this->buildSlackTestPayload(),
+        };
+
+        try {
+            $response = Http::timeout(10)
+                ->withHeaders(['Content-Type' => 'application/json'])
+                ->post($webhookUrl, $payload);
+
+            AlertNotification::create([
+                'channel'   => 'webhook',
+                'status'    => $response->successful() ? 'sent' : 'failed',
+                'recipient' => $webhookUrl,
+                'subject'   => '[TEST] RansomShield — webhook test',
+                'message'   => 'Envoi de test depuis la console SOC.',
+                'sent_at'   => $response->successful() ? now() : null,
+                'metadata'  => [
+                    'webhook_type'     => $type,
+                    'is_test'          => true,
+                    'http_status'      => $response->status(),
+                    'timeline_message' => $response->successful()
+                        ? 'Test webhook envoyé avec succès (HTTP '.$response->status().').'
+                        : 'Test webhook rejeté (HTTP '.$response->status().').',
+                    'response_body'    => substr($response->body(), 0, 500),
+                ],
+            ]);
+
+            return [
+                'success'     => $response->successful(),
+                'http_status' => $response->status(),
+                'error'       => $response->successful() ? null : 'HTTP '.$response->status(),
+            ];
+        } catch (\Throwable $e) {
+            AlertNotification::create([
+                'channel'   => 'webhook',
+                'status'    => 'failed',
+                'recipient' => $webhookUrl,
+                'subject'   => '[TEST] RansomShield — webhook test',
+                'message'   => 'Envoi de test depuis la console SOC.',
+                'metadata'  => [
+                    'webhook_type'     => $type,
+                    'is_test'          => true,
+                    'timeline_message' => 'Test webhook — exception : '.$e->getMessage(),
+                    'error'            => $e->getMessage(),
+                ],
+            ]);
+
+            return ['success' => false, 'http_status' => null, 'error' => $e->getMessage()];
+        }
+    }
+
+    private function buildSlackTestPayload(): array
+    {
+        return [
+            'attachments' => [[
+                'color'   => '#38bdf8',
+                'title'   => '✅ Test RansomShield SOC',
+                'text'    => 'Connexion webhook opérationnelle. Vous recevrez les vraies alertes ici dès que le seuil de risque est atteint.',
+                'fields'  => [
+                    ['title' => 'Type',   'value' => 'Slack Incoming Webhook', 'short' => true],
+                    ['title' => 'Statut', 'value' => 'Connecté',               'short' => true],
+                ],
+                'footer' => 'RansomShield SOC',
+                'ts'     => now()->timestamp,
+            ]],
+        ];
+    }
+
+    private function buildTeamsTestPayload(): array
+    {
+        return [
+            '@type'      => 'MessageCard',
+            '@context'   => 'http://schema.org/extensions',
+            'themeColor' => '38bdf8',
+            'summary'    => 'Test RansomShield SOC',
+            'sections'   => [[
+                'activityTitle'    => '✅ Test RansomShield SOC',
+                'activitySubtitle' => 'Connexion webhook opérationnelle.',
+                'activityText'     => 'Vous recevrez les vraies alertes ici dès que le seuil de risque est atteint.',
+                'facts'            => [
+                    ['name' => 'Type',   'value' => 'Microsoft Teams MessageCard'],
+                    ['name' => 'Statut', 'value' => 'Connecté'],
+                ],
+                'markdown' => true,
+            ]],
+        ];
+    }
+
+    private function buildGenericTestPayload(): array
+    {
+        return [
+            'event'      => 'ransomshield.test',
+            'title'      => 'Test RansomShield SOC',
+            'message'    => 'Connexion webhook opérationnelle.',
+            'is_test'    => true,
+            'webhook_type' => 'generic',
+            'sent_at'    => now()->toIso8601String(),
+            'console_url' => url('/console/dashboard'),
+        ];
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
     //  PAYLOADS WEBHOOK
     // ──────────────────────────────────────────────────────────────────────────
 
