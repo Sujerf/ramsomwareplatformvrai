@@ -74,4 +74,9 @@ class Incident extends Model
     {
         return $this->hasMany(AlertNotification::class);
     }
+
+    public function comments(): HasMany
+    {
+        return $this->hasMany(IncidentComment::class)->oldest();
+    }
 }

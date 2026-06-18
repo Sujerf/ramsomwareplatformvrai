@@ -85,6 +85,8 @@ Route::prefix('console')->name('platform.')->middleware('auth')->group(function 
     Route::patch('/incidents/{incident}/false-positive', [IncidentController::class, 'falsePositive'])->name('incidents.false-positive');
     Route::patch('/incidents/{incident}/reopen', [IncidentController::class, 'reopen'])->name('incidents.reopen');
     Route::get('/incidents/{incident}/timeline', IncidentTimelineController::class)->name('incidents.timeline');
+    Route::post('/incidents/{incident}/comments', [\App\Http\Controllers\Platform\IncidentCommentController::class, 'store'])->name('incidents.comments.store');
+    Route::delete('/incidents/{incident}/comments/{comment}', [\App\Http\Controllers\Platform\IncidentCommentController::class, 'destroy'])->name('incidents.comments.destroy');
 
     // Actions de protection — lecture + approbation/rejet/exécution pour analyst
     Route::get('/protection-actions', [ProtectionActionController::class, 'index'])->name('protection-actions.index');

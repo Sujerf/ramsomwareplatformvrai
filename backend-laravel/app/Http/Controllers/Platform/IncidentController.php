@@ -89,6 +89,7 @@ class IncidentController extends Controller
             'protectionActions.protectionPolicy',
             'protectionActions.decisions.user',
             'notifications',
+            'comments.user',
         ]);
 
         return view('platform.incidents.show', [

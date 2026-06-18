@@ -708,10 +708,151 @@
 
     </div>
 
+    {{-- ═══════════════════════════════════════════════════════════
+         SECTION COMMENTAIRES
+    ════════════════════════════════════════════════════════════ --}}
+    <section class="section-gap" id="comments">
+        <style>
+        .comments-wrap { background:var(--card-bg); border:1px solid var(--border-color); border-radius:14px; overflow:hidden; }
+        .comments-header { padding:14px 20px; border-bottom:1px solid var(--border-color);
+            display:flex; align-items:center; gap:10px; font-size:13px; font-weight:700; }
+        .comments-header .count-pill { background:var(--accent); color:#fff; font-size:10px;
+            font-weight:700; border-radius:99px; padding:2px 8px; }
+
+        .comment-list { padding:0; }
+        .comment-item { padding:14px 20px; border-bottom:1px solid var(--border-color); display:flex; gap:12px; }
+        .comment-item:last-child { border-bottom:none; }
+        .comment-item.is-system { background:rgba(56,189,248,.04); }
+
+        .comment-avatar { width:34px; height:34px; border-radius:50%; flex-shrink:0;
+            display:grid; place-items:center; font-size:13px; font-weight:700;
+            background:rgba(99,102,241,.15); color:#818cf8; }
+        .comment-avatar.system { background:rgba(100,116,139,.12); color:#64748b; }
+
+        .comment-body { flex:1; min-width:0; }
+        .comment-meta { display:flex; align-items:center; gap:8px; margin-bottom:5px; }
+        .comment-author { font-size:12px; font-weight:700; color:var(--text-primary); }
+        .comment-date   { font-size:11px; color:var(--text-muted); }
+        .comment-system-badge { font-size:10px; font-weight:700; padding:1px 7px;
+            border-radius:99px; background:rgba(100,116,139,.12); color:#64748b; }
+        .comment-text { font-size:13px; color:var(--text-primary); line-height:1.6;
+            white-space:pre-wrap; word-break:break-word; }
+        .comment-delete { margin-left:auto; flex-shrink:0; background:transparent; border:none;
+            color:var(--text-muted); cursor:pointer; font-size:12px; padding:4px 8px;
+            border-radius:6px; opacity:.5; transition:opacity .15s; }
+        .comment-delete:hover { opacity:1; color:#ef4444; }
+
+        .comment-form { padding:16px 20px; border-top:1px solid var(--border-color); background:rgba(255,255,255,.015); }
+        .comment-textarea { width:100%; background:var(--card-bg); border:1px solid var(--border-color);
+            color:var(--text-primary); border-radius:10px; padding:10px 14px; font-size:13px;
+            resize:vertical; min-height:80px; font-family:inherit; line-height:1.5;
+            transition:border-color .15s; box-sizing:border-box; }
+        .comment-textarea:focus { outline:none; border-color:var(--accent); }
+        .comment-textarea::placeholder { color:var(--text-muted); }
+        .comment-form-footer { display:flex; align-items:center; justify-content:space-between;
+            margin-top:10px; }
+        .comment-hint { font-size:11px; color:var(--text-muted); }
+        </style>
+
+        @if(session('comment_success'))
+        <div class="flash flash-success" style="margin-bottom:10px;">Commentaire ajouté.</div>
+        @endif
+        @if(session('comment_deleted'))
+        <div class="flash flash-success" style="margin-bottom:10px;">Commentaire supprimé.</div>
+        @endif
+
+        <div class="comments-wrap">
+            <div class="comments-header">
+                <i class="fa-solid fa-comments" style="color:var(--accent);"></i>
+                Notes &amp; commentaires opérateurs
+                <span class="count-pill">{{ $incident->comments->count() }}</span>
+            </div>
+
+            {{-- Liste des commentaires --}}
+            @if($incident->comments->isEmpty())
+            <div style="padding:30px 20px; text-align:center; color:var(--text-muted); font-size:13px;">
+                <i class="fa-regular fa-comment-dots" style="font-size:24px; display:block; margin-bottom:8px; opacity:.3;"></i>
+                Aucune note pour l'instant. Soyez le premier à commenter.
+            </div>
+            @else
+            <div class="comment-list">
+                @foreach($incident->comments as $comment)
+                <div class="comment-item {{ $comment->is_system ? 'is-system' : '' }}">
+                    <div class="comment-avatar {{ $comment->is_system ? 'system' : '' }}">
+                        @if($comment->is_system)
+                            <i class="fa-solid fa-robot"></i>
+                        @else
+                            {{ strtoupper(substr($comment->user_name, 0, 1)) }}
+                        @endif
+                    </div>
+                    <div class="comment-body">
+                        <div class="comment-meta">
+                            <span class="comment-author">{{ $comment->user_name }}</span>
+                            @if($comment->is_system)
+                            <span class="comment-system-badge">système</span>
+                            @endif
+                            <span class="comment-date">{{ $comment->created_at->diffForHumans() }}</span>
+                            <span class="comment-date" title="{{ $comment->created_at->format('d/m/Y H:i:s') }}">
+                                · {{ $comment->created_at->format('d/m/Y H:i') }}
+                            </span>
+                        </div>
+                        <div class="comment-text">{{ $comment->body }}</div>
+                    </div>
+                    @if(! $comment->is_system && (auth()->id() === $comment->user_id || auth()->user()->isAdmin()))
+                    <form method="POST"
+                          action="{{ route('platform.incidents.comments.destroy', [$incident, $comment]) }}"
+                          onsubmit="return confirm('Supprimer ce commentaire ?')">
+                        @csrf @method('DELETE')
+                        <button type="submit" class="comment-delete" title="Supprimer">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </form>
+                    @endif
+                </div>
+                @endforeach
+            </div>
+            @endif
+
+            {{-- Formulaire d'ajout --}}
+            <div class="comment-form">
+                <form method="POST" action="{{ route('platform.incidents.comments.store', $incident) }}">
+                    @csrf
+                    <textarea
+                        name="body"
+                        class="comment-textarea"
+                        placeholder="Ajouter une note, observation ou action… (Ctrl+Entrée pour envoyer)"
+                        maxlength="2000"
+                        id="commentBody"
+                    >{{ old('body') }}</textarea>
+                    @error('body')
+                    <div style="color:#ef4444; font-size:11px; margin-top:4px;">{{ $message }}</div>
+                    @enderror
+                    <div class="comment-form-footer">
+                        <span class="comment-hint">
+                            <i class="fa-solid fa-user" style="margin-right:4px;"></i>{{ auth()->user()->name }}
+                            · max 2000 caractères
+                        </span>
+                        <button type="submit" class="btn btn-primary" style="font-size:12px;">
+                            <i class="fa-solid fa-paper-plane"></i> Ajouter une note
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </section>
+
     <script>
     document.getElementById('metaToggle')?.addEventListener('click', function () {
         this.classList.toggle('open');
         document.getElementById('metaBody').classList.toggle('open');
+    });
+
+    // Ctrl+Enter soumet le formulaire de commentaire
+    document.getElementById('commentBody')?.addEventListener('keydown', function (e) {
+        if (e.ctrlKey && e.key === 'Enter') {
+            e.preventDefault();
+            this.closest('form').submit();
+        }
     });
     </script>
 @endsection
