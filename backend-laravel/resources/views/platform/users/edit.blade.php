@@ -211,12 +211,29 @@
         <div class="profile-meta">
             <h2>{{ $user->name }}</h2>
             <p class="mono" style="font-size: 12px;">{{ $user->email }}</p>
-            <span class="badge {{ $roleClass }}">{{ $roleLabel }}</span>
-            @if($isOwnProfile)
-                <span class="badge" style="margin-left: 6px; color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); border-color: color-mix(in srgb, var(--accent) 25%, transparent);">
-                    <i class="fa-solid fa-circle-check" style="margin-right: 4px;"></i> Votre compte
-                </span>
+            <div style="margin-top:6px; display:flex; align-items:center; flex-wrap:wrap; gap:6px;">
+                <span class="badge {{ $roleClass }}">{{ $roleLabel }}</span>
+                @if($isOwnProfile)
+                    <span class="badge" style="color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); border-color: color-mix(in srgb, var(--accent) 25%, transparent);">
+                        <i class="fa-solid fa-circle-check" style="margin-right: 4px;"></i> Votre compte
+                    </span>
+                @endif
+                @if($user->hasTwoFactorEnabled())
+                    <span class="badge" style="color:#22c55e; background:rgba(34,197,94,.1); border-color:rgba(34,197,94,.25);">
+                        <i class="fa-solid fa-mobile-screen-button" style="margin-right:4px;"></i>2FA active
+                    </span>
+                @endif
+            </div>
+            @if($user->last_login_at)
+            <p style="margin-top:6px; font-size:11px; color:var(--text-muted);">
+                <i class="fa-solid fa-clock" style="margin-right:4px; opacity:.6;"></i>
+                Dernière connexion : {{ $user->last_login_at->format('d/m/Y à H:i') }}
+            </p>
             @endif
+            <p style="margin-top:3px; font-size:11px; color:var(--text-muted);">
+                <i class="fa-solid fa-calendar-plus" style="margin-right:4px; opacity:.6;"></i>
+                Compte créé le {{ $user->created_at->format('d/m/Y') }}
+            </p>
         </div>
         @if($isAdmin && !$isOwnProfile)
             <a href="{{ route('platform.users.index') }}" class="profile-back-link">
@@ -357,24 +374,45 @@
 
     {{-- ── AUTHENTIFICATION À DEUX FACTEURS (profil propre uniquement) ── --}}
     @if($isOwnProfile)
-    <div class="profile-section">
+    <div class="profile-section anim anim-3">
         <h3 class="profile-section-title">
             <i class="fa-solid fa-mobile-screen-button"></i>
             Authentification à deux facteurs (2FA)
         </h3>
-        <p style="color: var(--text-muted); font-size: 13px; margin: 0 0 16px; line-height: 1.6;">
-            @if(auth()->user()->hasTwoFactorEnabled())
+
+        @if(auth()->user()->hasTwoFactorEnabled())
+            @php $remaining = auth()->user()->recoveryCodesRemaining(); @endphp
+            <p style="color: var(--text-muted); font-size: 13px; margin: 0 0 16px; line-height: 1.6;">
                 <span style="color:#22c55e; font-weight:600;"><i class="fa-solid fa-circle-check" style="margin-right:6px;"></i>Active</span>
                 — Votre compte est protégé par une application TOTP.
-            @else
+            </p>
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px; padding:12px 16px; background:{{ $remaining <= 2 ? 'rgba(245,158,11,.08)' : 'rgba(34,197,94,.07)' }}; border-radius:10px; border:1px solid {{ $remaining <= 2 ? 'rgba(245,158,11,.25)' : 'rgba(34,197,94,.2)' }};">
+                <i class="fa-solid fa-key" style="color:{{ $remaining <= 2 ? '#f59e0b' : '#22c55e' }}; font-size:16px;"></i>
+                <div style="flex:1; font-size:12px; color:var(--text-muted);">
+                    <strong style="color:var(--text-primary);">{{ $remaining }} code(s) de secours</strong> restant(s)
+                    @if($remaining <= 2) — <span style="color:#f59e0b;">Régénérez-en bientôt.</span> @endif
+                </div>
+                <a href="{{ route('platform.two-factor.recovery-codes') }}" style="font-size:11px; color:var(--accent); text-decoration:none; white-space:nowrap;">
+                    Gérer <i class="fa-solid fa-arrow-right" style="font-size:10px;"></i>
+                </a>
+            </div>
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                <a href="{{ route('platform.two-factor.setup') }}" class="btn btn-soft" style="text-decoration:none;">
+                    <i class="fa-solid fa-shield-halved"></i> Gérer la 2FA
+                </a>
+                <a href="{{ route('platform.two-factor.recovery-codes') }}" class="btn btn-soft" style="text-decoration:none;">
+                    <i class="fa-solid fa-key"></i> Codes de secours
+                </a>
+            </div>
+        @else
+            <p style="color: var(--text-muted); font-size: 13px; margin: 0 0 16px; line-height: 1.6;">
                 <span style="color:#f59e0b; font-weight:600;"><i class="fa-solid fa-triangle-exclamation" style="margin-right:6px;"></i>Désactivée</span>
                 — Renforcez la sécurité de votre compte en activant la vérification en deux étapes.
-            @endif
-        </p>
-        <a href="{{ route('platform.two-factor.setup') }}" class="btn" style="min-width: 200px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
-            <i class="fa-solid fa-shield-halved"></i>
-            {{ auth()->user()->hasTwoFactorEnabled() ? 'Gérer la 2FA' : 'Activer la 2FA' }}
-        </a>
+            </p>
+            <a href="{{ route('platform.two-factor.setup') }}" class="btn btn-primary" style="min-width:200px; text-decoration:none;">
+                <i class="fa-solid fa-shield-halved"></i> Activer la 2FA
+            </a>
+        @endif
     </div>
     @endif
 

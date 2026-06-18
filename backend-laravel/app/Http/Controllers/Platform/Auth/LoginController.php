@@ -41,6 +41,7 @@ class LoginController extends Controller
         Auth::login($user, $request->boolean('remember'));
         $request->session()->regenerate();
 
+        $user->update(['last_login_at' => now()]);
         app(AuditLogService::class)->userLoggedIn($user->id, $user->email);
 
         return redirect()->intended(route('platform.dashboard'));

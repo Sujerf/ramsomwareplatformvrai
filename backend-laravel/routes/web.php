@@ -36,7 +36,8 @@ Route::post('/logout', [LoginController::class, 'logout'])->name('platform.logou
 
 // ── Challenge 2FA (après password OK, avant session complète) ────────────────
 Route::get('/2fa/challenge',  [TwoFactorController::class, 'showChallenge'])->name('platform.2fa.challenge');
-Route::post('/2fa/challenge', [TwoFactorController::class, 'verifyChallenge'])->name('platform.2fa.verify')->middleware('throttle:two-factor');
+Route::post('/2fa/challenge',      [TwoFactorController::class, 'verifyChallenge'])->name('platform.2fa.verify')->middleware('throttle:two-factor');
+Route::post('/2fa/backup-code',    [TwoFactorController::class, 'verifyBackupCode'])->name('platform.2fa.backup-code')->middleware('throttle:two-factor');
 
 Route::get('/', HomeController::class)->name('platform.home');
 
@@ -125,9 +126,11 @@ Route::prefix('console')->name('platform.')->middleware('auth')->group(function 
     Route::get('/profile', fn () => redirect()->route('platform.users.edit', auth()->user()))->name('profile');
 
     // ── Configuration 2FA (profil) ───────────────────────────────────────────
-    Route::get('/two-factor',         [TwoFactorController::class, 'showSetup'])->name('two-factor.setup');
-    Route::post('/two-factor/enable', [TwoFactorController::class, 'enable'])->name('two-factor.enable');
-    Route::post('/two-factor/disable',[TwoFactorController::class, 'disable'])->name('two-factor.disable');
+    Route::get('/two-factor',                      [TwoFactorController::class, 'showSetup'])->name('two-factor.setup');
+    Route::post('/two-factor/enable',              [TwoFactorController::class, 'enable'])->name('two-factor.enable');
+    Route::post('/two-factor/disable',             [TwoFactorController::class, 'disable'])->name('two-factor.disable');
+    Route::get('/two-factor/recovery-codes',       [TwoFactorController::class, 'showRecoveryCodes'])->name('two-factor.recovery-codes');
+    Route::post('/two-factor/recovery-codes/regenerate', [TwoFactorController::class, 'regenerateCodes'])->name('two-factor.regenerate-codes');
 
     // ════════════════════════════════════════════════════════════════════════
     //  Routes réservées aux ADMINISTRATEURS uniquement

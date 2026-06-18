@@ -163,6 +163,46 @@
             font-size: 12px; color: var(--muted); line-height: 1.6;
         }
         .hint i { color: var(--accent); margin-right: 6px; }
+
+        .toggle-link {
+            display: block; margin-top: 16px; text-align: center;
+            font-size: 12px; color: var(--muted); text-decoration: none;
+            transition: color 0.2s; cursor: pointer; background: none; border: none;
+            font-family: inherit; width: 100%;
+        }
+        .toggle-link:hover { color: var(--accent); }
+
+        .backup-panel { display: none; margin-top: 20px; }
+        .backup-panel.visible { display: block; }
+
+        .input-backup {
+            display: block; width: 100%;
+            padding: 14px 16px;
+            background: var(--panel-inner);
+            border: 1px solid var(--border);
+            border-radius: 13px;
+            color: var(--text);
+            font-size: 18px;
+            font-family: 'Courier New', monospace;
+            font-weight: 700;
+            letter-spacing: 4px;
+            text-align: center;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            text-transform: uppercase;
+        }
+        .input-backup:focus { border-color: var(--border-hi); box-shadow: 0 0 0 3px var(--accent-dim); }
+        .input-backup.err   { border-color: rgba(248,113,113,0.45); }
+        .btn-backup {
+            width: 100%; padding: 12px; margin-top: 12px;
+            background: rgba(56,189,248,0.1);
+            border: 1px solid rgba(56,189,248,0.25);
+            border-radius: 11px;
+            color: var(--accent); font-size: 13px; font-weight: 700;
+            font-family: inherit; cursor: pointer;
+            transition: background 0.15s;
+        }
+        .btn-backup:hover { background: rgba(56,189,248,0.18); }
     </style>
 </head>
 <body>
@@ -216,6 +256,39 @@
         </button>
     </form>
 
+    <button type="button" class="toggle-link" id="toggleBackup" onclick="toggleBackupPanel()">
+        <i class="fa-solid fa-key" style="margin-right:5px;"></i>
+        Utiliser un code de secours
+    </button>
+
+    {{-- ── Formulaire code de secours (caché par défaut) ── --}}
+    <div class="backup-panel" id="backupPanel">
+        <div style="border-top:1px solid var(--border); padding-top:20px; margin-top:4px;">
+            <div style="font-size:13px; color:var(--muted); margin-bottom:14px; line-height:1.5;">
+                <i class="fa-solid fa-key" style="color:var(--warning); margin-right:6px;"></i>
+                Saisissez l'un de vos codes de secours (format <code style="font-size:12px; background:rgba(255,255,255,.06); padding:1px 5px; border-radius:4px;">XXXXXX-XXXXXX</code>).
+            </div>
+
+            @if($errors->has('backup_code'))
+            <div class="alert-error" style="margin-bottom:14px;">
+                <i class="fa-solid fa-circle-exclamation"></i>
+                {{ $errors->first('backup_code') }}
+            </div>
+            @endif
+
+            <form method="POST" action="{{ route('platform.2fa.backup-code') }}">
+                @csrf
+                <input type="text" name="backup_code" class="input-backup {{ $errors->has('backup_code') ? 'err' : '' }}"
+                       placeholder="XXXXXX-XXXXXX" maxlength="13" autocomplete="off"
+                       style="margin-bottom:0;">
+                <button type="submit" class="btn-backup">
+                    <i class="fa-solid fa-unlock" style="margin-right:8px;"></i>
+                    Accéder avec ce code
+                </button>
+            </form>
+        </div>
+    </div>
+
     <a href="{{ route('platform.login') }}" class="back-link">
         <i class="fa-solid fa-arrow-left" style="margin-right:6px;"></i>
         Retour à la connexion
@@ -223,19 +296,34 @@
 
     <div class="hint">
         <i class="fa-solid fa-circle-info"></i>
-        Le code est valable 30 secondes. Si votre code est refusé, vérifiez que l'heure de votre téléphone est synchronisée.
+        Le code TOTP est valable 30 secondes. Vérifiez que l'heure de votre téléphone est synchronisée.
     </div>
 </div>
 
 <script>
-// Auto-format : espace au milieu pour lisibilité
 const inp = document.getElementById('code');
 inp.addEventListener('input', () => {
     inp.value = inp.value.replace(/\D/g, '').slice(0, 6);
-    if (inp.value.length === 6) {
-        inp.closest('form').submit();
-    }
+    if (inp.value.length === 6) inp.closest('form').submit();
 });
+
+function toggleBackupPanel() {
+    const panel  = document.getElementById('backupPanel');
+    const btn    = document.getElementById('toggleBackup');
+    const totp   = document.querySelector('form[action="{{ route("platform.2fa.verify") }}"]');
+    const isOpen = panel.classList.toggle('visible');
+    btn.innerHTML = isOpen
+        ? '<i class="fa-solid fa-mobile-screen-button" style="margin-right:5px;"></i> Utiliser mon application TOTP'
+        : '<i class="fa-solid fa-key" style="margin-right:5px;"></i> Utiliser un code de secours';
+    if (totp) totp.style.display = isOpen ? 'none' : 'block';
+    if (isOpen) panel.querySelector('input').focus();
+}
+
+@if($errors->has('backup_code'))
+document.addEventListener('DOMContentLoaded', () => {
+    toggleBackupPanel();
+});
+@endif
 </script>
 </body>
 </html>
