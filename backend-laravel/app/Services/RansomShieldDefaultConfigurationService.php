@@ -204,6 +204,11 @@ class RansomShieldDefaultConfigurationService
             // Corrigé : 'soc_dark' est le thème par défaut réel (soc.blade.php + SystemSettingSeeder).
             // L'ancienne valeur 'light' n'existe pas dans le sélecteur et produisait un thème inconnu.
             ['group' => 'ui',            'key' => 'ui_theme',                                  'label' => 'Thème interface',                 'value_type' => 'string',  'value' => 'soc_dark', 'description' => 'Thème visuel par défaut de la console SOC.'],
+
+            // ── Rapports exécutifs ────────────────────────────────────────────
+            ['group' => 'reports', 'key' => 'report_executive_enabled',   'label' => 'Rapport exécutif activé',  'value_type' => 'boolean', 'value' => '0',      'description' => "Active l'envoi automatique du rapport exécutif SOC (hebdomadaire ou mensuel)."],
+            ['group' => 'reports', 'key' => 'report_executive_recipient', 'label' => 'Destinataire du rapport',  'value_type' => 'string',  'value' => '',       'description' => "Adresse e-mail du destinataire du rapport exécutif (ex. : ciso@entreprise.fr)."],
+            ['group' => 'reports', 'key' => 'report_executive_frequency', 'label' => 'Fréquence du rapport',     'value_type' => 'string',  'value' => 'weekly', 'description' => "Fréquence d'envoi : 'weekly' (lundi 8h) ou 'monthly' (1er du mois 8h)."],
         ];
 
         foreach ($items as $item) {
