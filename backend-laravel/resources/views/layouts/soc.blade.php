@@ -1209,6 +1209,10 @@
                         <span class="nav-icon"><i class="fa-solid fa-users-gear"></i></span>
                         <span class="nav-label">Utilisateurs</span>
                     </a>
+                    <a href="{{ route('platform.health.index') }}" class="soc-nav-link {{ request()->routeIs('platform.health.*') ? 'active' : '' }}">
+                        <span class="nav-icon"><i class="fa-solid fa-heart-pulse"></i></span>
+                        <span class="nav-label">Santé SOC</span>
+                    </a>
                     <a href="{{ route('platform.audit-log.index') }}" class="soc-nav-link {{ request()->routeIs('platform.audit-log.*') ? 'active' : '' }}">
                         <span class="nav-icon"><i class="fa-solid fa-shield-halved"></i></span>
                         <span class="nav-label">Journal d'audit</span>

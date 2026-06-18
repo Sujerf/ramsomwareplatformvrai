@@ -109,6 +109,9 @@ Route::prefix('console')->name('platform.')->middleware('auth')->group(function 
     // Journal d'audit — admin uniquement (contrôlé via policy dans le controller)
     Route::get('/audit-log', [\App\Http\Controllers\Platform\AuditLogController::class, 'index'])->name('audit-log.index');
 
+    // Santé SOC — admin uniquement
+    Route::get('/health', [\App\Http\Controllers\Platform\HealthController::class, 'index'])->name('health.index');
+
     // Rapports exécutifs — admin uniquement
     Route::get('/reports',                        [\App\Http\Controllers\Platform\ReportController::class, 'index'])->name('reports.index');
     Route::post('/reports/generate',              [\App\Http\Controllers\Platform\ReportController::class, 'generate'])->name('reports.generate');
