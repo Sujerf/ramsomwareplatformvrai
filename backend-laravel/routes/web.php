@@ -186,7 +186,7 @@ Route::prefix('console')->name('platform.')->middleware('auth')->group(function 
         Route::delete('/protection-actions/{protectionAction}', [ProtectionActionController::class, 'destroy'])->name('protection-actions.destroy');
 
         // Configuration — écriture
-        Route::resource('/detection-rules', DetectionRuleController::class)->only(['update']);
+        Route::resource('/detection-rules', DetectionRuleController::class)->only(['store', 'update', 'destroy']);
         Route::resource('/detection-thresholds', DetectionThresholdController::class)->only(['update']);
         Route::resource('/protection-policies', ProtectionPolicyController::class)->only(['update']);
         Route::resource('/system-settings', SystemSettingController::class)->only(['update']);

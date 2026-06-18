@@ -218,6 +218,10 @@
                     <i class="fa-solid fa-gauge-high"></i> Seuils d'analyse
                 </a>
                 @if(auth()->user()->isAdmin())
+                <button type="button" class="action-btn primary"
+                    onclick="document.getElementById('createRulePanel').style.display = document.getElementById('createRulePanel').style.display === 'none' ? 'block' : 'none'">
+                    <i class="fa-solid fa-plus"></i> Nouvelle règle
+                </button>
                 <form method="POST" action="{{ route('platform.configuration.reset-defaults') }}" style="display:contents">
                     @csrf
                     <button class="action-btn warning" type="submit">
@@ -280,6 +284,97 @@
                         margin-bottom:1rem; display:flex; align-items:center; gap:.5rem;">
                 <i class="fa-solid fa-circle-check"></i> {{ session('success') }}
             </div>
+        @endif
+
+        {{-- ── Panel création (admin) ─────────────────────────────── --}}
+        @if(auth()->user()->isAdmin())
+        <div id="createRulePanel" style="display:{{ $errors->any() ? 'block' : 'none' }};" class="section-gap">
+            <div style="background:var(--card-bg);border:1px solid var(--border-color);border-radius:14px;padding:22px 24px;">
+                <div style="font-size:13px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px;">
+                    <i class="fa-solid fa-plus" style="color:var(--accent);"></i>
+                    Créer une nouvelle règle de détection
+                </div>
+                <form method="POST" action="{{ route('platform.detection-rules.store') }}" id="createRuleForm">
+                    @csrf
+                    <div class="config-form-row" style="flex-wrap:wrap;gap:12px;">
+                        <div class="config-field" style="flex:1;min-width:160px;">
+                            <label>Code <span style="color:#ef4444;">*</span></label>
+                            <input class="form-control" type="text" name="code"
+                                value="{{ old('code') }}"
+                                placeholder="rule_mon_code" pattern="[a-z0-9_]+"
+                                title="Minuscules, chiffres et underscores uniquement" required>
+                            @error('code')<div style="color:#ef4444;font-size:11px;margin-top:3px;">{{ $message }}</div>@enderror
+                        </div>
+                        <div class="config-field" style="flex:2;min-width:200px;">
+                            <label>Nom <span style="color:#ef4444;">*</span></label>
+                            <input class="form-control" type="text" name="name"
+                                value="{{ old('name') }}" placeholder="Nom lisible de la règle" required>
+                            @error('name')<div style="color:#ef4444;font-size:11px;margin-top:3px;">{{ $message }}</div>@enderror
+                        </div>
+                        <div class="config-field" style="flex:1;min-width:150px;">
+                            <label>Type d'événement</label>
+                            <input class="form-control" type="text" name="event_type"
+                                value="{{ old('event_type') }}"
+                                list="event-types-list" placeholder="file_modified, …">
+                            <datalist id="event-types-list">
+                                @foreach(['extension_detected','file_created','file_deleted','file_extension_changed','file_modified','file_moved','file_renamed','multi_host_propagation','ransom_note_detected','shared_folder_access','simulation'] as $et)
+                                <option value="{{ $et }}">
+                                @endforeach
+                            </datalist>
+                        </div>
+                    </div>
+                    <div class="config-form-row" style="flex-wrap:wrap;gap:12px;margin-top:10px;">
+                        <div class="config-field" style="flex:1;min-width:120px;">
+                            <label>Niveau de risque <span style="color:#ef4444;">*</span></label>
+                            <select class="form-control" name="risk_level" required>
+                                @foreach(['normal','suspect','high','critical'] as $lvl)
+                                <option value="{{ $lvl }}" @selected(old('risk_level') === $lvl)>{{ $lvl }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="config-field" style="flex:1;min-width:100px;">
+                            <label>Poids score <span style="color:#ef4444;">*</span></label>
+                            <input class="form-control" type="number" name="score_weight"
+                                value="{{ old('score_weight', 10) }}" min="0" max="1000" required>
+                        </div>
+                        <div class="config-field" style="flex:1;min-width:100px;">
+                            <label>État</label>
+                            <select class="form-control" name="is_enabled">
+                                <option value="1" @selected(old('is_enabled', '1') === '1')>active</option>
+                                <option value="0" @selected(old('is_enabled') === '0')>inactive</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="config-form-row" style="flex-wrap:wrap;gap:12px;margin-top:10px;">
+                        <div class="config-field" style="flex:2;min-width:200px;">
+                            <label>Description</label>
+                            <input class="form-control" type="text" name="description"
+                                value="{{ old('description') }}" placeholder="Description courte de la règle">
+                        </div>
+                        <div class="config-field" style="flex:2;min-width:200px;">
+                            <label>Conditions (JSON)
+                                <span style="font-size:10px;color:var(--text-muted);font-weight:400;">
+                                    ex: {"threshold_key":"my_key","window_seconds":60}
+                                </span>
+                            </label>
+                            <textarea class="form-control" name="conditions" rows="2"
+                                id="createConditions"
+                                placeholder='{"threshold_key": "...", "window_seconds": 60}'>{{ old('conditions') }}</textarea>
+                            @error('conditions')<div style="color:#ef4444;font-size:11px;margin-top:3px;">{{ $message }}</div>@enderror
+                        </div>
+                    </div>
+                    <div class="config-actions" style="margin-top:14px;">
+                        <button class="action-btn primary" type="submit">
+                            <i class="fa-solid fa-plus"></i> Créer la règle
+                        </button>
+                        <button type="button" class="action-btn"
+                            onclick="document.getElementById('createRulePanel').style.display='none'">
+                            Annuler
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
         @endif
 
         {{-- ── 4. Règles actives ─────────────────────────────────── --}}
@@ -348,40 +443,7 @@
                             </div>
 
                             @if(auth()->user()->isAdmin())
-                            {{-- Formulaire --}}
-                            <form method="POST"
-                                  action="{{ route('platform.detection-rules.update', $rule) }}"
-                                  class="config-form">
-                                @csrf
-                                @method('PUT')
-                                <div class="config-form-row">
-                                    <div class="config-field">
-                                        <label>Risque</label>
-                                        <select class="form-control" name="risk_level">
-                                            @foreach (['normal','suspect','high','critical'] as $lvl)
-                                                <option value="{{ $lvl }}" @selected($rule->risk_level === $lvl)>{{ $lvl }}</option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                    <div class="config-field">
-                                        <label>Poids score</label>
-                                        <input class="form-control" type="number" name="score_weight"
-                                               value="{{ $rule->score_weight }}" min="0" max="1000">
-                                    </div>
-                                    <div class="config-field">
-                                        <label>État</label>
-                                        <select class="form-control" name="is_enabled">
-                                            <option value="1" @selected($rule->is_enabled)>active</option>
-                                            <option value="0" @selected(!$rule->is_enabled)>inactive</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="config-actions">
-                                    <button class="action-btn primary" type="submit">
-                                        <i class="fa-solid fa-floppy-disk"></i> Enregistrer
-                                    </button>
-                                </div>
-                            </form>
+                            @include('platform.detection-rules._form', ['rule' => $rule])
                             @endif
                         </div>
                     </div>
@@ -474,39 +536,7 @@
                                         </div>
 
                                         @if(auth()->user()->isAdmin())
-                                        <form method="POST"
-                                              action="{{ route('platform.detection-rules.update', $rule) }}"
-                                              class="config-form">
-                                            @csrf
-                                            @method('PUT')
-                                            <div class="config-form-row">
-                                                <div class="config-field">
-                                                    <label>Risque</label>
-                                                    <select class="form-control" name="risk_level">
-                                                        @foreach (['normal','suspect','high','critical'] as $lvl)
-                                                            <option value="{{ $lvl }}" @selected($rule->risk_level === $lvl)>{{ $lvl }}</option>
-                                                        @endforeach
-                                                    </select>
-                                                </div>
-                                                <div class="config-field">
-                                                    <label>Poids score</label>
-                                                    <input class="form-control" type="number" name="score_weight"
-                                                           value="{{ $rule->score_weight }}" min="0" max="1000">
-                                                </div>
-                                                <div class="config-field">
-                                                    <label>État</label>
-                                                    <select class="form-control" name="is_enabled">
-                                                        <option value="1" @selected($rule->is_enabled)>active</option>
-                                                        <option value="0" @selected(!$rule->is_enabled)>inactive</option>
-                                                    </select>
-                                                </div>
-                                            </div>
-                                            <div class="config-actions">
-                                                <button class="action-btn primary" type="submit">
-                                                    <i class="fa-solid fa-floppy-disk"></i> Enregistrer
-                                                </button>
-                                            </div>
-                                        </form>
+                                        @include('platform.detection-rules._form', ['rule' => $rule])
                                         @endif
                                     </div>
                                 </div>
@@ -518,4 +548,31 @@
         @endif
 
     </div>
+
+{{-- datalist partagé pour event_type --}}
+<datalist id="event-types-list">
+    @foreach(['extension_detected','file_created','file_deleted','file_extension_changed','file_modified','file_moved','file_renamed','multi_host_propagation','ransom_note_detected','shared_folder_access','simulation'] as $et)
+    <option value="{{ $et }}">
+    @endforeach
+</datalist>
+
+<script>
+function validateRuleJson(form) {
+    const ta = form.querySelector('.rule-conditions-json');
+    if (!ta) return true;
+    const val = ta.value.trim();
+    if (!val) return true;
+    try { JSON.parse(val); return true; }
+    catch (e) {
+        ta.style.borderColor = '#ef4444';
+        alert('Conditions JSON invalide : ' + e.message);
+        ta.focus();
+        return false;
+    }
+}
+// Réinitialiser la couleur sur input
+document.querySelectorAll('.rule-conditions-json').forEach(ta => {
+    ta.addEventListener('input', () => ta.style.borderColor = '');
+});
+</script>
 @endsection
