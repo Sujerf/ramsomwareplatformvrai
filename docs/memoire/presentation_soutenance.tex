@@ -1,14 +1,12 @@
 % =========================================================================
-%  RansomShield — Présentation de soutenance  (design orange moderne)
+%  RansomShield — Présentation de soutenance  (design bleu IFRI v2)
 %  IFRI-UAC | Codjo Fréjus Loïc SANGRONIO | Ing. Guy KPEDJO | 2023-2024
 %  Compilateur : pdfLaTeX
 %
-%  NOTES ORATEUR — DEUX PDF GÉNÉRÉS AUTOMATIQUEMENT, RIEN À DÉCOMMENTER :
+%  DEUX PDF GÉNÉRÉS :
 %    ./build.sh
-%      → presentation_soutenance.pdf        (PROPRE : à projeter — Meet, vidéoprojecteur)
-%      → presentation_soutenance_notes.pdf  (AVEC NOTES : à garder sur votre propre écran)
-%    Le choix se fait automatiquement selon le nom de compilation (\jobname) :
-%    compiler ce fichier normalement ne montre JAMAIS les notes.
+%      → presentation_soutenance.pdf        (à projeter)
+%      → presentation_soutenance_notes.pdf  (avec notes orateur)
 % =========================================================================
 
 \documentclass[aspectratio=169,t,10pt]{beamer}
@@ -31,28 +29,27 @@
 \tcbuselibrary{skins,breakable}
 \usepackage{ragged2e}
 \usepackage{adjustbox}
-\usepackage{pgfpages}   % nécessaire pour les notes sur 2e écran
+\usepackage{pgfpages}
 
-% ─── NOTES ORATEUR — activées SEULEMENT pour le job "..._notes" ──────────
-%  Voir build.sh : deux compilations du même fichier, deux PDF différents.
+% ─── NOTES ORATEUR ───────────────────────────────────────────────────────
 \edef\rs@jobname{\jobname}
 \ifnum\pdfstrcmp{\rs@jobname}{presentation_soutenance_notes}=0
   \setbeameroption{show notes on second screen=right}
 \fi
-% ─────────────────────────────────────────────────────────────────────────
 
 % =========================================================================
-%  PALETTE BLEU MARINE IFRI
+%  PALETTE
 % =========================================================================
-\definecolor{primary}   {RGB}{  0,  82, 165}   % bleu IFRI principal
-\definecolor{darkblue}  {RGB}{ 10,  40,  90}   % bleu nuit (ombres, titre slide final)
-\definecolor{darkbg}    {RGB}{ 12,  28,  68}   % fond sombre (slide final)
-\definecolor{light}     {RGB}{232, 240, 252}   % fond très clair bleu des blocs
-\definecolor{muted}     {RGB}{100, 100, 110}   % gris neutre
-\definecolor{crit}      {RGB}{185,  28,  28}   % rouge critique
-\definecolor{high}      {RGB}{194,  96,  10}   % orange élevé
-\definecolor{norm}      {RGB}{ 22, 128,  65}   % vert normal
-\definecolor{textdark}  {RGB}{ 18,  22,  55}   % texte principal bleu sombre
+\definecolor{primary}   {RGB}{  0,  82, 165}   % bleu IFRI
+\definecolor{darkblue}  {RGB}{ 10,  40,  90}
+\definecolor{darkbg}    {RGB}{ 12,  28,  68}
+\definecolor{light}     {RGB}{232, 240, 252}
+\definecolor{muted}     {RGB}{100, 100, 110}
+\definecolor{crit}      {RGB}{185,  28,  28}
+\definecolor{high}      {RGB}{194,  96,  10}
+\definecolor{norm}      {RGB}{ 22, 128,  65}
+\definecolor{textdark}  {RGB}{ 18,  22,  55}
+\definecolor{gold}      {RGB}{212, 175,  55}
 
 % =========================================================================
 %  THÈME BEAMER
@@ -63,8 +60,6 @@
 \setbeamercolor{structure}           {fg=primary}
 \setbeamercolor{normal text}         {fg=textdark,bg=white}
 \setbeamercolor{alerted text}        {fg=crit}
-\setbeamercolor{frametitle}          {fg=primary,bg=white}
-\setbeamerfont{frametitle}           {size=\large,series=\bfseries}
 \setbeamercolor{block title}         {fg=white,bg=primary}
 \setbeamercolor{block body}          {fg=textdark,bg=light}
 \setbeamercolor{block title alerted} {fg=white,bg=crit}
@@ -76,27 +71,37 @@
 \setbeamertemplate{itemize subitem}  {\textcolor{primary!70}{\footnotesize$\triangleright$}}
 \setbeamertemplate{navigation symbols}{}
 
-% Filet orange sous chaque titre de frame
-\addtobeamertemplate{frametitle}{}{%
-  \vspace{-4pt}%
-  {\color{primary}\rule{\textwidth}{2pt}}%
-  \vspace{2pt}%
+% Frametitle : barre bleue pleine + filet doré
+\setbeamercolor{frametitle}{fg=white,bg=primary}
+\setbeamerfont{frametitle}{size=\normalsize,series=\bfseries}
+\setbeamertemplate{frametitle}{%
+  \nointerlineskip%
+  \begin{beamercolorbox}[wd=\paperwidth,ht=2.7ex,dp=1.0ex,leftskip=10pt]{frametitle}%
+    \usebeamerfont{frametitle}\insertframetitle%
+  \end{beamercolorbox}%
+  \nointerlineskip%
+  \begin{beamercolorbox}[wd=\paperwidth,ht=0.28ex,dp=0pt,colsep=0pt]{goldline}%
+  \end{beamercolorbox}%
 }
+\setbeamercolor{goldline}{bg=gold}
 
-% Filigrane bouclier (très discret, fond de chaque slide)
+% Filigrane : bouclier discret + triangle coin
 \setbeamertemplate{background}{%
   \begin{tikzpicture}[overlay,remember picture]
-    \node[anchor=south east, opacity=0.045,
-          inner sep=0pt]
-      at ([xshift=-0.5cm,yshift=0.8cm]current page.south east)
-      {\fontsize{90}{90}\selectfont\color{primary}\faIcon{shield-alt}};
+    \node[anchor=south east, opacity=0.055, inner sep=0pt]
+      at ([xshift=-0.5cm,yshift=0.7cm]current page.south east)
+      {\fontsize{98}{98}\selectfont\color{primary}\faIcon{shield-alt}};
+    \fill[primary,opacity=0.04]
+      (current page.north east) --
+      ([xshift=-2.8cm]current page.north east) --
+      ([yshift=-2.8cm]current page.north east) -- cycle;
   \end{tikzpicture}%
 }
 
-% Footline orange 3 colonnes
+% Footline 3 colonnes
 \setbeamertemplate{footline}{%
   \leavevmode%
-  \begin{beamercolorbox}[wd=\paperwidth,ht=2.5ex,dp=1.2ex,colsep=0pt]{section in head/foot}%
+  \begin{beamercolorbox}[wd=\paperwidth,ht=2.5ex,dp=1.2ex]{section in head/foot}%
     \color{white}%
     \hspace*{6pt}\tiny Codjo Fréjus Loïc SANGRONIO%
     \hfill%
@@ -108,7 +113,7 @@
 \setbeamercolor{section in head/foot}{fg=white,bg=primary}
 
 % =========================================================================
-%  CHEMINS DES IMAGES
+%  CHEMINS
 % =========================================================================
 \graphicspath{%
   {New_IFRI_template_latex_05_04_2020_Bachelor___Licence__2_-2/images/}%
@@ -124,34 +129,48 @@
 \newcommand{\warn}{\textcolor{high}{\faExclamationCircle}\ }
 \newcommand{\arr} {\textcolor{primary}{\small\faChevronRight}\ }
 
-% Slide séparateur de section (bande orange + numéro + icône thématique)
+% Slide séparateur de section
 \newcommand{\sectionslide}[3]{%
   \begin{frame}[plain,noframenumbering]%
     \begin{tikzpicture}[overlay,remember picture]%
-      % Bande orange côté gauche
-      \fill[primary]
+      % Bande gauche sombre
+      \fill[darkbg]
         (current page.north west) --
-        ([xshift=5.5cm]current page.north west) --
-        ([xshift=3.8cm]current page.south west) --
+        ([xshift=6.0cm]current page.north west) --
+        ([xshift=4.2cm]current page.south west) --
         (current page.south west) -- cycle;
-      % Icône de section en filigrane (grand format, dans la bande)
+      % Filet doré sur la bande
+      \fill[gold]
+        ([xshift=5.96cm]current page.north west) --
+        ([xshift=6.24cm]current page.north west) --
+        ([xshift=4.46cm]current page.south west) --
+        ([xshift=4.18cm]current page.south west) -- cycle;
+      % Grande icône en filigrane dans la bande
       \node[anchor=center,
-            font=\fontsize{95}{95}\selectfont,
-            text=white,opacity=0.16]
-        at ([xshift=2.0cm,yshift=1.7cm]current page.west) {\faIcon{#3}};
-      % Numéro de section en filigrane
+            font=\fontsize{88}{88}\selectfont,
+            text=white,opacity=0.10]
+        at ([xshift=2.7cm,yshift=1.4cm]current page.west) {\faIcon{#3}};
+      % Numéro en filigrane vertical
       \node[anchor=center,rotate=90,
-            font=\fontsize{60}{60}\selectfont\bfseries,
-            text=white,opacity=0.22]
-        at ([xshift=2.0cm,yshift=-1.9cm]current page.west) {#1};
-      % Icône + titre à droite
+            font=\fontsize{52}{52}\selectfont\bfseries,
+            text=white,opacity=0.18]
+        at ([xshift=2.7cm,yshift=-2.1cm]current page.west) {#1};
+      % Bouclier filigrane côté droit
+      \node[anchor=center,opacity=0.04,
+            font=\fontsize{110}{110}\selectfont,text=primary]
+        at ([xshift=2.8cm,yshift=0cm]current page.east) {\faIcon{shield-alt}};
+      % Titre
       \node[anchor=west, font=\LARGE\bfseries, text=textdark]
-        at ([xshift=6.5cm,yshift=0.3cm]current page.west)
-        {\textcolor{primary}{\faIcon{#3}}\ \ #2};
-      % Trait orange sous le titre
-      \draw[primary,line width=2.5pt]
-        ([xshift=6.5cm,yshift=-0.4cm]current page.west) --
-        ([xshift=14.5cm,yshift=-0.4cm]current page.west);
+        at ([xshift=7.3cm,yshift=0.5cm]current page.west)
+        {\textcolor{primary}{\large\faIcon{#3}}\ \ #2};
+      % Filet primaire
+      \draw[primary,line width=3pt]
+        ([xshift=7.3cm,yshift=-0.35cm]current page.west) --
+        ([xshift=15.3cm,yshift=-0.35cm]current page.west);
+      % Filet doré (court)
+      \draw[gold,line width=1.8pt]
+        ([xshift=7.3cm,yshift=-0.70cm]current page.west) --
+        ([xshift=10.8cm,yshift=-0.70cm]current page.west);
     \end{tikzpicture}%
   \end{frame}%
 }
@@ -165,8 +184,7 @@
   dans un environnement contrôlé%
 }
 \author[L.~SANGRONIO]{Codjo Fréjus Loïc \textbf{SANGRONIO}}
-\institute[IFRI-UAC]{%
-  Licence Informatique --- Option Sécurité Informatique \textbar{} IFRI-UAC}
+\institute[IFRI-UAC]{Licence Informatique --- Option Sécurité Informatique \textbar{} IFRI-UAC}
 \date{24 juin 2026}
 
 % =========================================================================
@@ -179,19 +197,37 @@
 {
 \setbeamertemplate{headline}{}
 \setbeamertemplate{footline}{}
-\begin{frame}[plain,noframenumbering]
-
+\setbeamertemplate{background}{%
   \begin{tikzpicture}[overlay,remember picture]
-    \node[anchor=north west,inner sep=8pt]
-      at (current page.north west)
-      {\includegraphics[height=1.35cm]{logoUAC1}};
-    \node[anchor=north east,inner sep=8pt]
-      at (current page.north east)
-      {\includegraphics[height=1.35cm]{logoIfri}};
-    % Footline titre
+    % Bande bleue de pied
     \fill[primary]
       (current page.south west) rectangle
       ([yshift=1.9em]current page.south east);
+    % Filet doré au pied
+    \fill[gold]
+      ([yshift=1.88em]current page.south west) rectangle
+      ([yshift=2.08em]current page.south east);
+    % Bande subtile en haut
+    \fill[darkbg,opacity=0.07]
+      (current page.north west) rectangle
+      ([yshift=-0.5cm]current page.north east);
+    \fill[gold]
+      ([yshift=-0.48cm]current page.north west) rectangle
+      ([yshift=-0.58cm]current page.north east);
+    % Bouclier filigrane
+    \node[anchor=south east, opacity=0.07, inner sep=0pt]
+      at ([xshift=-0.3cm,yshift=2.8cm]current page.south east)
+      {\fontsize{145}{145}\selectfont\color{primary}\faIcon{shield-alt}};
+  \end{tikzpicture}%
+}
+\begin{frame}[plain,noframenumbering]
+  \begin{tikzpicture}[overlay,remember picture]
+    \node[anchor=north west,inner sep=10pt]
+      at (current page.north west)
+      {\includegraphics[height=1.35cm]{logoUAC1}};
+    \node[anchor=north east,inner sep=10pt]
+      at (current page.north east)
+      {\includegraphics[height=1.35cm]{logoIfri}};
     \node[anchor=west,font=\tiny\color{white},inner sep=6pt]
       at ([yshift=0.95em]current page.south west)
       {Codjo Fréjus Loïc SANGRONIO};
@@ -203,13 +239,15 @@
       {24 juin 2026 \quad 1\,/\,\inserttotalframenumber};
   \end{tikzpicture}
 
-  \vspace{1.4cm}
+  \vspace{1.5cm}
 
   \begin{tcolorbox}[
     colback=primary,colframe=darkblue,
     arc=10pt,boxrule=0pt,halign=center,
-    left=16pt,right=16pt,top=12pt,bottom=12pt,
-    drop shadow={opacity=0.3,shadow xshift=0pt,shadow yshift=-3pt}
+    left=18pt,right=18pt,top=14pt,bottom=14pt,
+    drop shadow={opacity=0.35,shadow xshift=0pt,shadow yshift=-4pt},
+    borderline west={4pt}{0pt}{gold},
+    borderline east={4pt}{0pt}{gold}
   ]
     {\large\bfseries\color{white}
      Conception et mise en place d'un système de\\[6pt]
@@ -218,14 +256,11 @@
   \end{tcolorbox}
 
   \vspace{0.45cm}
-
   \centering
   {\normalsize\bfseries Codjo Fréjus Loïc SANGRONIO}\\[4pt]
   {\small Licence Informatique --- Option Sécurité Informatique}\\[8pt]
   {\normalsize\bfseries 24 juin 2026}
-
   \vfill
-
   \begin{columns}[b]
     \column{0.5\textwidth}
       \raggedright{\scriptsize\color{muted}%
@@ -234,7 +269,6 @@
       \raggedleft{\scriptsize\color{muted}%
         \textbf{Maître de stage :}\\{[}Nom du maître de stage{]}}
   \end{columns}
-
   \vspace{0.45cm}
 \end{frame}
 }
@@ -245,18 +279,17 @@
   la conception et la mise en place d'un système de détection et de réponse aux attaques
   ransomware dans un environnement contrôlé~: RansomShield.
   Cette présentation durera dix minutes, suivie d'une démonstration live de cinq minutes
-  sur des machines virtuelles réelles. Je reste à votre disposition pour vos questions
-  à la fin.
+  sur des machines virtuelles réelles.
 }
 
 % ─────────────────────────────────────────────────────────────────────────
 %  SLIDE 2 — SOMMAIRE
 % ─────────────────────────────────────────────────────────────────────────
 \begin{frame}{Sommaire}
-  \vspace{0.2cm}
+  \vspace{0.3cm}
   \begin{columns}[T]
     \column{0.58\textwidth}
-      \begin{enumerate}\setlength\itemsep{10pt}
+      \begin{enumerate}\setlength\itemsep{11pt}
         \item[\textcolor{primary}{\bfseries\large 1.}] Introduction Générale
         \item[\textcolor{primary}{\bfseries\large 2.}] Revue de littérature
         \item[\textcolor{primary}{\bfseries\large 3.}] Analyse et Conception
@@ -274,7 +307,7 @@
         \small\color{textdark}
         \begin{tabular}{@{}r@{\;:\;}l@{}}
           Présentation & \textbf{10 min} \\[4pt]
-          Diapositives & \textbf{21}     \\[4pt]
+          Diapositives & \textbf{18}     \\[4pt]
           Démo live    & \textbf{5 min}  \\[4pt]
           VMs test     & 3 KVM           \\
         \end{tabular}
@@ -284,9 +317,8 @@
 \note{
   \textbf{[SOMMAIRE — 0:30]}\\[4pt]
   Ma présentation s'articule en cinq parties~: le contexte et la problématique,
-  la revue de littérature, la conception de la solution, sa réalisation avec les
-  résultats obtenus, puis la conclusion. Je terminerai par une courte démonstration
-  du système en fonctionnement.
+  la revue de littérature, la conception, la réalisation et les résultats, puis
+  la conclusion. Je terminerai par une courte démonstration live.
 }
 
 % =========================================================================
@@ -295,8 +327,8 @@
 
 \sectionslide{01}{Introduction Générale}{bullseye}
 
-% ─── Contexte + Problématique ─────────────────────────────────────────────
-\begin{frame}{Introduction Générale}
+% ─── Contexte ─────────────────────────────────────────────────────────────
+\begin{frame}{Introduction Générale --- Contexte}
 
   \begin{block}{Contexte}
     L'évolution rapide du numérique expose les organisations aux ransomwares~: des
@@ -309,32 +341,7 @@
     \end{itemize}
   \end{block}
 
-  \vspace{4pt}
-
-  \begin{block}{Problématique}
-    Les terminaux constituent des points d'entrée sensibles, tandis que les antivirus
-    basés sur les signatures restent insuffisants face aux variantes nouvelles ou inconnues.
-    La nécessité de détecter automatiquement un comportement ransomware sur un parc de
-    machines hétérogène --- et de déclencher une réponse maîtrisée
-    \textbf{sans déployer de vrai malware} --- constitue le défi central de ce travail.
-  \end{block}
-
-\end{frame}
-\note{
-  \textbf{[CONTEXTE \& PROBLÉMATIQUE — 1:00]}\\[4pt]
-  Les organisations dépendent aujourd'hui fortement de leurs systèmes informatiques,
-  ce qui les expose de plus en plus aux cyberattaques — en particulier au ransomware,
-  ce logiciel malveillant qui chiffre les données puis exige une rançon.
-  Selon l'ENISA, ces attaques ont augmenté de 73\,\% en 2023~; sans outil dédié,
-  il faut en moyenne 21 jours pour les détecter, pour un coût qui dépasse souvent
-  le million de dollars. Le problème, c'est que les antivirus classiques, basés
-  sur des signatures, ne suffisent plus face à des comportements inconnus.
-  D'où la question centrale de ce travail~: comment détecter et répondre à un
-  comportement ransomware, dans un environnement contrôlé, sans déployer de vrai malware~?
-}
-
-% ─── Objectifs ────────────────────────────────────────────────────────────
-\begin{frame}{Introduction Générale}
+  \vspace{5pt}
 
   \begin{block}{Objectif général}
     Concevoir et mettre en œuvre un \textbf{système de détection et de réponse
@@ -342,10 +349,75 @@
     et des processus, avec une console de supervision traçable.
   \end{block}
 
-  \vspace{4pt}
+\end{frame}
+\note{
+  \textbf{[CONTEXTE — 1:00]}\\[4pt]
+  Les organisations dépendent aujourd'hui fortement de leurs systèmes informatiques,
+  ce qui les expose de plus en plus aux cyberattaques — en particulier au ransomware.
+  Selon l'ENISA, ces attaques ont augmenté de 73\,\% en 2023~; sans outil dédié,
+  il faut en moyenne 21 jours pour les détecter.
+}
+
+% ─── Problématique (affirmative, slide dédié) ─────────────────────────────
+\begin{frame}{Problématique}
+  \vspace{0.2cm}
+  \begin{center}
+  \begin{tcolorbox}[
+    colback=darkbg,colframe=gold,
+    arc=12pt,boxrule=1.8pt,
+    left=20pt,right=20pt,top=15pt,bottom=15pt,
+    width=0.93\textwidth,
+    drop shadow={opacity=0.30,shadow xshift=0pt,shadow yshift=-3pt}
+  ]
+    \centering
+    {\large\bfseries\color{white}
+    La détection comportementale en temps réel des attaques ransomware,\\[5pt]
+    combinée à une réponse maîtrisée avec validation humaine systématique,\\[5pt]
+    constitue une solution efficace et démontrable pour protéger\\[5pt]
+    un parc de machines hétérogène sans déployer de vrai malware.}
+  \end{tcolorbox}
+  \end{center}
+  \vspace{8pt}
+  \begin{columns}[T]
+    \column{0.32\textwidth}
+      \begin{tcolorbox}[colback=light,colframe=primary,arc=5pt,boxrule=0.8pt,
+          left=6pt,right=6pt,top=5pt,bottom=5pt,halign=center]
+        \small\color{textdark}
+        \textcolor{primary}{\large\faExclamationTriangle}\\[3pt]
+        \textbf{Défi \#1}\\[2pt]
+        Variantes inconnues contournent les antivirus par signatures
+      \end{tcolorbox}
+    \column{0.32\textwidth}
+      \begin{tcolorbox}[colback=light,colframe=primary,arc=5pt,boxrule=0.8pt,
+          left=6pt,right=6pt,top=5pt,bottom=5pt,halign=center]
+        \small\color{textdark}
+        \textcolor{primary}{\large\faNetworkWired}\\[3pt]
+        \textbf{Défi \#2}\\[2pt]
+        Parc hétérogène (Windows, Linux, macOS) à surveiller
+      \end{tcolorbox}
+    \column{0.32\textwidth}
+      \begin{tcolorbox}[colback=light,colframe=primary,arc=5pt,boxrule=0.8pt,
+          left=6pt,right=6pt,top=5pt,bottom=5pt,halign=center]
+        \small\color{textdark}
+        \textcolor{primary}{\large\faUserCheck}\\[3pt]
+        \textbf{Défi \#3}\\[2pt]
+        Réponse automatique risquée --- contrôle humain indispensable
+      \end{tcolorbox}
+  \end{columns}
+\end{frame}
+\note{
+  \textbf{[PROBLÉMATIQUE — 2:00]}\\[4pt]
+  La problématique est formulée de manière affirmative : la détection comportementale
+  couplée à un contrôle humain constitue la réponse adaptée.
+  Trois défis structurent ce travail : les variantes inconnues, le parc hétérogène,
+  et la nécessité d'un contrôle humain avant chaque action.
+}
+
+% ─── Objectifs ────────────────────────────────────────────────────────────
+\begin{frame}{Introduction Générale --- Objectifs spécifiques}
 
   \begin{block}{Objectifs spécifiques}
-    \begin{itemize}\setlength\itemsep{2pt}
+    \begin{itemize}\setlength\itemsep{4pt}
       \item Surveiller les événements fichiers en temps réel sur les terminaux
       \item Analyser les comportements et calculer un score de risque configurable
       \item Générer automatiquement des alertes et des incidents de sécurité
@@ -355,42 +427,7 @@
     \end{itemize}
   \end{block}
 
-\end{frame}
-\note{
-  \textbf{[OBJECTIFS — 2:30]}\\[4pt]
-  L'objectif général est de concevoir un système de détection et de réponse aux
-  attaques ransomware, basé sur la surveillance comportementale des fichiers et
-  des processus. Concrètement, il s'agit de surveiller les événements en temps réel,
-  de calculer un score de risque, de générer automatiquement des alertes et des
-  incidents, de proposer des actions de protection avec un contrôle humain
-  systématique, de sécuriser la console par une double authentification, et de
-  valider le tout sur des scénarios d'attaque réalistes.
-}
-
-% ─── Organisation ─────────────────────────────────────────────────────────
-\begin{frame}{Organisation du mémoire}
-
-  \vspace{0.2cm}
-
-  \begin{columns}[T]
-    \column{0.32\textwidth}
-      \begin{block}{Chapitre I\\Revue de littérature}
-        \small Sécurité informatique, logiciels malveillants, ransomwares,
-        antivirus, IDS, EDR~: positionnement de RansomShield.
-      \end{block}
-    \column{0.32\textwidth}
-      \begin{block}{Chapitre II\\Analyse et Conception}
-        \small Besoins fonctionnels et non fonctionnels, architecture générale,
-        modèle de données, processus de détection et mesures de sécurité.
-      \end{block}
-    \column{0.32\textwidth}
-      \begin{block}{Chapitre III\\Réalisation et Résultats}
-        \small Implémentation des composants, scénarios de validation,
-        résultats obtenus, limites et perspectives.
-      \end{block}
-  \end{columns}
-
-  \vspace{8pt}
+  \vspace{6pt}
 
   \begin{tcolorbox}[
     colback=light,colframe=primary,arc=5pt,boxrule=0.8pt,halign=center,
@@ -403,10 +440,9 @@
 
 \end{frame}
 \note{
-  \textbf{[ORGANISATION DU MÉMOIRE — 3:15]}\\[4pt]
-  Le mémoire suit le canevas IFRI en trois chapitres~: la revue de littérature,
-  l'analyse et la conception du système, puis sa réalisation et ses résultats.
-  Voyons d'abord les fondements théoriques.
+  \textbf{[OBJECTIFS — 3:00]}\\[4pt]
+  Six objectifs spécifiques guident ce travail : surveillance temps réel, scoring
+  configurable, alertes automatiques, contrôle humain, 2FA et validation par scénarios.
 }
 
 % =========================================================================
@@ -416,7 +452,7 @@
 \sectionslide{02}{Revue de littérature}{book}
 
 % ─── Définition + comportements ───────────────────────────────────────────
-\begin{frame}{Revue de littérature}
+\begin{frame}{Revue de littérature --- Définition et comportements}
 
   \begin{block}{Définition d'un ransomware}
     Un ransomware est un logiciel malveillant qui vise à bloquer l'accès à un
@@ -442,21 +478,16 @@
 
 \end{frame}
 \note{
-  \textbf{[DÉFINITION \& COMPORTEMENTS — 3:50]}\\[4pt]
-  Selon le NIST, un ransomware est un logiciel malveillant qui bloque l'accès aux
-  données, le plus souvent par chiffrement, pour ensuite réclamer une rançon.
-  Ce qui compte pour nous, c'est que ce type d'attaque laisse des signes avant que
-  les dégâts ne soient irréversibles~: renommage massif de fichiers, apparition
-  d'extensions suspectes comme \texttt{.locked}, création d'une note de rançon,
-  suppression des sauvegardes système, ou encore utilisation détournée d'outils
-  légitimes. Ce sont ces signaux qui constituent la base de notre détection
-  comportementale.
+  \textbf{[DÉFINITION — 3:50]}\\[4pt]
+  Un ransomware laisse des traces comportementales avant que les dégâts soient
+  irréversibles : extensions suspectes, note de rançon, suppression VSS, LOLBins.
+  Ce sont ces signaux qui forment la base de notre détection.
 }
 
 % ─── Solutions existantes ─────────────────────────────────────────────────
-\begin{frame}{Revue de littérature}
+\begin{frame}{Revue de littérature --- Solutions existantes}
 
-  \begin{block}{Quelques solutions existantes}
+  \begin{block}{Solutions existantes}
     \begin{itemize}\setlength\itemsep{2pt}
       \item \textbf{Antivirus} --- détection par signatures statiques (ClamAV, Windows Defender)
       \item \textbf{SIEM génériques} --- collecte de journaux sans corrélation comportementale
@@ -483,14 +514,9 @@
 
 \end{frame}
 \note{
-  \textbf{[SOLUTIONS EXISTANTES — 5:15]}\\[4pt]
-  Les solutions existantes ont chacune leurs limites. Les antivirus classiques
-  détectent par signatures, donc ils passent à côté des nouvelles variantes.
-  Les SIEM collectent des journaux mais sans corrélation comportementale spécifique.
-  Les EDR commerciaux, comme CrowdStrike ou SentinelOne, sont efficaces mais hors
-  de portée pour un contexte académique. C'est dans cet espace que se positionne
-  RansomShield~: une approche comportementale, open-source, avec un contrôle
-  humain garanti à chaque étape. Voyons maintenant comment ce système a été conçu.
+  \textbf{[SOLUTIONS — 5:15]}\\[4pt]
+  Les antivirus passent à côté des nouvelles variantes. Les EDR commerciaux sont
+  efficaces mais hors de portée académique. RansomShield se positionne dans cet espace.
 }
 
 % =========================================================================
@@ -499,53 +525,70 @@
 
 \sectionslide{03}{Analyse et Conception}{drafting-compass}
 
-% ─── Architecture ─────────────────────────────────────────────────────────
+% ─── Architecture (2 lignes, circuit) ─────────────────────────────────────
 \begin{frame}{Architecture générale de RansomShield}
-  \centering
-  \vspace{0.3cm}
-  \begin{adjustbox}{max width=\textwidth,max totalheight=0.72\textheight,center}
-  \begin{tikzpicture}[
-    box/.style={
-      rectangle, rounded corners=6pt, draw=primary, line width=1.2pt,
-      fill=light, minimum width=3.9cm, minimum height=2.6cm,
-      align=center, font=\normalsize
-    }
-  ]
-    \node[box] (b1) at (0,0)
-      {\Large\faDesktop\\[4pt]\textbf{Agents}\\ \small Windows / Linux / macOS};
-    \node[box] (b2) at (5.2,0)
-      {\Large\faServer\\[4pt]\textbf{API Laravel}\\ \small Clé par agent};
-    \node[box] (b3) at (10.4,0)
-      {\Large\faBrain\\[4pt]\textbf{Moteur de détection}\\ \small Score de risque};
-    \node[box] (b4) at (15.6,0)
-      {\Large\faChartBar\\[4pt]\textbf{Console SOC}\\ \small Alertes \& incidents};
+\vspace{0.1cm}
+\begin{center}
+\begin{adjustbox}{max width=\textwidth,max totalheight=0.80\textheight,center}
+\begin{tikzpicture}[
+  box/.style={
+    rectangle, rounded corners=8pt, draw=primary, line width=1.3pt,
+    fill=light, minimum width=4.3cm, minimum height=2.5cm,
+    align=center, font=\normalsize, text=textdark
+  },
+  boxop/.style={
+    rectangle, rounded corners=8pt,
+    draw=gold!80!black, line width=1.5pt,
+    fill=gold!15, minimum width=5.2cm, minimum height=2.2cm,
+    align=center, font=\normalsize, text=textdark
+  },
+  fwd/.style={-{Stealth[length=4mm]}, primary, line width=1.6pt},
+  back/.style={-{Stealth[length=3.5mm]}, primary!55, dashed, line width=1.2pt, rounded corners=8pt}
+]
+  % ── Ligne du haut ──
+  \node[box] (agent) at (0,    0) {
+    \Large\faDesktop\\[4pt]\textbf{Agents Python}\\
+    \small Windows / Linux / macOS};
+  \node[box] (api)   at (5.5,  0) {
+    \Large\faServer\\[4pt]\textbf{API Laravel}\\
+    \small Clé par agent};
+  \node[box] (moteur)at (11.0, 0) {
+    \Large\faBrain\\[4pt]\textbf{Moteur Détection}\\
+    \small Score de risque};
 
-    \draw[-{Stealth[length=3.5mm]}, primary, line width=1.4pt] (b1) -- (b2);
-    \draw[-{Stealth[length=3.5mm]}, primary, line width=1.4pt] (b2) -- (b3);
-    \draw[-{Stealth[length=3.5mm]}, primary, line width=1.4pt] (b3) -- (b4);
+  % ── Ligne du bas ──
+  \node[box]   (soc) at (11.0,-3.8) {
+    \Large\faChartBar\\[4pt]\textbf{Console SOC}\\
+    \small Alertes \& Incidents};
+  \node[boxop] (op)  at (5.5, -3.8) {
+    \Large\faUserCheck\\[4pt]\textbf{Opérateur humain}\\
+    \small valide chaque action};
 
-    \node[box, fill=primary!10, draw=primary!70!black, minimum width=6.5cm, minimum height=1.6cm]
-      (op) at (7.8,-3.6)
-      {\Large\faUserCheck\quad\textbf{Opérateur humain}\\ \small approuve chaque action avant exécution};
+  % ── Flèches circuit ──
+  \draw[fwd] (agent.east)  -- node[above,font=\tiny\color{muted}]{événements} (api.west);
+  \draw[fwd] (api.east)    -- node[above,font=\tiny\color{muted}]{analyse}    (moteur.west);
+  \draw[fwd] (moteur.south)-- node[right,font=\tiny\color{muted}]{alertes}    (soc.north);
+  \draw[fwd] (soc.west)    -- node[above,font=\tiny\color{muted}]{approbation}(op.east);
+  \draw[back] (op.west) -- ++(-1.2,0) |- (agent.south);
 
-    \draw[-{Stealth[length=3.5mm]}, primary!70!black, dashed, line width=1.2pt, rounded corners=8pt]
-      (15.6,-1.3) -- (15.6,-2.4) -- (9.8,-2.4) -- (9.8,-2.8);
-    \draw[-{Stealth[length=3.5mm]}, primary!70!black, dashed, line width=1.2pt, rounded corners=8pt]
-      (5.8,-2.8) -- (5.8,-2.4) -- (0,-2.4) -- (0,-1.3);
-  \end{tikzpicture}
-  \end{adjustbox}
-  \vspace{6pt}
-  {\small\color{muted}
-   Aucune action n'est exécutée automatiquement — l'opérateur valide toujours avant.}
+  % ── Numéros d'étape ──
+  \foreach \ii/\bb in {1/agent,2/api,3/moteur,4/soc,5/op}{%
+    \node[circle,fill=primary,text=white,inner sep=1.5pt,
+          font=\tiny\bfseries] at (\bb.north east) {\ii};
+  }
+
+\end{tikzpicture}
+\end{adjustbox}
+\end{center}
+\vspace{3pt}
+{\small\centering\color{muted}
+ \faLock\ Aucune action automatique --- l'opérateur valide systématiquement avant exécution}
 \end{frame}
 \note{
   \textbf{[ARCHITECTURE — 6:15]}\\[4pt]
-  L'architecture repose sur un flux simple. Les agents Python, installés sur les
-  machines surveillées, envoient les événements à l'API Laravel via une clé propre
-  à chaque agent. Le moteur de détection analyse ces événements, calcule un score
-  de risque, et déclenche une alerte puis un incident si le seuil est dépassé.
-  L'opérateur consulte la console SOC et valide chaque action avant son exécution~:
-  c'est notre règle d'or, aucune action automatique sans validation humaine.
+  L'architecture suit un circuit~: les agents envoient les événements à l'API Laravel,
+  le moteur calcule le score, la console SOC affiche les alertes, l'opérateur valide
+  l'action, et la réponse est appliquée sur les agents. Aucune action automatique.
 }
 
 % ─── Les 4 composants ─────────────────────────────────────────────────────
@@ -582,21 +625,17 @@
 
 \end{frame}
 \note{
-  \textbf{[LES 4 COMPOSANTS — 7:15]}\\[4pt]
-  Le système repose sur quatre composants. L'agent Python surveille les fichiers
-  en temps réel et conserve une file locale pour ne rien perdre en cas de coupure
-  réseau. La console SOC centralise le suivi~: alertes, incidents, et validation
-  des actions. La découverte réseau scanne automatiquement les sous-réseaux, mais
-  aucun agent ne peut s'enrôler sans validation manuelle de l'administrateur.
-  Enfin, le module de simulation permet de rejouer des scénarios d'attaque
-  réalistes, jusqu'à vingt-deux événements, sans jamais toucher à un vrai malware.
+  \textbf{[4 COMPOSANTS — 7:15]}\\[4pt]
+  L'agent surveille en temps réel et conserve une file locale. La console centralise
+  le suivi. La découverte réseau scanne mais exige une validation manuelle. Le module
+  de simulation rejoue des attaques réalistes sans vrai malware.
 }
 
-% ─── Diagramme de cas d'utilisation (UML TikZ) ───────────────────────────
+% ─── Diagramme de cas d'utilisation ──────────────────────────────────────
 \begin{frame}{Diagramme de cas d'utilisation}
 \vspace{-0.15cm}
 \begin{center}
-\begin{adjustbox}{max width=0.9\textwidth,max totalheight=0.78\textheight,center}
+\begin{adjustbox}{max width=0.90\textwidth,max totalheight=0.78\textheight,center}
 \begin{tikzpicture}[
   uc/.style={
     ellipse, draw=primary, fill=light,
@@ -612,7 +651,7 @@
   }
 ]
 
-%% ── ACTEUR 1 : Administrateur (gauche haut) ──
+%% Acteur Administrateur (haut)
 \draw[fill=darkbg, draw=darkbg, line width=1.4pt]
   (-0.7, 2.85) circle (0.38);
 \draw[darkbg, line width=1.5pt]
@@ -624,7 +663,7 @@
   at (-0.7, 0.75) {Administrateur};
 \coordinate (adminPt) at (-0.05, 2.15);
 
-%% ── ACTEUR 2 : Analyste SOC (gauche bas) ──
+%% Acteur Analyste SOC (bas)
 \draw[fill=primary!75!black, draw=primary!75!black, line width=1.4pt]
   (-0.7, -2.35) circle (0.38);
 \draw[primary!75!black, line width=1.5pt]
@@ -636,14 +675,14 @@
   at (-0.7,-4.45) {Analyste SOC};
 \coordinate (socPt) at (-0.05, -3.1);
 
-%% ── FRONTIÈRE SYSTÈME ──
+%% Frontière système
 \draw[draw=primary, line width=1.8pt, rounded corners=8pt, fill=primary!3]
   (1.5, 4.35) rectangle (11.8, -4.7);
 \node[font=\large\bfseries, text=primary, fill=white, inner sep=6pt,
       rounded corners=5pt, draw=primary, line width=1pt]
   at (6.65, 4.35) {$\ll$\,system\,$\gg$\quad\faIcon{shield-alt}\enspace RansomShield};
 
-%% ── CAS D'UTILISATION (6, colonne unique) ──
+%% Cas d'utilisation
 \node[uc]       (uc1) at (6.5,  3.25)  {Gérer agents \& réseaux};
 \node[uc]       (uc2) at (6.5,  1.95)  {Configurer le système};
 \node[uc]       (uc3) at (6.5,  0.65)  {Lancer une simulation};
@@ -651,15 +690,15 @@
 \node[ucshared] (uc5) at (6.5, -1.95)  {Approuver / rejeter\\une action};
 \node[ucshared] (uc6) at (6.5, -3.25)  {Consulter la timeline\\d'audit};
 
-%% ── ASSOCIATIONS ADMIN (colonne unique, ligne directe, aucun obstacle) ──
+%% Associations Admin
 \foreach \uc in {uc1,uc2,uc3,uc4,uc5,uc6}
   \draw[gray!55, thin] (adminPt) -- (\uc.west);
 
-%% ── ASSOCIATIONS SOC (uniquement les cas partagés) ──
+%% Associations SOC
 \foreach \uc in {uc4,uc5,uc6}
   \draw[primary!55, thin, dashed] (socPt) -- (\uc.west);
 
-%% ── LÉGENDE ──
+%% Légende
 \draw[draw=muted!60, rounded corners=4pt, fill=white]
   (2.5, -4.15) rectangle (11.0, -4.5);
 \node[font=\small, text=textdark, align=center] at (6.75, -4.325) {
@@ -673,12 +712,137 @@
 \end{center}
 \end{frame}
 \note{
-  \textbf{[DIAGRAMME UML — 8:45]}\\[4pt]
-  Le système distingue deux acteurs. L'administrateur gère les agents, configure
-  le système et lance les simulations. L'analyste SOC, lui, se concentre sur le
-  traitement opérationnel~: il visualise les alertes et les incidents, approuve
-  ou rejette les actions de protection, et consulte la timeline d'audit — mais
-  n'a pas accès à la configuration.
+  \textbf{[USE CASE — 8:30]}\\[4pt]
+  L'administrateur gère les agents, configure le système et lance les simulations.
+  L'analyste SOC se concentre sur le traitement opérationnel~: alertes, approbation
+  d'actions, et timeline. Il n'a pas accès à la configuration.
+}
+
+% ─── Diagramme de classes (UML) ───────────────────────────────────────────
+\begin{frame}{Diagramme de classes}
+\vspace{0.05cm}
+\begin{center}
+\begin{adjustbox}{max width=\textwidth,max totalheight=0.84\textheight,center}
+\begin{tikzpicture}[
+  chead/.style={rectangle, draw=primary, fill=primary, line width=1pt,
+    minimum width=3.3cm, minimum height=0.62cm,
+    align=center, font=\small\bfseries, text=white},
+  cbody/.style={rectangle, draw=primary, fill=light, line width=1pt,
+    minimum width=3.3cm, text width=3.0cm,
+    align=left, inner sep=4pt, font=\tiny, text=textdark},
+  rel/.style={-{Stealth[length=3.2mm]}, draw=primary!80, line width=1.1pt},
+  dep/.style={-{Stealth[length=2.8mm]}, draw=primary!50, dashed, line width=0.9pt}
+]
+
+%% ── Macros de placement des classes ──
+% Ligne 1 : y=0  (en-têtes)
+% Ligne 2 : y=-0.62 (corps, ancrés au bas de l'en-tête)
+
+%% ── AGENT ──
+\node[chead] (AgH) at (0,0) {Agent};
+\node[cbody, anchor=north] (AgB) at (AgH.south) {
+  \texttt{--} id : int\\
+  \texttt{--} name : string\\
+  \texttt{--} ip\_address : string\\
+  \texttt{--} api\_key : string\\
+  \texttt{--} status : enum\\
+  \texttt{--} risk\_score : int
+};
+
+%% ── EVENT ──
+\node[chead] (EvH) at (4.5,0) {Event};
+\node[cbody, anchor=north] (EvB) at (EvH.south) {
+  \texttt{--} id : int\\
+  \texttt{--} agent\_id : int\\
+  \texttt{--} file\_path : string\\
+  \texttt{--} event\_type : string\\
+  \texttt{--} signal\_type : string\\
+  \texttt{--} score : int
+};
+
+%% ── ALERT ──
+\node[chead] (AlH) at (9.0,0) {Alert};
+\node[cbody, anchor=north] (AlB) at (AlH.south) {
+  \texttt{--} id : int\\
+  \texttt{--} agent\_id : int\\
+  \texttt{--} total\_score : int\\
+  \texttt{--} level : enum\\
+  \texttt{--} signals : json\\
+  \texttt{--} created\_at : datetime
+};
+
+%% ── INCIDENT ──
+\node[chead] (InH) at (13.5,0) {Incident};
+\node[cbody, anchor=north] (InB) at (InH.south) {
+  \texttt{--} id : int\\
+  \texttt{--} title : string\\
+  \texttt{--} status : enum\\
+  \texttt{--} severity : enum\\
+  \texttt{--} resolved\_at : datetime
+};
+
+%% ── DETECTIONRULE ──
+\node[chead] (DrH) at (4.5,-4.5) {DetectionRule};
+\node[cbody, anchor=north] (DrB) at (DrH.south) {
+  \texttt{--} id : int\\
+  \texttt{--} name : string\\
+  \texttt{--} signal\_type : string\\
+  \texttt{--} score : int\\
+  \texttt{--} enabled : bool
+};
+
+%% ── AUDITLOG ──
+\node[chead] (AuH) at (9.0,-4.5) {AuditLog};
+\node[cbody, anchor=north] (AuB) at (AuH.south) {
+  \texttt{--} id : int\\
+  \texttt{--} user\_id : int\\
+  \texttt{--} action : string\\
+  \texttt{--} loggable\_type : string\\
+  \texttt{--} timestamp : datetime
+};
+
+%% ── PROTECTIONACTION ──
+\node[chead] (PaH) at (13.5,-4.5) {ProtectionAction};
+\node[cbody, anchor=north] (PaB) at (PaH.south) {
+  \texttt{--} id : int\\
+  \texttt{--} incident\_id : int\\
+  \texttt{--} action\_type : enum\\
+  \texttt{--} status : enum\\
+  \texttt{--} approved\_by : int
+};
+
+%% ── RELATIONS ──
+% Pipeline ligne 1
+\draw[rel] (AgH.east |- AgB.center) --
+  node[above,font=\tiny,text=muted]{1..N} (EvH.west |- AgB.center);
+\draw[rel] (EvH.east |- EvB.center) --
+  node[above,font=\tiny,text=muted]{N..1} (AlH.west |- EvB.center);
+\draw[rel] (AlH.east |- AlB.center) --
+  node[above,font=\tiny,text=muted]{N..1} (InH.west |- AlB.center);
+
+% Incident → ProtectionAction (vertical)
+\draw[rel] ([xshift=4pt]InB.south) --
+  node[right,font=\tiny,text=muted]{1..N} ([xshift=4pt]PaH.north);
+
+% Incident → AuditLog (brisé : vertical puis horizontal)
+\draw[rel] ([xshift=-4pt]InB.south) -- ++(0,-0.7)
+  -- ($(AuH.north) + (0,0.7)$) --
+  node[right,font=\tiny,text=muted]{1..N} (AuH.north);
+
+% DetectionRule -uses-> Event (vertical, tirets)
+\draw[dep] (DrH.north) --
+  node[right,font=\tiny,text=muted]{uses} (EvB.south);
+
+\end{tikzpicture}
+\end{adjustbox}
+\end{center}
+\end{frame}
+\note{
+  \textbf{[DIAGRAMME DE CLASSES — 9:15]}\\[4pt]
+  Le diagramme montre sept entités. Le pipeline se lit de gauche à droite~:
+  Agent génère des Events, évalués par DetectionRule, qui créent des Alerts,
+  escaladées en Incidents. Chaque Incident génère des ProtectionActions et
+  des entrées dans l'AuditLog.
 }
 
 % ─── Modèle de données ────────────────────────────────────────────────────
@@ -716,22 +880,19 @@
       \vspace{4pt}
       \begin{tcolorbox}[
         colback=light,colframe=primary,arc=4pt,boxrule=0.6pt,
-        left=6pt,right=6pt,top=4pt,bottom=4pt
+        left=6pt,right=6pt,top=4pt,bottom=4pt,halign=center
       ]
         \tiny\color{textdark}
-        8 tables MySQL --- pipeline complet~:
+        8 tables MySQL --- pipeline complet~:\\
         événement $\to$ alerte $\to$ incident $\to$ action $\to$ audit
       \end{tcolorbox}
   \end{columns}
 
 \end{frame}
 \note{
-  \textbf{[MODÈLE DE DONNÉES — 9:45]}\\[4pt]
-  Le modèle de données repose sur huit tables MySQL. Le pipeline se lit de gauche
-  à droite~: un agent génère des événements, qui déclenchent des alertes, qui
-  créent des incidents, qui donnent lieu à des actions de protection — le tout
-  tracé dans un journal d'audit. Chaque action est horodatée avec l'identité de
-  l'opérateur qui l'a validée. Passons maintenant à la réalisation concrète.
+  \textbf{[MODÈLE DE DONNÉES — 10:15]}\\[4pt]
+  Le modèle repose sur huit tables MySQL. Chaque action est horodatée avec l'identité
+  de l'opérateur qui l'a validée.
 }
 
 % =========================================================================
@@ -787,13 +948,9 @@
 
 \end{frame}
 \note{
-  \textbf{[CHOIX TECHNIQUES — 11:00]}\\[4pt]
-  Côté technique, le backend repose sur Laravel 11 et PHP 8.3, avec une base MySQL
-  et une API sécurisée par une clé propre à chaque agent. L'agent de surveillance
-  est écrit en Python avec la bibliothèque Watchdog, et conserve ses événements
-  dans une file SQLite locale. Le frontend utilise Chart.js en local, sans
-  dépendance externe. Les tests ont été menés sur trois machines virtuelles KVM,
-  avec une authentification à double facteur.
+  \textbf{[CHOIX TECHNIQUES — 11:30]}\\[4pt]
+  Backend Laravel 11, agent Python avec Watchdog, frontend Chart.js en local,
+  tests sur 3 VMs KVM avec 2FA TOTP.
 }
 
 % ─── Agent Python + Moteur ────────────────────────────────────────────────
@@ -812,7 +969,7 @@
           \item Heartbeat toutes les \textbf{30\,s}
         \end{enumerate}
         \vspace{5pt}
-        \textit{\tiny Installation en une commande (Linux, Windows, macOS)~:}\\
+        \textit{\tiny Installation en une commande~:}\\
         {\color{textdark!60}\tiny\ttfamily curl -sSL http://<soc>/install.sh | bash}
       \end{block}
 
@@ -846,14 +1003,9 @@
 
 \end{frame}
 \note{
-  \textbf{[AGENT \& MOTEUR — 12:15]}\\[4pt]
-  Au démarrage, l'agent s'enrôle via un token à usage unique qui lui donne une clé
-  API permanente, puis il surveille les dossiers avec Watchdog et envoie un signal
-  de présence toutes les trente secondes. Le moteur de détection calcule un score
-  cumulatif configurable. Par exemple~: un fichier renommé en \texttt{.locked}
-  vaut 80 points, une note de rançon 55 points~; le total de 135 déclenche
-  immédiatement une alerte critique et la création d'un incident. Tout ce
-  processus prend moins de cinq secondes.
+  \textbf{[AGENT — 12:45]}\\[4pt]
+  Un fichier renommé en \texttt{.locked} (+80) et une note de rançon (+55) donnent
+  135 points : alerte critique et incident créés en moins de cinq secondes.
 }
 
 % ─── Console SOC ──────────────────────────────────────────────────────────
@@ -872,7 +1024,6 @@
           \faCheckSquare & File d'approbation \\
           \faGavel       & Règles (CRUD live) \\
           \faSearch      & Recherche globale \\
-          \faBell        & Notifications \\
           \faCog         & Paramètres système \\
         \end{tabular}
       \end{block}
@@ -892,13 +1043,10 @@
 
 \end{frame}
 \note{
-  \textbf{[CONSOLE SOC — 13:30]}\\[4pt]
-  La console SOC centralise dix pages fonctionnelles, avec un tableau de bord mis
-  à jour automatiquement toutes les trente secondes. Le point important, c'est que
-  toute action de protection passe par une file d'approbation~: l'analyste doit
-  explicitement valider ou rejeter chaque action avant qu'elle ne s'exécute.
-  Les notifications partent simultanément par quatre canaux~: le web, l'e-mail,
-  le son, et un webhook. Vous verrez tout cela dans la démonstration.
+  \textbf{[CONSOLE SOC — 14:00]}\\[4pt]
+  La console centralise neuf pages. Toute action passe par la file d'approbation~:
+  l'analyste valide ou rejette explicitement. Les notifications partent sur quatre
+  canaux simultanément.
 }
 
 % ─── Tests de validation ──────────────────────────────────────────────────
@@ -921,7 +1069,7 @@
           \bottomrule
         \end{tabular}
         \vspace{3pt}
-        {\tiny\color{muted} Environnement~: 3 VMs KVM --- réseau \texttt{10.20.0.0/24}}
+        {\tiny\color{muted} 3 VMs KVM --- réseau \texttt{10.20.0.0/24}}
       \end{block}
 
     \column{0.47\textwidth}
@@ -930,8 +1078,7 @@
         \begin{itemize}\setlength\itemsep{2pt}
           \item[\ok] Détection en \textbf{$<$ 5 secondes} (tous scénarios)
           \item[\ok] Aucun événement perdu (file SQLite)
-          \item[\ok] Pipeline complet validé :
-                     événement $\to$ alerte $\to$ incident $\to$ timeline
+          \item[\ok] Pipeline complet validé bout en bout
           \item[\ok] Rollback isolation réseau fonctionnel
           \item[\ok] 2FA TOTP et API sécurisée (per-agent)
         \end{itemize}
@@ -945,25 +1092,25 @@
 
 \end{frame}
 \note{
-  \textbf{[TESTS \& RÉSULTATS — 14:45]}\\[4pt]
-  Nous avons validé le système sur cinq scénarios d'attaque, de sept à vingt-deux
-  événements. Tous ont été détectés en moins de cinq secondes, sans perte
-  d'événement, avec un pipeline complet validé de bout en bout, de l'événement
-  jusqu'à la timeline. Je précise honnêtement une limite~: les tests ont été
-  conduits uniquement sur Linux, et un attaquant qui ralentirait son rythme
-  resterait moins visible. Passons maintenant à la démonstration du système.
+  \textbf{[TESTS — 15:15]}\\[4pt]
+  Cinq scénarios validés, de 5 à 22 événements, tous détectés en moins de cinq
+  secondes. Je précise une limite~: tests Linux uniquement.
 }
 
 % ─────────────────────────────────────────────────────────────────────────
-%  SLIDE TRANSITION DÉMONSTRATION
+%  SLIDE DÉMONSTRATION
 % ─────────────────────────────────────────────────────────────────────────
 {
 \setbeamertemplate{headline}{}
 \setbeamertemplate{footline}{}
+\setbeamertemplate{background}{}
 \begin{frame}[plain,noframenumbering]
   \begin{tikzpicture}[overlay,remember picture]
-    \fill[primary]
+    \shade[top color=darkbg,bottom color=primary!85!darkbg]
       (current page.north west) rectangle (current page.south east);
+    \node[anchor=center,opacity=0.07,
+          font=\fontsize{155}{155}\selectfont,text=white]
+      at (current page.center) {\faIcon{shield-alt}};
     \node[anchor=center,font=\Huge\bfseries\color{white}]
       at ([yshift=1cm]current page.center)
       {\faPlay\quad Démonstration Live};
@@ -974,17 +1121,17 @@
 \end{frame}
 }
 \note{
-  \textbf{[DÉMO LIVE — 15:00, checklist 5 min, hors chrono présentation]}\\[4pt]
+  \textbf{[DÉMO LIVE — 16:00, checklist 5 min, hors chrono présentation]}\\[4pt]
   1. Ouvrir \texttt{http://10.20.0.1} (console SOC)\\[3pt]
   2. Se connecter : identifiants + \textbf{code 2FA}\\[3pt]
   3. Vérifier : 3 agents en ligne (heartbeat vert)\\[3pt]
-  4. \textbf{Agents} $\to$ VM-02 $\to$ \textbf{Lancer simulation} $\to$ "Kill chain complète" (22 évts)\\[3pt]
+  4. \textbf{Agents} $\to$ VM-02 $\to$ \textbf{Lancer simulation} $\to$ "Kill chain complète"\\[3pt]
   5. \textbf{Dashboard} : le score monte en temps réel\\[3pt]
-  6. \textbf{Alertes} : niveau Critique + signaux détectés\\[3pt]
+  6. \textbf{Alertes} : niveau Critique\\[3pt]
   7. \textbf{Incidents} : ouvrir l'incident auto-créé\\[3pt]
   8. \textbf{File d'approbation} : approuver l'isolation réseau\\[3pt]
   9. \textbf{Timeline} : tout est horodaté et tracé\\[3pt]
-  \textit{Rester calme, ne pas se précipiter — chaque étape a le temps qu'il faut.}
+  \textit{Rester calme, ne pas se précipiter.}
 }
 
 % =========================================================================
@@ -1023,17 +1170,9 @@
 
 \end{frame}
 \note{
-  \textbf{[CONCLUSION \& PERSPECTIVES — 20:00]}\\[4pt]
-  En résumé, RansomShield est une solution fonctionnelle qui couvre tout le cycle
-  de traitement d'un incident~: collecte, analyse, alerte, réponse et audit.
-  Elle repose sur un agent multi-plateforme, une console complète, un moteur de
-  détection réactif, et un contrôle humain à chaque étape. Ce travail a ses
-  limites~: il a été testé dans un environnement contrôlé, avec des réponses en
-  partie simulées. Les perspectives sont claires~: ajouter le chiffrement HTTPS,
-  des rôles distincts pour les utilisateurs, puis à terme du machine learning
-  pour affiner la détection, et une intégration avec les outils SIEM du marché.
-  Je vous remercie pour votre attention et reste à votre disposition pour vos
-  questions.
+  \textbf{[CONCLUSION — 20:00]}\\[4pt]
+  RansomShield couvre tout le cycle d'un incident. Ses limites sont assumées~: tests
+  Linux, LAN sans HTTPS. Les perspectives visent HTTPS, RBAC, ML et MITRE ATT\&CK.
 }
 
 % ─────────────────────────────────────────────────────────────────────────
@@ -1042,11 +1181,15 @@
 {
 \setbeamertemplate{headline}{}
 \setbeamertemplate{footline}{}
+\setbeamertemplate{background}{}
 \begin{frame}[plain,noframenumbering]
 
   \begin{tikzpicture}[overlay,remember picture]
     \shade[top color=darkbg,bottom color=primary!80!darkbg]
       (current page.north west) rectangle (current page.south east);
+    \node[anchor=center,opacity=0.06,
+          font=\fontsize{155}{155}\selectfont,text=white]
+      at (current page.center) {\faIcon{shield-alt}};
   \end{tikzpicture}
 
   \centering\vspace{0.8cm}
@@ -1055,13 +1198,13 @@
 
   \vspace{0.6cm}
 
-  {\color{primary!40!white}\fontsize{52}{52}\selectfont ?}
+  {\color{gold}\fontsize{52}{52}\selectfont ?}
 
   \vspace{0.6cm}
 
   \begin{tcolorbox}[
-    colback=white!8!darkbg,colframe=primary,
-    arc=8pt,boxrule=1.2pt,width=0.70\textwidth,center,
+    colback=white!8!darkbg,colframe=gold,
+    arc=8pt,boxrule=1.5pt,width=0.70\textwidth,center,
     halign=center,left=12pt,right=12pt,top=10pt,bottom=10pt
   ]
     \color{white}\small
@@ -1073,13 +1216,13 @@
 \end{frame}
 }
 \note{
-  \textbf{[QUESTIONS DU JURY — aide-mémoire]}\\[4pt]
-  \textbullet\ \ \textbf{Pourquoi Python et pas C/Go ?} $\to$ Watchdog exploite inotify nativement, CPU minimal, portable Linux/Windows/macOS\\[3pt]
-  \textbullet\ \ \textbf{Faux positifs ?} $\to$ seuils configurables, \textbf{opérateur humain} valide ou rejette chaque action\\[3pt]
-  \textbullet\ \ \textbf{Pourquoi pas HTTPS ?} $\to$ LAN contrôlé ; c'est la 1\textsuperscript{re} perspective pour la prod\\[3pt]
-  \textbullet\ \ \textbf{Différence avec un antivirus ?} $\to$ comportement, pas signature ; fonctionne sur variantes inconnues\\[3pt]
-  \textbullet\ \ \textbf{Testé sur Windows ?} $\to$ Non, limite assumée : Linux uniquement\\[3pt]
-  \textit{Garder les \textbf{annexes} prêtes (file d'approbation, captures d'écran).}
+  \textbf{[QUESTIONS DU JURY]}\\[4pt]
+  \textbullet\ \textbf{Pourquoi Python et pas C/Go ?} Watchdog exploite inotify nativement, CPU minimal, portable\\[3pt]
+  \textbullet\ \textbf{Faux positifs ?} Seuils configurables, opérateur humain valide ou rejette\\[3pt]
+  \textbullet\ \textbf{Pourquoi pas HTTPS ?} LAN contrôlé ; 1\textsuperscript{re} perspective pour la prod\\[3pt]
+  \textbullet\ \textbf{Différence avec un antivirus ?} Comportement, pas signature ; variantes inconnues couvertes\\[3pt]
+  \textbullet\ \textbf{Testé sur Windows ?} Non, limite assumée : Linux uniquement\\[3pt]
+  \textit{Garder les \textbf{annexes} prêtes.}
 }
 
 % =========================================================================
