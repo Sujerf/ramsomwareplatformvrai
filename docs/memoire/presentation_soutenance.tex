@@ -1,12 +1,7 @@
 % =========================================================================
-%  RansomShield — Présentation de soutenance  (design bleu IFRI v2)
+%  RansomShield — Présentation de soutenance  (design orange IFRI v3)
 %  IFRI-UAC | Codjo Fréjus Loïc SANGRONIO | Ing. Guy KPEDJO | 2023-2024
 %  Compilateur : pdfLaTeX
-%
-%  DEUX PDF GÉNÉRÉS :
-%    ./build.sh
-%      → presentation_soutenance.pdf        (à projeter)
-%      → presentation_soutenance_notes.pdf  (avec notes orateur)
 % =========================================================================
 
 \documentclass[aspectratio=169,t,10pt]{beamer}
@@ -19,7 +14,7 @@
 \usepackage{xcolor}
 \usepackage{graphicx}
 \usepackage{tikz}
-\usetikzlibrary{arrows.meta,positioning,fit,backgrounds,shadows.blur,calc,shapes.geometric}
+\usetikzlibrary{arrows.meta,positioning,fit,backgrounds,calc,shapes.geometric}
 \usepackage{fontawesome5}
 \usepackage{booktabs}
 \usepackage{tabularx}
@@ -38,18 +33,18 @@
 \fi
 
 % =========================================================================
-%  PALETTE
+%  PALETTE — couleurs IFRI orange
 % =========================================================================
-\definecolor{primary}   {RGB}{  0,  82, 165}   % bleu IFRI
-\definecolor{darkblue}  {RGB}{ 10,  40,  90}
-\definecolor{darkbg}    {RGB}{ 12,  28,  68}
-\definecolor{light}     {RGB}{232, 240, 252}
-\definecolor{muted}     {RGB}{100, 100, 110}
-\definecolor{crit}      {RGB}{185,  28,  28}
-\definecolor{high}      {RGB}{194,  96,  10}
-\definecolor{norm}      {RGB}{ 22, 128,  65}
-\definecolor{textdark}  {RGB}{ 18,  22,  55}
-\definecolor{gold}      {RGB}{212, 175,  55}
+\definecolor{primary}  {RGB}{228,  92,  16}   % orange IFRI
+\definecolor{dprimary} {RGB}{168,  58,   8}   % orange foncé
+\definecolor{darkbg}   {RGB}{ 22,  28,  48}   % fond sombre (slides spéciaux)
+\definecolor{light}    {RGB}{255, 243, 230}   % orange très pâle
+\definecolor{textdark} {RGB}{ 22,  25,  42}   % texte principal
+\definecolor{muted}    {RGB}{130, 130, 140}
+\definecolor{crit}     {RGB}{185,  28,  28}
+\definecolor{high}     {RGB}{210, 100,  10}
+\definecolor{norm}     {RGB}{ 22, 128,  65}
+\definecolor{accent}   {RGB}{ 30, 140, 190}
 
 % =========================================================================
 %  THÈME BEAMER
@@ -71,7 +66,7 @@
 \setbeamertemplate{itemize subitem}  {\textcolor{primary!70}{\footnotesize$\triangleright$}}
 \setbeamertemplate{navigation symbols}{}
 
-% Frametitle : barre bleue pleine + filet doré
+% Frametitle : barre orange + filet foncé
 \setbeamercolor{frametitle}{fg=white,bg=primary}
 \setbeamerfont{frametitle}{size=\normalsize,series=\bfseries}
 \setbeamertemplate{frametitle}{%
@@ -80,21 +75,23 @@
     \usebeamerfont{frametitle}\insertframetitle%
   \end{beamercolorbox}%
   \nointerlineskip%
-  \begin{beamercolorbox}[wd=\paperwidth,ht=0.28ex,dp=0pt,colsep=0pt]{goldline}%
+  \begin{beamercolorbox}[wd=\paperwidth,ht=0.30ex,dp=0pt]{accentline}%
   \end{beamercolorbox}%
 }
-\setbeamercolor{goldline}{bg=gold}
+\setbeamercolor{accentline}{bg=dprimary}
 
-% Filigrane : bouclier discret + triangle coin
+% ─── Filigrane : arcs concentriques élégants depuis le coin bas-droite ───
 \setbeamertemplate{background}{%
   \begin{tikzpicture}[overlay,remember picture]
-    \node[anchor=south east, opacity=0.055, inner sep=0pt]
-      at ([xshift=-0.5cm,yshift=0.7cm]current page.south east)
-      {\fontsize{98}{98}\selectfont\color{primary}\faIcon{shield-alt}};
-    \fill[primary,opacity=0.04]
-      (current page.north east) --
-      ([xshift=-2.8cm]current page.north east) --
-      ([yshift=-2.8cm]current page.north east) -- cycle;
+    \foreach \rr in {2.5,4.5,6.5,8.5,10.5,12.5}{%
+      \draw[primary,opacity=0.038,line width=0.9pt]
+        ([xshift=\rr cm]current page.south east)
+        arc(0:90:\rr cm);
+    }
+    \fill[primary,opacity=0.07]
+      (current page.north west) --
+      ([xshift=0.42cm]current page.north west) --
+      ([yshift=-0.42cm]current page.north west) -- cycle;
   \end{tikzpicture}%
 }
 
@@ -113,7 +110,7 @@
 \setbeamercolor{section in head/foot}{fg=white,bg=primary}
 
 % =========================================================================
-%  CHEMINS
+%  CHEMINS IMAGES
 % =========================================================================
 \graphicspath{%
   {New_IFRI_template_latex_05_04_2020_Bachelor___Licence__2_-2/images/}%
@@ -129,48 +126,32 @@
 \newcommand{\warn}{\textcolor{high}{\faExclamationCircle}\ }
 \newcommand{\arr} {\textcolor{primary}{\small\faChevronRight}\ }
 
-% Slide séparateur de section
-\newcommand{\sectionslide}[3]{%
+% Slide séparateur de section (bande diagonale orange + arcs concentriques)
+\newcommand{\sectionslide}[2]{%
   \begin{frame}[plain,noframenumbering]%
     \begin{tikzpicture}[overlay,remember picture]%
-      % Bande gauche sombre
-      \fill[darkbg]
+      \fill[white](current page.north west) rectangle (current page.south east);
+      \fill[primary]
         (current page.north west) --
-        ([xshift=6.0cm]current page.north west) --
-        ([xshift=4.2cm]current page.south west) --
+        ([xshift=5.6cm]current page.north west) --
+        ([xshift=3.7cm]current page.south west) --
         (current page.south west) -- cycle;
-      % Filet doré sur la bande
-      \fill[gold]
-        ([xshift=5.96cm]current page.north west) --
-        ([xshift=6.24cm]current page.north west) --
-        ([xshift=4.46cm]current page.south west) --
-        ([xshift=4.18cm]current page.south west) -- cycle;
-      % Grande icône en filigrane dans la bande
-      \node[anchor=center,
-            font=\fontsize{88}{88}\selectfont,
-            text=white,opacity=0.10]
-        at ([xshift=2.7cm,yshift=1.4cm]current page.west) {\faIcon{#3}};
-      % Numéro en filigrane vertical
-      \node[anchor=center,rotate=90,
-            font=\fontsize{52}{52}\selectfont\bfseries,
-            text=white,opacity=0.18]
-        at ([xshift=2.7cm,yshift=-2.1cm]current page.west) {#1};
-      % Bouclier filigrane côté droit
-      \node[anchor=center,opacity=0.04,
-            font=\fontsize{110}{110}\selectfont,text=primary]
-        at ([xshift=2.8cm,yshift=0cm]current page.east) {\faIcon{shield-alt}};
-      % Titre
-      \node[anchor=west, font=\LARGE\bfseries, text=textdark]
-        at ([xshift=7.3cm,yshift=0.5cm]current page.west)
-        {\textcolor{primary}{\large\faIcon{#3}}\ \ #2};
-      % Filet primaire
+      \node[rotate=90,font=\fontsize{80}{80}\selectfont\bfseries,
+            text=white,opacity=0.20,anchor=center]
+        at ([xshift=2.2cm]current page.west) {#1};
+      \foreach \rr in {3.0,5.5,8.0,10.5}{%
+        \draw[primary,opacity=0.06,line width=0.9pt]
+          ([xshift=\rr cm]current page.south east) arc(0:90:\rr cm);
+      }
+      \node[anchor=west,font=\LARGE\bfseries,text=textdark,
+            text width=9.5cm,align=left]
+        at ([xshift=7.2cm,yshift=0.62cm]current page.west) {#2};
       \draw[primary,line width=3pt]
-        ([xshift=7.3cm,yshift=-0.35cm]current page.west) --
-        ([xshift=15.3cm,yshift=-0.35cm]current page.west);
-      % Filet doré (court)
-      \draw[gold,line width=1.8pt]
-        ([xshift=7.3cm,yshift=-0.70cm]current page.west) --
-        ([xshift=10.8cm,yshift=-0.70cm]current page.west);
+        ([xshift=7.2cm,yshift=0.0cm]current page.west) --
+        ([xshift=15.2cm,yshift=0.0cm]current page.west);
+      \draw[dprimary,line width=2pt]
+        ([xshift=7.2cm,yshift=-0.45cm]current page.west) --
+        ([xshift=10.4cm,yshift=-0.45cm]current page.west);
     \end{tikzpicture}%
   \end{frame}%
 }
@@ -199,25 +180,22 @@
 \setbeamertemplate{footline}{}
 \setbeamertemplate{background}{%
   \begin{tikzpicture}[overlay,remember picture]
-    % Bande bleue de pied
     \fill[primary]
       (current page.south west) rectangle
-      ([yshift=1.9em]current page.south east);
-    % Filet doré au pied
-    \fill[gold]
-      ([yshift=1.88em]current page.south west) rectangle
-      ([yshift=2.08em]current page.south east);
-    % Bande subtile en haut
-    \fill[darkbg,opacity=0.07]
+      ([yshift=2.0em]current page.south east);
+    \fill[dprimary]
+      ([yshift=1.96em]current page.south west) rectangle
+      ([yshift=2.22em]current page.south east);
+    \fill[primary,opacity=0.09]
       (current page.north west) rectangle
-      ([yshift=-0.5cm]current page.north east);
-    \fill[gold]
-      ([yshift=-0.48cm]current page.north west) rectangle
-      ([yshift=-0.58cm]current page.north east);
-    % Bouclier filigrane
-    \node[anchor=south east, opacity=0.07, inner sep=0pt]
-      at ([xshift=-0.3cm,yshift=2.8cm]current page.south east)
-      {\fontsize{145}{145}\selectfont\color{primary}\faIcon{shield-alt}};
+      ([yshift=-0.55cm]current page.north east);
+    \fill[dprimary,opacity=0.6]
+      ([yshift=-0.53cm]current page.north west) rectangle
+      ([yshift=-0.66cm]current page.north east);
+    \foreach \rr in {3.0,5.5,8.0,10.5,13.0}{%
+      \draw[primary,opacity=0.07,line width=1.0pt]
+        ([xshift=\rr cm]current page.south east) arc(0:90:\rr cm);
+    }
   \end{tikzpicture}%
 }
 \begin{frame}[plain,noframenumbering]
@@ -229,25 +207,26 @@
       at (current page.north east)
       {\includegraphics[height=1.35cm]{logoIfri}};
     \node[anchor=west,font=\tiny\color{white},inner sep=6pt]
-      at ([yshift=0.95em]current page.south west)
+      at ([yshift=1.0em]current page.south west)
       {Codjo Fréjus Loïc SANGRONIO};
     \node[anchor=center,font=\tiny\color{white}]
-      at ([yshift=0.95em]current page.south)
+      at ([yshift=1.0em]current page.south)
       {RansomShield --- Détection \& Réponse ransomware};
     \node[anchor=east,font=\tiny\color{white},inner sep=6pt]
-      at ([yshift=0.95em]current page.south east)
+      at ([yshift=1.0em]current page.south east)
       {24 juin 2026 \quad 1\,/\,\inserttotalframenumber};
   \end{tikzpicture}
 
-  \vspace{1.5cm}
+  \vspace{1.6cm}
 
   \begin{tcolorbox}[
-    colback=primary,colframe=darkblue,
-    arc=10pt,boxrule=0pt,halign=center,
-    left=18pt,right=18pt,top=14pt,bottom=14pt,
-    drop shadow={opacity=0.35,shadow xshift=0pt,shadow yshift=-4pt},
-    borderline west={4pt}{0pt}{gold},
-    borderline east={4pt}{0pt}{gold}
+    enhanced,
+    colback=primary,colframe=dprimary,
+    arc=12pt,boxrule=0pt,halign=center,
+    left=20pt,right=20pt,top=16pt,bottom=16pt,
+    drop shadow,
+    borderline west={5pt}{0pt}{dprimary},
+    borderline east={5pt}{0pt}{dprimary}
   ]
     {\large\bfseries\color{white}
      Conception et mise en place d'un système de\\[6pt]
@@ -255,7 +234,7 @@
      dans un environnement contrôlé}
   \end{tcolorbox}
 
-  \vspace{0.45cm}
+  \vspace{0.5cm}
   \centering
   {\normalsize\bfseries Codjo Fréjus Loïc SANGRONIO}\\[4pt]
   {\small Licence Informatique --- Option Sécurité Informatique}\\[8pt]
@@ -283,37 +262,63 @@
 }
 
 % ─────────────────────────────────────────────────────────────────────────
-%  SLIDE 2 — SOMMAIRE
+%  SLIDE 2 — PLAN (style référence IFRI)
 % ─────────────────────────────────────────────────────────────────────────
-\begin{frame}{Sommaire}
-  \vspace{0.3cm}
-  \begin{columns}[T]
-    \column{0.58\textwidth}
-      \begin{enumerate}\setlength\itemsep{11pt}
-        \item[\textcolor{primary}{\bfseries\large 1.}] Introduction Générale
-        \item[\textcolor{primary}{\bfseries\large 2.}] Revue de littérature
-        \item[\textcolor{primary}{\bfseries\large 3.}] Analyse et Conception
-        \item[\textcolor{primary}{\bfseries\large 4.}] Réalisation et Résultats
-        \item[\textcolor{primary}{\bfseries\large 5.}] Conclusion et Perspectives
-      \end{enumerate}
-    \column{0.39\textwidth}
-      \begin{tcolorbox}[
-        colback=light,colframe=primary,arc=6pt,boxrule=1pt,
-        title={\small\faClock\quad Informations pratiques},
-        coltitle=white,fonttitle=\bfseries\small,
-        attach boxed title to top left={yshift=-2mm,xshift=4mm},
-        boxed title style={colback=primary,arc=3pt,boxrule=0pt}
-      ]
-        \small\color{textdark}
-        \begin{tabular}{@{}r@{\;:\;}l@{}}
-          Présentation & \textbf{10 min} \\[4pt]
-          Diapositives & \textbf{18}     \\[4pt]
-          Démo live    & \textbf{5 min}  \\[4pt]
-          VMs test     & 3 KVM           \\
-        \end{tabular}
-      \end{tcolorbox}
-  \end{columns}
+{
+\setbeamertemplate{headline}{}
+\setbeamertemplate{footline}{}
+\setbeamertemplate{background}{}
+\begin{frame}[plain,noframenumbering]
+  \begin{tikzpicture}[overlay,remember picture]
+    \fill[white](current page.north west) rectangle (current page.south east);
+    % Bande diagonale orange gauche
+    \fill[primary]
+      (current page.north west) --
+      ([xshift=5.2cm]current page.north west) --
+      ([xshift=3.3cm]current page.south west) --
+      (current page.south west) -- cycle;
+    % "PLAN" fantôme vertical
+    \node[rotate=90,font=\fontsize{62}{62}\selectfont\bfseries,
+          text=white,opacity=0.22,anchor=center]
+      at ([xshift=1.9cm]current page.west) {PLAN};
+    % Arcs filigrane droit
+    \foreach \rr in {3.0,5.5,8.0,10.5}{%
+      \draw[primary,opacity=0.055,line width=0.8pt]
+        ([xshift=\rr cm]current page.south east) arc(0:90:\rr cm);
+    }
+    % Item 1
+    \draw[primary,fill=white,line width=2.2pt]
+      ([xshift=6.2cm,yshift=7.05cm]current page.south west) circle (0.36cm);
+    \node[anchor=west,font=\large\bfseries,text=textdark]
+      at ([xshift=6.75cm,yshift=7.05cm]current page.south west)
+      {Introduction Générale};
+    % Item 2
+    \draw[primary,fill=white,line width=2.2pt]
+      ([xshift=6.2cm,yshift=5.80cm]current page.south west) circle (0.36cm);
+    \node[anchor=west,font=\large\bfseries,text=textdark]
+      at ([xshift=6.75cm,yshift=5.80cm]current page.south west)
+      {Revue de littérature};
+    % Item 3
+    \draw[primary,fill=white,line width=2.2pt]
+      ([xshift=6.2cm,yshift=4.55cm]current page.south west) circle (0.36cm);
+    \node[anchor=west,font=\large\bfseries,text=textdark]
+      at ([xshift=6.75cm,yshift=4.55cm]current page.south west)
+      {Analyse et Conception};
+    % Item 4
+    \draw[primary,fill=white,line width=2.2pt]
+      ([xshift=6.2cm,yshift=3.30cm]current page.south west) circle (0.36cm);
+    \node[anchor=west,font=\large\bfseries,text=textdark]
+      at ([xshift=6.75cm,yshift=3.30cm]current page.south west)
+      {Réalisation et Résultats};
+    % Item 5
+    \draw[primary,fill=white,line width=2.2pt]
+      ([xshift=6.2cm,yshift=2.05cm]current page.south west) circle (0.36cm);
+    \node[anchor=west,font=\large\bfseries,text=textdark]
+      at ([xshift=6.75cm,yshift=2.05cm]current page.south west)
+      {Conclusion et Perspectives};
+  \end{tikzpicture}
 \end{frame}
+}
 \note{
   \textbf{[SOMMAIRE — 0:30]}\\[4pt]
   Ma présentation s'articule en cinq parties~: le contexte et la problématique,
@@ -325,7 +330,7 @@
 \section{Introduction Générale}
 % =========================================================================
 
-\sectionslide{01}{Introduction Générale}{bullseye}
+\sectionslide{01}{Introduction Générale}
 
 % ─── Contexte ─────────────────────────────────────────────────────────────
 \begin{frame}{Introduction Générale --- Contexte}
@@ -358,16 +363,17 @@
   il faut en moyenne 21 jours pour les détecter.
 }
 
-% ─── Problématique (affirmative, slide dédié) ─────────────────────────────
+% ─── Problématique (affirmative) ─────────────────────────────────────────
 \begin{frame}{Problématique}
   \vspace{0.2cm}
   \begin{center}
   \begin{tcolorbox}[
-    colback=darkbg,colframe=gold,
-    arc=12pt,boxrule=1.8pt,
+    enhanced,
+    colback=darkbg,colframe=primary,
+    arc=12pt,boxrule=2pt,
     left=20pt,right=20pt,top=15pt,bottom=15pt,
     width=0.93\textwidth,
-    drop shadow={opacity=0.30,shadow xshift=0pt,shadow yshift=-3pt}
+    drop shadow
   ]
     \centering
     {\large\bfseries\color{white}
@@ -449,7 +455,7 @@
 \section{Revue de littérature}
 % =========================================================================
 
-\sectionslide{02}{Revue de littérature}{book}
+\sectionslide{02}{Revue de littérature}
 
 % ─── Définition + comportements ───────────────────────────────────────────
 \begin{frame}{Revue de littérature --- Définition et comportements}
@@ -523,9 +529,9 @@
 \section{Analyse et Conception}
 % =========================================================================
 
-\sectionslide{03}{Analyse et Conception}{drafting-compass}
+\sectionslide{03}{Analyse et Conception}
 
-% ─── Architecture (2 lignes, circuit) ─────────────────────────────────────
+% ─── Architecture ─────────────────────────────────────────────────────────
 \begin{frame}{Architecture générale de RansomShield}
 \vspace{0.1cm}
 \begin{center}
@@ -538,14 +544,13 @@
   },
   boxop/.style={
     rectangle, rounded corners=8pt,
-    draw=gold!80!black, line width=1.5pt,
-    fill=gold!15, minimum width=5.2cm, minimum height=2.2cm,
+    draw=dprimary, line width=1.5pt,
+    fill=primary!15, minimum width=5.2cm, minimum height=2.2cm,
     align=center, font=\normalsize, text=textdark
   },
   fwd/.style={-{Stealth[length=4mm]}, primary, line width=1.6pt},
   back/.style={-{Stealth[length=3.5mm]}, primary!55, dashed, line width=1.2pt, rounded corners=8pt}
 ]
-  % ── Ligne du haut ──
   \node[box] (agent) at (0,    0) {
     \Large\faDesktop\\[4pt]\textbf{Agents Python}\\
     \small Windows / Linux / macOS};
@@ -555,8 +560,6 @@
   \node[box] (moteur)at (11.0, 0) {
     \Large\faBrain\\[4pt]\textbf{Moteur Détection}\\
     \small Score de risque};
-
-  % ── Ligne du bas ──
   \node[box]   (soc) at (11.0,-3.8) {
     \Large\faChartBar\\[4pt]\textbf{Console SOC}\\
     \small Alertes \& Incidents};
@@ -564,14 +567,12 @@
     \Large\faUserCheck\\[4pt]\textbf{Opérateur humain}\\
     \small valide chaque action};
 
-  % ── Flèches circuit ──
   \draw[fwd] (agent.east)  -- node[above,font=\tiny\color{muted}]{événements} (api.west);
   \draw[fwd] (api.east)    -- node[above,font=\tiny\color{muted}]{analyse}    (moteur.west);
   \draw[fwd] (moteur.south)-- node[right,font=\tiny\color{muted}]{alertes}    (soc.north);
   \draw[fwd] (soc.west)    -- node[above,font=\tiny\color{muted}]{approbation}(op.east);
   \draw[back] (op.west) -- ++(-1.2,0) |- (agent.south);
 
-  % ── Numéros d'étape ──
   \foreach \ii/\bb in {1/agent,2/api,3/moteur,4/soc,5/op}{%
     \node[circle,fill=primary,text=white,inner sep=1.5pt,
           font=\tiny\bfseries] at (\bb.north east) {\ii};
@@ -644,14 +645,13 @@
     inner sep=4pt, text=textdark
   },
   ucshared/.style={
-    ellipse, draw=primary!70!black, fill=primary!15,
+    ellipse, draw=dprimary, fill=primary!20,
     font=\large\bfseries, align=center,
     text width=5.0cm, minimum height=1.1cm,
     inner sep=4pt, text=textdark
   }
 ]
 
-%% Acteur Administrateur (haut)
 \draw[fill=darkbg, draw=darkbg, line width=1.4pt]
   (-0.7, 2.85) circle (0.38);
 \draw[darkbg, line width=1.5pt]
@@ -663,7 +663,6 @@
   at (-0.7, 0.75) {Administrateur};
 \coordinate (adminPt) at (-0.05, 2.15);
 
-%% Acteur Analyste SOC (bas)
 \draw[fill=primary!75!black, draw=primary!75!black, line width=1.4pt]
   (-0.7, -2.35) circle (0.38);
 \draw[primary!75!black, line width=1.5pt]
@@ -675,14 +674,12 @@
   at (-0.7,-4.45) {Analyste SOC};
 \coordinate (socPt) at (-0.05, -3.1);
 
-%% Frontière système
 \draw[draw=primary, line width=1.8pt, rounded corners=8pt, fill=primary!3]
   (1.5, 4.35) rectangle (11.8, -4.7);
 \node[font=\large\bfseries, text=primary, fill=white, inner sep=6pt,
       rounded corners=5pt, draw=primary, line width=1pt]
-  at (6.65, 4.35) {$\ll$\,system\,$\gg$\quad\faIcon{shield-alt}\enspace RansomShield};
+  at (6.65, 4.35) {$\ll$\,system\,$\gg$\quad\faIcon{layer-group}\enspace RansomShield};
 
-%% Cas d'utilisation
 \node[uc]       (uc1) at (6.5,  3.25)  {Gérer agents \& réseaux};
 \node[uc]       (uc2) at (6.5,  1.95)  {Configurer le système};
 \node[uc]       (uc3) at (6.5,  0.65)  {Lancer une simulation};
@@ -690,21 +687,18 @@
 \node[ucshared] (uc5) at (6.5, -1.95)  {Approuver / rejeter\\une action};
 \node[ucshared] (uc6) at (6.5, -3.25)  {Consulter la timeline\\d'audit};
 
-%% Associations Admin
 \foreach \uc in {uc1,uc2,uc3,uc4,uc5,uc6}
   \draw[gray!55, thin] (adminPt) -- (\uc.west);
 
-%% Associations SOC
 \foreach \uc in {uc4,uc5,uc6}
   \draw[primary!55, thin, dashed] (socPt) -- (\uc.west);
 
-%% Légende
 \draw[draw=muted!60, rounded corners=4pt, fill=white]
   (2.5, -4.15) rectangle (11.0, -4.5);
 \node[font=\small, text=textdark, align=center] at (6.75, -4.325) {
   \tikz{\draw[primary,fill=light](0,0)ellipse(0.28 and 0.15);}\ \ Admin seul
   \qquad
-  \tikz{\draw[primary!70!black,fill=primary!15](0,0)ellipse(0.28 and 0.15);}\ \ Partagé SOC
+  \tikz{\draw[dprimary,fill=primary!20](0,0)ellipse(0.28 and 0.15);}\ \ Partagé SOC
 };
 
 \end{tikzpicture}
@@ -718,7 +712,7 @@
   d'actions, et timeline. Il n'a pas accès à la configuration.
 }
 
-% ─── Diagramme de classes (UML) ───────────────────────────────────────────
+% ─── Diagramme de classes ─────────────────────────────────────────────────
 \begin{frame}{Diagramme de classes}
 \vspace{0.05cm}
 \begin{center}
@@ -734,11 +728,6 @@
   dep/.style={-{Stealth[length=2.8mm]}, draw=primary!50, dashed, line width=0.9pt}
 ]
 
-%% ── Macros de placement des classes ──
-% Ligne 1 : y=0  (en-têtes)
-% Ligne 2 : y=-0.62 (corps, ancrés au bas de l'en-tête)
-
-%% ── AGENT ──
 \node[chead] (AgH) at (0,0) {Agent};
 \node[cbody, anchor=north] (AgB) at (AgH.south) {
   \texttt{--} id : int\\
@@ -749,7 +738,6 @@
   \texttt{--} risk\_score : int
 };
 
-%% ── EVENT ──
 \node[chead] (EvH) at (4.5,0) {Event};
 \node[cbody, anchor=north] (EvB) at (EvH.south) {
   \texttt{--} id : int\\
@@ -760,7 +748,6 @@
   \texttt{--} score : int
 };
 
-%% ── ALERT ──
 \node[chead] (AlH) at (9.0,0) {Alert};
 \node[cbody, anchor=north] (AlB) at (AlH.south) {
   \texttt{--} id : int\\
@@ -771,7 +758,6 @@
   \texttt{--} created\_at : datetime
 };
 
-%% ── INCIDENT ──
 \node[chead] (InH) at (13.5,0) {Incident};
 \node[cbody, anchor=north] (InB) at (InH.south) {
   \texttt{--} id : int\\
@@ -781,7 +767,6 @@
   \texttt{--} resolved\_at : datetime
 };
 
-%% ── DETECTIONRULE ──
 \node[chead] (DrH) at (4.5,-4.5) {DetectionRule};
 \node[cbody, anchor=north] (DrB) at (DrH.south) {
   \texttt{--} id : int\\
@@ -791,7 +776,6 @@
   \texttt{--} enabled : bool
 };
 
-%% ── AUDITLOG ──
 \node[chead] (AuH) at (9.0,-4.5) {AuditLog};
 \node[cbody, anchor=north] (AuB) at (AuH.south) {
   \texttt{--} id : int\\
@@ -801,7 +785,6 @@
   \texttt{--} timestamp : datetime
 };
 
-%% ── PROTECTIONACTION ──
 \node[chead] (PaH) at (13.5,-4.5) {ProtectionAction};
 \node[cbody, anchor=north] (PaB) at (PaH.south) {
   \texttt{--} id : int\\
@@ -811,8 +794,6 @@
   \texttt{--} approved\_by : int
 };
 
-%% ── RELATIONS ──
-% Pipeline ligne 1
 \draw[rel] (AgH.east |- AgB.center) --
   node[above,font=\tiny,text=muted]{1..N} (EvH.west |- AgB.center);
 \draw[rel] (EvH.east |- EvB.center) --
@@ -820,16 +801,13 @@
 \draw[rel] (AlH.east |- AlB.center) --
   node[above,font=\tiny,text=muted]{N..1} (InH.west |- AlB.center);
 
-% Incident → ProtectionAction (vertical)
 \draw[rel] ([xshift=4pt]InB.south) --
   node[right,font=\tiny,text=muted]{1..N} ([xshift=4pt]PaH.north);
 
-% Incident → AuditLog (brisé : vertical puis horizontal)
 \draw[rel] ([xshift=-4pt]InB.south) -- ++(0,-0.7)
   -- ($(AuH.north) + (0,0.7)$) --
   node[right,font=\tiny,text=muted]{1..N} (AuH.north);
 
-% DetectionRule -uses-> Event (vertical, tirets)
 \draw[dep] (DrH.north) --
   node[right,font=\tiny,text=muted]{uses} (EvB.south);
 
@@ -899,7 +877,7 @@
 \section{Réalisation et Résultats}
 % =========================================================================
 
-\sectionslide{04}{Réalisation et Résultats}{cogs}
+\sectionslide{04}{Réalisation et Résultats}
 
 % ─── Choix techniques ─────────────────────────────────────────────────────
 \begin{frame}{Choix techniques}
@@ -1106,11 +1084,12 @@
 \setbeamertemplate{background}{}
 \begin{frame}[plain,noframenumbering]
   \begin{tikzpicture}[overlay,remember picture]
-    \shade[top color=darkbg,bottom color=primary!85!darkbg]
+    \shade[top color=darkbg,bottom color=primary!80!darkbg]
       (current page.north west) rectangle (current page.south east);
-    \node[anchor=center,opacity=0.07,
-          font=\fontsize{155}{155}\selectfont,text=white]
-      at (current page.center) {\faIcon{shield-alt}};
+    \foreach \rr in {3.0,5.5,8.0,10.5,13.0}{%
+      \draw[white,opacity=0.06,line width=1.0pt]
+        ([xshift=\rr cm]current page.south east) arc(0:90:\rr cm);
+    }
     \node[anchor=center,font=\Huge\bfseries\color{white}]
       at ([yshift=1cm]current page.center)
       {\faPlay\quad Démonstration Live};
@@ -1138,7 +1117,7 @@
 \section{Conclusion et Perspectives}
 % =========================================================================
 
-\sectionslide{05}{Conclusion et Perspectives}{rocket}
+\sectionslide{05}{Conclusion et Perspectives}
 
 % ─── Conclusion ───────────────────────────────────────────────────────────
 \begin{frame}{Conclusion et Perspectives}
@@ -1185,11 +1164,12 @@
 \begin{frame}[plain,noframenumbering]
 
   \begin{tikzpicture}[overlay,remember picture]
-    \shade[top color=darkbg,bottom color=primary!80!darkbg]
+    \shade[top color=darkbg,bottom color=primary!75!darkbg]
       (current page.north west) rectangle (current page.south east);
-    \node[anchor=center,opacity=0.06,
-          font=\fontsize{155}{155}\selectfont,text=white]
-      at (current page.center) {\faIcon{shield-alt}};
+    \foreach \rr in {3.0,5.5,8.0,10.5,13.0}{%
+      \draw[white,opacity=0.06,line width=1.0pt]
+        ([xshift=\rr cm]current page.south east) arc(0:90:\rr cm);
+    }
   \end{tikzpicture}
 
   \centering\vspace{0.8cm}
@@ -1198,12 +1178,13 @@
 
   \vspace{0.6cm}
 
-  {\color{gold}\fontsize{52}{52}\selectfont ?}
+  {\color{primary!60!white}\fontsize{52}{52}\selectfont ?}
 
   \vspace{0.6cm}
 
   \begin{tcolorbox}[
-    colback=white!8!darkbg,colframe=gold,
+    enhanced,
+    colback=white!8!darkbg,colframe=primary,
     arc=8pt,boxrule=1.5pt,width=0.70\textwidth,center,
     halign=center,left=12pt,right=12pt,top=10pt,bottom=10pt
   ]
