@@ -80,8 +80,20 @@
 }
 \setbeamercolor{accentline}{bg=dprimary}
 
-% ─── Fond : blanc pur, aucun filigrane (canevas IFRI référence) ─────────
-\setbeamertemplate{background}{}
+% ─── Filigrane : arcs quart-cercle très discrets depuis coin bas-droit ──
+\setbeamertemplate{background}{%
+  \begin{tikzpicture}[overlay,remember picture]
+    \draw[primary,opacity=0.055,line width=1.8pt]
+      ([yshift=5.5cm]current page.south east)
+      arc[start angle=90,end angle=180,radius=5.5cm];
+    \draw[primary,opacity=0.035,line width=1.2pt]
+      ([yshift=9.2cm]current page.south east)
+      arc[start angle=90,end angle=180,radius=9.2cm];
+    \draw[primary,opacity=0.018,line width=0.8pt]
+      ([yshift=12.8cm]current page.south east)
+      arc[start angle=90,end angle=180,radius=12.8cm];
+  \end{tikzpicture}%
+}
 
 % Footline 3 colonnes
 \setbeamertemplate{footline}{%
