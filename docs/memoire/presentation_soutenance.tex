@@ -35,10 +35,10 @@
 % =========================================================================
 %  PALETTE — couleurs IFRI orange
 % =========================================================================
-\definecolor{primary}  {RGB}{228,  92,  16}   % orange IFRI
-\definecolor{dprimary} {RGB}{168,  58,   8}   % orange foncé
-\definecolor{darkbg}   {RGB}{ 22,  28,  48}   % fond sombre (slides spéciaux)
-\definecolor{light}    {RGB}{255, 243, 230}   % orange très pâle
+\definecolor{primary}  {RGB}{247, 148,  29}   % orange IFRI vif
+\definecolor{dprimary} {RGB}{200, 100,   8}   % orange foncé
+\definecolor{darkbg}   {RGB}{ 30,  30,  50}   % fond sombre (slides spéciaux)
+\definecolor{light}    {RGB}{255, 245, 225}   % orange très pâle
 \definecolor{textdark} {RGB}{ 22,  25,  42}   % texte principal
 \definecolor{muted}    {RGB}{130, 130, 140}
 \definecolor{crit}     {RGB}{185,  28,  28}
@@ -80,18 +80,19 @@
 }
 \setbeamercolor{accentline}{bg=dprimary}
 
-% ─── Filigrane : arcs concentriques élégants depuis le coin bas-droite ───
+% ─── Filigrane : grands cercles concentriques depuis coin bas-droite ────
 \setbeamertemplate{background}{%
   \begin{tikzpicture}[overlay,remember picture]
-    \foreach \rr in {2.5,4.5,6.5,8.5,10.5,12.5}{%
-      \draw[primary,opacity=0.038,line width=0.9pt]
-        ([xshift=\rr cm]current page.south east)
-        arc(0:90:\rr cm);
-    }
-    \fill[primary,opacity=0.07]
+    \draw[primary,opacity=0.12,line width=1.8pt]
+      (current page.south east) circle (5.5cm);
+    \draw[primary,opacity=0.08,line width=1.4pt]
+      (current page.south east) circle (8.8cm);
+    \draw[primary,opacity=0.05,line width=1.0pt]
+      (current page.south east) circle (12.2cm);
+    \fill[primary,opacity=0.09]
       (current page.north west) --
-      ([xshift=0.42cm]current page.north west) --
-      ([yshift=-0.42cm]current page.north west) -- cycle;
+      ([xshift=0.55cm]current page.north west) --
+      ([yshift=-0.55cm]current page.north west) -- cycle;
   \end{tikzpicture}%
 }
 
@@ -139,10 +140,12 @@
       \node[rotate=90,font=\fontsize{80}{80}\selectfont\bfseries,
             text=white,opacity=0.20,anchor=center]
         at ([xshift=2.2cm]current page.west) {#1};
-      \foreach \rr in {3.0,5.5,8.0,10.5}{%
-        \draw[primary,opacity=0.06,line width=0.9pt]
-          ([xshift=\rr cm]current page.south east) arc(0:90:\rr cm);
-      }
+      \draw[primary,opacity=0.12,line width=1.6pt]
+        (current page.south east) circle (5.5cm);
+      \draw[primary,opacity=0.07,line width=1.2pt]
+        (current page.south east) circle (9.0cm);
+      \draw[primary,opacity=0.05,line width=0.9pt]
+        (current page.south east) circle (12.5cm);
       \node[anchor=west,font=\LARGE\bfseries,text=textdark,
             text width=9.5cm,align=left]
         at ([xshift=7.2cm,yshift=0.62cm]current page.west) {#2};
@@ -192,10 +195,12 @@
     \fill[dprimary,opacity=0.6]
       ([yshift=-0.53cm]current page.north west) rectangle
       ([yshift=-0.66cm]current page.north east);
-    \foreach \rr in {3.0,5.5,8.0,10.5,13.0}{%
-      \draw[primary,opacity=0.07,line width=1.0pt]
-        ([xshift=\rr cm]current page.south east) arc(0:90:\rr cm);
-    }
+    \draw[primary,opacity=0.13,line width=2pt]
+      (current page.south east) circle (5.5cm);
+    \draw[primary,opacity=0.08,line width=1.5pt]
+      (current page.south east) circle (9.0cm);
+    \draw[primary,opacity=0.05,line width=1.0pt]
+      (current page.south east) circle (12.5cm);
   \end{tikzpicture}%
 }
 \begin{frame}[plain,noframenumbering]
@@ -281,11 +286,13 @@
     \node[rotate=90,font=\fontsize{62}{62}\selectfont\bfseries,
           text=white,opacity=0.22,anchor=center]
       at ([xshift=1.9cm]current page.west) {PLAN};
-    % Arcs filigrane droit
-    \foreach \rr in {3.0,5.5,8.0,10.5}{%
-      \draw[primary,opacity=0.055,line width=0.8pt]
-        ([xshift=\rr cm]current page.south east) arc(0:90:\rr cm);
-    }
+    % Cercles filigrane droit
+    \draw[primary,opacity=0.12,line width=1.6pt]
+      (current page.south east) circle (5.5cm);
+    \draw[primary,opacity=0.07,line width=1.2pt]
+      (current page.south east) circle (9.0cm);
+    \draw[primary,opacity=0.05,line width=0.9pt]
+      (current page.south east) circle (12.5cm);
     % Item 1
     \draw[primary,fill=white,line width=2.2pt]
       ([xshift=6.2cm,yshift=7.05cm]current page.south west) circle (0.36cm);
@@ -1086,10 +1093,12 @@
   \begin{tikzpicture}[overlay,remember picture]
     \shade[top color=darkbg,bottom color=primary!80!darkbg]
       (current page.north west) rectangle (current page.south east);
-    \foreach \rr in {3.0,5.5,8.0,10.5,13.0}{%
-      \draw[white,opacity=0.06,line width=1.0pt]
-        ([xshift=\rr cm]current page.south east) arc(0:90:\rr cm);
-    }
+    \draw[white,opacity=0.12,line width=1.8pt]
+      (current page.south east) circle (5.5cm);
+    \draw[white,opacity=0.07,line width=1.3pt]
+      (current page.south east) circle (9.0cm);
+    \draw[white,opacity=0.05,line width=1.0pt]
+      (current page.south east) circle (12.5cm);
     \node[anchor=center,font=\Huge\bfseries\color{white}]
       at ([yshift=1cm]current page.center)
       {\faPlay\quad Démonstration Live};
@@ -1166,10 +1175,12 @@
   \begin{tikzpicture}[overlay,remember picture]
     \shade[top color=darkbg,bottom color=primary!75!darkbg]
       (current page.north west) rectangle (current page.south east);
-    \foreach \rr in {3.0,5.5,8.0,10.5,13.0}{%
-      \draw[white,opacity=0.06,line width=1.0pt]
-        ([xshift=\rr cm]current page.south east) arc(0:90:\rr cm);
-    }
+    \draw[white,opacity=0.12,line width=1.8pt]
+      (current page.south east) circle (5.5cm);
+    \draw[white,opacity=0.07,line width=1.3pt]
+      (current page.south east) circle (9.0cm);
+    \draw[white,opacity=0.05,line width=1.0pt]
+      (current page.south east) circle (12.5cm);
   \end{tikzpicture}
 
   \centering\vspace{0.8cm}
