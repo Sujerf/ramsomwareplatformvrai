@@ -81,7 +81,10 @@ def parse_notes_by_frame():
 
     # The \sectionslide macro DEFINITION contains a literal \begin{frame}
     # (template code, not an invocation) -- strip it before counting frames.
-    src_nc = strip_braced_command(src_nc, r"\newcommand{\sectionslide}[3]")
+    src_nc = strip_braced_command(src_nc, r"\newcommand{\sectionslide}[2]")
+    # \somitem definition also lives in document body — no \begin{frame} inside,
+    # but strip it to keep the source clean for parsing.
+    src_nc = strip_braced_command(src_nc, r"\newcommand{\somitem}[2]")
 
     frame_re = re.compile(r"\\begin\{frame\}|\\sectionslide\{")
     note_re = re.compile(r"\\note\{")

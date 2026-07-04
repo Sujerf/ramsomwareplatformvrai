@@ -33,18 +33,18 @@
 \fi
 
 % =========================================================================
-%  PALETTE — couleurs IFRI orange
+%  PALETTE — couleurs IFRI bleu
 % =========================================================================
-\definecolor{primary}  {RGB}{247, 148,  29}   % orange IFRI vif
-\definecolor{dprimary} {RGB}{200, 100,   8}   % orange foncé
-\definecolor{darkbg}   {RGB}{ 30,  30,  50}   % fond sombre (slides spéciaux)
-\definecolor{light}    {RGB}{255, 245, 225}   % orange très pâle
-\definecolor{textdark} {RGB}{ 22,  25,  42}   % texte principal
-\definecolor{muted}    {RGB}{130, 130, 140}
+\definecolor{primary}  {RGB}{  0,  82, 165}   % bleu IFRI
+\definecolor{dprimary} {RGB}{  0,  55, 115}   % bleu IFRI foncé
+\definecolor{darkbg}   {RGB}{  8,  22,  58}   % fond marine profond
+\definecolor{light}    {RGB}{228, 238, 252}   % bleu très pâle
+\definecolor{textdark} {RGB}{ 12,  20,  45}   % texte principal
+\definecolor{muted}    {RGB}{110, 125, 150}
 \definecolor{crit}     {RGB}{185,  28,  28}
-\definecolor{high}     {RGB}{210, 100,  10}
+\definecolor{high}     {RGB}{210, 100,   0}
 \definecolor{norm}     {RGB}{ 22, 128,  65}
-\definecolor{accent}   {RGB}{ 30, 140, 190}
+\definecolor{accent}   {RGB}{ 30, 165, 215}
 
 % =========================================================================
 %  THÈME BEAMER
@@ -80,21 +80,8 @@
 }
 \setbeamercolor{accentline}{bg=dprimary}
 
-% ─── Filigrane : grands cercles concentriques depuis coin bas-droite ────
-\setbeamertemplate{background}{%
-  \begin{tikzpicture}[overlay,remember picture]
-    \draw[primary,opacity=0.12,line width=1.8pt]
-      (current page.south east) circle (5.5cm);
-    \draw[primary,opacity=0.08,line width=1.4pt]
-      (current page.south east) circle (8.8cm);
-    \draw[primary,opacity=0.05,line width=1.0pt]
-      (current page.south east) circle (12.2cm);
-    \fill[primary,opacity=0.09]
-      (current page.north west) --
-      ([xshift=0.55cm]current page.north west) --
-      ([yshift=-0.55cm]current page.north west) -- cycle;
-  \end{tikzpicture}%
-}
+% ─── Fond : blanc pur, aucun filigrane (canevas IFRI référence) ─────────
+\setbeamertemplate{background}{}
 
 % Footline 3 colonnes
 \setbeamertemplate{footline}{%
@@ -127,35 +114,20 @@
 \newcommand{\warn}{\textcolor{high}{\faExclamationCircle}\ }
 \newcommand{\arr} {\textcolor{primary}{\small\faChevronRight}\ }
 
-% Slide séparateur de section (bande diagonale orange + arcs concentriques)
+% Slide séparateur de section — style IFRI référence : titre centré sur blanc
 \newcommand{\sectionslide}[2]{%
   \begin{frame}[plain,noframenumbering]%
-    \begin{tikzpicture}[overlay,remember picture]%
+    \begin{tikzpicture}[overlay,remember picture]
       \fill[white](current page.north west) rectangle (current page.south east);
       \fill[primary]
-        (current page.north west) --
-        ([xshift=5.6cm]current page.north west) --
-        ([xshift=3.7cm]current page.south west) --
-        (current page.south west) -- cycle;
-      \node[rotate=90,font=\fontsize{80}{80}\selectfont\bfseries,
-            text=white,opacity=0.20,anchor=center]
-        at ([xshift=2.2cm]current page.west) {#1};
-      \draw[primary,opacity=0.12,line width=1.6pt]
-        (current page.south east) circle (5.5cm);
-      \draw[primary,opacity=0.07,line width=1.2pt]
-        (current page.south east) circle (9.0cm);
-      \draw[primary,opacity=0.05,line width=0.9pt]
-        (current page.south east) circle (12.5cm);
-      \node[anchor=west,font=\LARGE\bfseries,text=textdark,
-            text width=9.5cm,align=left]
-        at ([xshift=7.2cm,yshift=0.62cm]current page.west) {#2};
-      \draw[primary,line width=3pt]
-        ([xshift=7.2cm,yshift=0.0cm]current page.west) --
-        ([xshift=15.2cm,yshift=0.0cm]current page.west);
-      \draw[dprimary,line width=2pt]
-        ([xshift=7.2cm,yshift=-0.45cm]current page.west) --
-        ([xshift=10.4cm,yshift=-0.45cm]current page.west);
-    \end{tikzpicture}%
+        (current page.south west) rectangle
+        ([yshift=0.68cm]current page.south east);
+    \end{tikzpicture}
+    \vfill
+    \begin{center}
+      {\fontsize{34}{42}\selectfont #2}
+    \end{center}
+    \vfill\vspace{0.68cm}
   \end{frame}%
 }
 
@@ -178,82 +150,64 @@
 % ─────────────────────────────────────────────────────────────────────────
 %  SLIDE 1 — TITRE
 % ─────────────────────────────────────────────────────────────────────────
+% ─── Page de garde — canevas IFRI référence exact ────────────────────────
 {
 \setbeamertemplate{headline}{}
 \setbeamertemplate{footline}{}
-\setbeamertemplate{background}{%
-  \begin{tikzpicture}[overlay,remember picture]
-    \fill[primary]
-      (current page.south west) rectangle
-      ([yshift=2.0em]current page.south east);
-    \fill[dprimary]
-      ([yshift=1.96em]current page.south west) rectangle
-      ([yshift=2.22em]current page.south east);
-    \fill[primary,opacity=0.09]
-      (current page.north west) rectangle
-      ([yshift=-0.55cm]current page.north east);
-    \fill[dprimary,opacity=0.6]
-      ([yshift=-0.53cm]current page.north west) rectangle
-      ([yshift=-0.66cm]current page.north east);
-    \draw[primary,opacity=0.13,line width=2pt]
-      (current page.south east) circle (5.5cm);
-    \draw[primary,opacity=0.08,line width=1.5pt]
-      (current page.south east) circle (9.0cm);
-    \draw[primary,opacity=0.05,line width=1.0pt]
-      (current page.south east) circle (12.5cm);
-  \end{tikzpicture}%
-}
+\setbeamertemplate{background}{}
 \begin{frame}[plain,noframenumbering]
   \begin{tikzpicture}[overlay,remember picture]
+    % Fond blanc
+    \fill[white](current page.north west) rectangle (current page.south east);
+    % Logos
     \node[anchor=north west,inner sep=10pt]
       at (current page.north west)
-      {\includegraphics[height=1.35cm]{logoUAC1}};
+      {\includegraphics[height=1.40cm]{logoUAC1}};
     \node[anchor=north east,inner sep=10pt]
       at (current page.north east)
-      {\includegraphics[height=1.35cm]{logoIfri}};
-    \node[anchor=west,font=\tiny\color{white},inner sep=6pt]
-      at ([yshift=1.0em]current page.south west)
+      {\includegraphics[height=1.40cm]{logoIfri}};
+    % Barre pied-de-page bleue
+    \fill[primary]
+      (current page.south west) rectangle
+      ([yshift=0.68cm]current page.south east);
+    \node[anchor=west,font=\tiny\color{white},inner sep=0pt]
+      at ([xshift=8pt,yshift=0.34cm]current page.south west)
       {Codjo Fréjus Loïc SANGRONIO};
     \node[anchor=center,font=\tiny\color{white}]
-      at ([yshift=1.0em]current page.south)
+      at ([yshift=0.34cm]current page.south)
       {RansomShield --- Détection \& Réponse ransomware};
-    \node[anchor=east,font=\tiny\color{white},inner sep=6pt]
-      at ([yshift=1.0em]current page.south east)
+    \node[anchor=east,font=\tiny\color{white},inner sep=0pt]
+      at ([xshift=-8pt,yshift=0.34cm]current page.south east)
       {24 juin 2026 \quad 1\,/\,\inserttotalframenumber};
+    % Encadreur bas-gauche (au-dessus du pied-de-page)
+    \node[anchor=south west,font=\scriptsize,text=textdark,align=left,inner sep=0pt]
+      at ([xshift=10pt,yshift=0.82cm]current page.south west)
+      {\textbf{Encadreur :}\\ Ing. Guy KPEDJO};
   \end{tikzpicture}
 
-  \vspace{1.6cm}
+  % Espace pour les logos
+  \vspace{1.65cm}
 
+  % Rectangle bleu arrondi — titre
   \begin{tcolorbox}[
     enhanced,
-    colback=primary,colframe=dprimary,
-    arc=12pt,boxrule=0pt,halign=center,
-    left=20pt,right=20pt,top=16pt,bottom=16pt,
-    drop shadow,
-    borderline west={5pt}{0pt}{dprimary},
-    borderline east={5pt}{0pt}{dprimary}
+    colback=primary,colframe=primary,
+    arc=10pt,boxrule=0pt,
+    halign=center,
+    left=18pt,right=18pt,top=16pt,bottom=16pt,
+    drop shadow
   ]
     {\large\bfseries\color{white}
-     Conception et mise en place d'un système de\\[6pt]
-     détection et de réponse aux attaques ransomware\\[6pt]
+     Conception et mise en place d'un système de\\[5pt]
+     \textbf{détection et de réponse aux attaques ransomware}\\[5pt]
      dans un environnement contrôlé}
   \end{tcolorbox}
 
-  \vspace{0.5cm}
+  \vspace{0.55cm}
   \centering
-  {\normalsize\bfseries Codjo Fréjus Loïc SANGRONIO}\\[4pt]
-  {\small Licence Informatique --- Option Sécurité Informatique}\\[8pt]
-  {\normalsize\bfseries 24 juin 2026}
-  \vfill
-  \begin{columns}[b]
-    \column{0.5\textwidth}
-      \raggedright{\scriptsize\color{muted}%
-        \textbf{Encadreur :}\\Ing. Guy KPEDJO}
-    \column{0.5\textwidth}
-      \raggedleft{\scriptsize\color{muted}%
-        \textbf{Maître de stage :}\\{[}Nom du maître de stage{]}}
-  \end{columns}
-  \vspace{0.45cm}
+  {\large\bfseries Codjo Fréjus Loïc SANGRONIO}\\[4pt]
+  {\normalsize Licence Informatique --- Option Sécurité Informatique}\\[10pt]
+  {\large\bfseries 24 juin 2026}
 \end{frame}
 }
 \note{
@@ -267,65 +221,31 @@
 }
 
 % ─────────────────────────────────────────────────────────────────────────
-%  SLIDE 2 — PLAN (style référence IFRI)
+%  SLIDE 2 — SOMMAIRE (canevas IFRI : frametitle bleu + cercles numérotés)
 % ─────────────────────────────────────────────────────────────────────────
-{
-\setbeamertemplate{headline}{}
-\setbeamertemplate{footline}{}
-\setbeamertemplate{background}{}
-\begin{frame}[plain,noframenumbering]
-  \begin{tikzpicture}[overlay,remember picture]
-    \fill[white](current page.north west) rectangle (current page.south east);
-    % Bande diagonale orange gauche
-    \fill[primary]
-      (current page.north west) --
-      ([xshift=5.2cm]current page.north west) --
-      ([xshift=3.3cm]current page.south west) --
-      (current page.south west) -- cycle;
-    % "PLAN" fantôme vertical
-    \node[rotate=90,font=\fontsize{62}{62}\selectfont\bfseries,
-          text=white,opacity=0.22,anchor=center]
-      at ([xshift=1.9cm]current page.west) {PLAN};
-    % Cercles filigrane droit
-    \draw[primary,opacity=0.12,line width=1.6pt]
-      (current page.south east) circle (5.5cm);
-    \draw[primary,opacity=0.07,line width=1.2pt]
-      (current page.south east) circle (9.0cm);
-    \draw[primary,opacity=0.05,line width=0.9pt]
-      (current page.south east) circle (12.5cm);
-    % Item 1
-    \draw[primary,fill=white,line width=2.2pt]
-      ([xshift=6.2cm,yshift=7.05cm]current page.south west) circle (0.36cm);
-    \node[anchor=west,font=\large\bfseries,text=textdark]
-      at ([xshift=6.75cm,yshift=7.05cm]current page.south west)
-      {Introduction Générale};
-    % Item 2
-    \draw[primary,fill=white,line width=2.2pt]
-      ([xshift=6.2cm,yshift=5.80cm]current page.south west) circle (0.36cm);
-    \node[anchor=west,font=\large\bfseries,text=textdark]
-      at ([xshift=6.75cm,yshift=5.80cm]current page.south west)
-      {Revue de littérature};
-    % Item 3
-    \draw[primary,fill=white,line width=2.2pt]
-      ([xshift=6.2cm,yshift=4.55cm]current page.south west) circle (0.36cm);
-    \node[anchor=west,font=\large\bfseries,text=textdark]
-      at ([xshift=6.75cm,yshift=4.55cm]current page.south west)
-      {Analyse et Conception};
-    % Item 4
-    \draw[primary,fill=white,line width=2.2pt]
-      ([xshift=6.2cm,yshift=3.30cm]current page.south west) circle (0.36cm);
-    \node[anchor=west,font=\large\bfseries,text=textdark]
-      at ([xshift=6.75cm,yshift=3.30cm]current page.south west)
-      {Réalisation et Résultats};
-    % Item 5
-    \draw[primary,fill=white,line width=2.2pt]
-      ([xshift=6.2cm,yshift=2.05cm]current page.south west) circle (0.36cm);
-    \node[anchor=west,font=\large\bfseries,text=textdark]
-      at ([xshift=6.75cm,yshift=2.05cm]current page.south west)
-      {Conclusion et Perspectives};
-  \end{tikzpicture}
-\end{frame}
+\newcommand{\somitem}[2]{%
+  \vspace{0.28cm}
+  \begin{tikzpicture}[baseline=-0.55ex]
+    \fill[primary] (0,0) circle (0.30cm);
+    \node[font=\small\bfseries,text=white] at (0,0) {#1};
+  \end{tikzpicture}%
+  \hspace{10pt}{\large\bfseries\color{primary} #2}%
 }
+\begin{frame}{Sommaire}
+  \vspace{0.3cm}
+
+  \somitem{1}{Introduction Générale}
+
+  \somitem{2}{Revue de littérature}
+
+  \somitem{3}{Analyse et Conception}
+
+  \somitem{4}{Réalisation et Résultats}
+
+  \somitem{5}{Conclusion et Perspectives}
+
+  \vfill
+\end{frame}
 \note{
   \textbf{[SOMMAIRE — 0:30]}\\[4pt]
   Ma présentation s'articule en cinq parties~: le contexte et la problématique,
@@ -372,51 +292,38 @@
 
 % ─── Problématique (affirmative) ─────────────────────────────────────────
 \begin{frame}{Problématique}
-  \vspace{0.2cm}
-  \begin{center}
+
   \begin{tcolorbox}[
     enhanced,
-    colback=darkbg,colframe=primary,
-    arc=12pt,boxrule=2pt,
-    left=20pt,right=20pt,top=15pt,bottom=15pt,
-    width=0.93\textwidth,
-    drop shadow
+    colback=light,colframe=primary,
+    arc=8pt,boxrule=1.5pt,
+    left=16pt,right=16pt,top=12pt,bottom=12pt,
+    width=\textwidth
   ]
-    \centering
-    {\large\bfseries\color{white}
-    La détection comportementale en temps réel des attaques ransomware,\\[5pt]
-    combinée à une réponse maîtrisée avec validation humaine systématique,\\[5pt]
-    constitue une solution efficace et démontrable pour protéger\\[5pt]
-    un parc de machines hétérogène sans déployer de vrai malware.}
+    \normalsize\bfseries\color{textdark}
+    La détection comportementale en temps réel des attaques ransomware,
+    combinée à une réponse maîtrisée avec validation humaine systématique,
+    constitue une solution efficace et démontrable pour protéger
+    un parc de machines hétérogène sans déployer de vrai malware.
   \end{tcolorbox}
-  \end{center}
-  \vspace{8pt}
+
+  \vspace{10pt}
+
   \begin{columns}[T]
     \column{0.32\textwidth}
-      \begin{tcolorbox}[colback=light,colframe=primary,arc=5pt,boxrule=0.8pt,
-          left=6pt,right=6pt,top=5pt,bottom=5pt,halign=center]
-        \small\color{textdark}
-        \textcolor{primary}{\large\faExclamationTriangle}\\[3pt]
-        \textbf{Défi \#1}\\[2pt]
-        Variantes inconnues contournent les antivirus par signatures
-      \end{tcolorbox}
+      \begin{block}{Défi \#1}
+        \small Variantes inconnues contournent les antivirus par signatures
+      \end{block}
     \column{0.32\textwidth}
-      \begin{tcolorbox}[colback=light,colframe=primary,arc=5pt,boxrule=0.8pt,
-          left=6pt,right=6pt,top=5pt,bottom=5pt,halign=center]
-        \small\color{textdark}
-        \textcolor{primary}{\large\faNetworkWired}\\[3pt]
-        \textbf{Défi \#2}\\[2pt]
-        Parc hétérogène (Windows, Linux, macOS) à surveiller
-      \end{tcolorbox}
+      \begin{block}{Défi \#2}
+        \small Parc hétérogène (Windows, Linux, macOS) à surveiller
+      \end{block}
     \column{0.32\textwidth}
-      \begin{tcolorbox}[colback=light,colframe=primary,arc=5pt,boxrule=0.8pt,
-          left=6pt,right=6pt,top=5pt,bottom=5pt,halign=center]
-        \small\color{textdark}
-        \textcolor{primary}{\large\faUserCheck}\\[3pt]
-        \textbf{Défi \#3}\\[2pt]
-        Réponse automatique risquée --- contrôle humain indispensable
-      \end{tcolorbox}
+      \begin{block}{Défi \#3}
+        \small Réponse automatique risquée --- contrôle humain indispensable
+      \end{block}
   \end{columns}
+
 \end{frame}
 \note{
   \textbf{[PROBLÉMATIQUE — 2:00]}\\[4pt]
@@ -1091,18 +998,17 @@
 \setbeamertemplate{background}{}
 \begin{frame}[plain,noframenumbering]
   \begin{tikzpicture}[overlay,remember picture]
-    \shade[top color=darkbg,bottom color=primary!80!darkbg]
-      (current page.north west) rectangle (current page.south east);
-    \draw[white,opacity=0.12,line width=1.8pt]
-      (current page.south east) circle (5.5cm);
-    \draw[white,opacity=0.07,line width=1.3pt]
-      (current page.south east) circle (9.0cm);
-    \draw[white,opacity=0.05,line width=1.0pt]
-      (current page.south east) circle (12.5cm);
+    \fill[primary](current page.north west) rectangle (current page.south east);
+    \fill[dprimary]
+      (current page.north west) rectangle
+      ([yshift=-0.40cm]current page.north east);
+    \fill[dprimary]
+      (current page.south west) rectangle
+      ([yshift=0.40cm]current page.south east);
     \node[anchor=center,font=\Huge\bfseries\color{white}]
-      at ([yshift=1cm]current page.center)
+      at ([yshift=0.8cm]current page.center)
       {\faPlay\quad Démonstration Live};
-    \node[anchor=center,font=\normalsize\color{white!80}]
+    \node[anchor=center,font=\large\color{white!85}]
       at ([yshift=-0.5cm]current page.center)
       {5 minutes --- système réel sur VMs KVM};
   \end{tikzpicture}
@@ -1164,47 +1070,42 @@
 }
 
 % ─────────────────────────────────────────────────────────────────────────
-%  SLIDE FINAL — MERCI / QUESTIONS
+%  SLIDE FINAL — MERCI / QUESTIONS  (fond bleu IFRI, sobre et élégant)
 % ─────────────────────────────────────────────────────────────────────────
 {
 \setbeamertemplate{headline}{}
 \setbeamertemplate{footline}{}
 \setbeamertemplate{background}{}
 \begin{frame}[plain,noframenumbering]
-
   \begin{tikzpicture}[overlay,remember picture]
-    \shade[top color=darkbg,bottom color=primary!75!darkbg]
-      (current page.north west) rectangle (current page.south east);
-    \draw[white,opacity=0.12,line width=1.8pt]
-      (current page.south east) circle (5.5cm);
-    \draw[white,opacity=0.07,line width=1.3pt]
-      (current page.south east) circle (9.0cm);
-    \draw[white,opacity=0.05,line width=1.0pt]
-      (current page.south east) circle (12.5cm);
+    % Fond bleu IFRI plein
+    \fill[primary](current page.north west) rectangle (current page.south east);
+    % Liseré foncé en haut et en bas
+    \fill[dprimary]
+      (current page.north west) rectangle
+      ([yshift=-0.40cm]current page.north east);
+    \fill[dprimary]
+      (current page.south west) rectangle
+      ([yshift=0.40cm]current page.south east);
+    % Grande inscription blanche centrée
+    \node[anchor=center,font=\fontsize{34}{34}\selectfont\bfseries,text=white]
+      at ([yshift=1.4cm]current page.center)
+      {Merci de votre attention\,!};
+    % Séparateur fin blanc
+    \draw[white,opacity=0.45,line width=0.8pt]
+      ([xshift=-6cm,yshift=0.35cm]current page.center) --
+      ([xshift= 6cm,yshift=0.35cm]current page.center);
+    % Identité
+    \node[anchor=center,font=\large\bfseries,text=white]
+      at ([yshift=-0.5cm]current page.center)
+      {Codjo Fréjus Loïc SANGRONIO};
+    \node[anchor=center,font=\normalsize,text=white!80]
+      at ([yshift=-1.15cm]current page.center)
+      {\texttt{lsangronio@gmail.com} \textbar{} IFRI-UAC · 2023--2024};
+    \node[anchor=center,font=\small,text=white!65]
+      at ([yshift=-1.75cm]current page.center)
+      {Encadreur : Ing. Guy KPEDJO};
   \end{tikzpicture}
-
-  \centering\vspace{0.8cm}
-
-  {\color{white}\LARGE\bfseries Merci de votre aimable attention\,!}
-
-  \vspace{0.6cm}
-
-  {\color{primary!60!white}\fontsize{52}{52}\selectfont ?}
-
-  \vspace{0.6cm}
-
-  \begin{tcolorbox}[
-    enhanced,
-    colback=white!8!darkbg,colframe=primary,
-    arc=8pt,boxrule=1.5pt,width=0.70\textwidth,center,
-    halign=center,left=12pt,right=12pt,top=10pt,bottom=10pt
-  ]
-    \color{white}\small
-    \textbf{Codjo Fréjus Loïc SANGRONIO}\\[4pt]
-    \texttt{lsangronio@gmail.com} \textbar{} IFRI-UAC 2023--2024\\[5pt]
-    {\scriptsize Encadreur~: \textbf{Ing. Guy KPEDJO}}
-  \end{tcolorbox}
-
 \end{frame}
 }
 \note{
