@@ -80,23 +80,22 @@
 }
 \setbeamercolor{accentline}{bg=dprimary}
 
-% ─── Filigrane : cercles élégants — centres décalés à l'intérieur des coins
-%     Les cercles complets créent de belles courbes traversant le slide,
-%     bien plus raffinés que de simples arcs coupés à angle droit.
+% ─── Filigrane : grille de cercles en quinconce — inspiré Beamer_Fréjus
+%     Motif en écailles : cercles de rayon R disposés en rangées décalées
+%     d'une demi-largeur, créant un réseau élégant sur tout le fond.
 \setbeamertemplate{background}{%
   \begin{tikzpicture}[overlay,remember picture]
-    % Groupe bas-droit : centre 2 cm à l'intérieur du coin SE
-    \draw[primary,opacity=0.068,line width=2.0pt]
-      ([xshift=-2cm,yshift=2cm]current page.south east) circle (5.6cm);
-    \draw[primary,opacity=0.042,line width=1.3pt]
-      ([xshift=-2cm,yshift=2cm]current page.south east) circle (9.0cm);
-    \draw[primary,opacity=0.020,line width=0.7pt]
-      ([xshift=-2cm,yshift=2cm]current page.south east) circle (12.4cm);
-    % Accent haut-gauche : centre 2 cm à l'intérieur du coin NW
-    \draw[primary,opacity=0.048,line width=1.4pt]
-      ([xshift=2cm,yshift=-2cm]current page.north west) circle (4.4cm);
-    \draw[primary,opacity=0.024,line width=0.7pt]
-      ([xshift=2cm,yshift=-2cm]current page.north west) circle (7.2cm);
+    \begin{scope}
+      \clip (current page.south west) rectangle (current page.north east);
+      \foreach \j in {0,1,...,10}{%
+        \foreach \i in {0,1,...,15}{%
+          \pgfmathsetmacro{\xc}{\i*1.10 + mod(\j,2)*0.55}%
+          \draw[primary,opacity=0.052,line width=0.55pt]%
+            ([xshift=\xc cm,yshift=\j*0.95cm]current page.south west)%
+            circle (0.55cm);%
+        }%
+      }%
+    \end{scope}
   \end{tikzpicture}%
 }
 
