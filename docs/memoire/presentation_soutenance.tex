@@ -232,8 +232,6 @@
   Je vous remercie pour l'occasion qui m'est donnée de présenter mon travail portant sur
   la conception et la mise en place d'un système de détection et de réponse aux attaques
   ransomware dans un environnement contrôlé~: RansomShield.
-  Cette présentation durera dix minutes, suivie d'une démonstration live de cinq minutes
-  sur des machines virtuelles réelles.
 }
 
 % ─────────────────────────────────────────────────────────────────────────
@@ -343,10 +341,13 @@
 \end{frame}
 \note{
   \textbf{[PROBLÉMATIQUE — 2:00]}\\[4pt]
-  La problématique est formulée de manière affirmative : la détection comportementale
-  couplée à un contrôle humain constitue la réponse adaptée.
-  Trois défis structurent ce travail : les variantes inconnues, le parc hétérogène,
-  et la nécessité d'un contrôle humain avant chaque action.
+  La détection comportementale en temps réel des attaques ransomware, combinée
+  à une réponse maîtrisée avec validation humaine systématique, constitue une solution
+  efficace et démontrable pour protéger un parc de machines hétérogène sans déployer
+  de vrai malware.
+  Trois défis structurent ce travail : les variantes inconnues qui contournent
+  les antivirus, la diversité des systèmes à surveiller, et le risque d'une réponse
+  automatique sans contrôle humain.
 }
 
 % ─── Objectifs ────────────────────────────────────────────────────────────
@@ -363,22 +364,19 @@
     \end{itemize}
   \end{block}
 
-  \vspace{6pt}
-
-  \begin{tcolorbox}[
-    colback=light,colframe=primary,arc=5pt,boxrule=0.8pt,halign=center,
-    left=8pt,right=8pt,top=5pt,bottom=5pt
-  ]
-    \small\color{textdark}
-    Mémoire rédigé en \LaTeX{} selon le canevas IFRI ---
-    Licence Informatique, option Sécurité Informatique --- Année 2023--2024
-  \end{tcolorbox}
 
 \end{frame}
 \note{
   \textbf{[OBJECTIFS — 3:00]}\\[4pt]
-  Six objectifs spécifiques guident ce travail : surveillance temps réel, scoring
-  configurable, alertes automatiques, contrôle humain, 2FA et validation par scénarios.
+  L'objectif général est de concevoir et mettre en œuvre un système de détection
+  et de réponse aux attaques ransomware, basé sur la surveillance comportementale
+  des fichiers et des processus, avec une console de supervision traçable.
+  Pour y parvenir, six objectifs spécifiques ont structuré ce travail :
+  surveiller les événements fichiers en temps réel, analyser les comportements
+  et calculer un score de risque configurable, générer automatiquement les alertes,
+  soumettre chaque action de protection à une validation humaine, sécuriser la console
+  par une authentification forte à deux facteurs, et valider la solution sur des
+  scénarios d'attaque représentatifs.
 }
 
 % =========================================================================
@@ -451,8 +449,12 @@
 \end{frame}
 \note{
   \textbf{[SOLUTIONS — 5:15]}\\[4pt]
-  Les antivirus passent à côté des nouvelles variantes. Les EDR commerciaux sont
-  efficaces mais hors de portée académique. RansomShield se positionne dans cet espace.
+  Les antivirus ne couvrent que les variantes connues par leur signature.
+  Les SIEM collectent des journaux, mais sans corrélation comportementale.
+  Les EDR commerciaux sont efficaces, mais leur coût les rend inaccessibles
+  dans un cadre académique.
+  RansomShield occupe cet espace : une solution open-source, comportementale,
+  multi-plateforme, démontrable sur machines réelles, avec contrôle humain intégré.
 }
 
 % =========================================================================
@@ -517,9 +519,12 @@
 \end{frame}
 \note{
   \textbf{[ARCHITECTURE — 6:15]}\\[4pt]
-  L'architecture suit un circuit~: les agents envoient les événements à l'API Laravel,
-  le moteur calcule le score, la console SOC affiche les alertes, l'opérateur valide
-  l'action, et la réponse est appliquée sur les agents. Aucune action automatique.
+  L'architecture suit un pipeline en cinq maillons.
+  L'agent collecte les événements sur la machine et les envoie à l'API Laravel.
+  Le moteur de détection analyse les signaux et calcule un score de risque.
+  Dès que ce score franchit un seuil, la console SOC génère une alerte et soumet
+  une action à l'opérateur.
+  C'est lui qui décide --- le système n'agit jamais de manière autonome.
 }
 
 % ─── Les 4 composants ─────────────────────────────────────────────────────
@@ -557,9 +562,14 @@
 \end{frame}
 \note{
   \textbf{[4 COMPOSANTS — 7:15]}\\[4pt]
-  L'agent surveille en temps réel et conserve une file locale. La console centralise
-  le suivi. La découverte réseau scanne mais exige une validation manuelle. Le module
-  de simulation rejoue des attaques réalistes sans vrai malware.
+  RansomShield repose sur quatre composants distincts.
+  L'agent Python surveille les fichiers en temps réel et maintient une file locale
+  SQLite pour ne perdre aucun événement en cas de coupure réseau.
+  La console SOC centralise la supervision, les alertes et la file d'approbation.
+  Le module de découverte réseau détecte les nouvelles machines, mais aucune n'est
+  enrôlée sans validation manuelle de l'administrateur.
+  Le module de simulation rejoue des scénarios d'attaque réalistes, sans déployer
+  de vrai malware.
 }
 
 % ─── Diagramme de cas d'utilisation ──────────────────────────────────────
@@ -637,9 +647,12 @@
 \end{frame}
 \note{
   \textbf{[USE CASE — 8:30]}\\[4pt]
-  L'administrateur gère les agents, configure le système et lance les simulations.
-  L'analyste SOC se concentre sur le traitement opérationnel~: alertes, approbation
-  d'actions, et timeline. Il n'a pas accès à la configuration.
+  Deux acteurs interagissent avec le système.
+  L'administrateur gère le parc : il enrôle les agents, configure les règles
+  de détection et lance les simulations.
+  L'analyste SOC traite les incidents au quotidien : il consulte les alertes,
+  approuve ou rejette les actions de protection, et suit la timeline d'audit.
+  Il n'a pas accès à la configuration --- cette séparation est intentionnelle.
 }
 
 % ─── Diagramme de classes ─────────────────────────────────────────────────
@@ -747,10 +760,10 @@
 \end{frame}
 \note{
   \textbf{[DIAGRAMME DE CLASSES — 9:15]}\\[4pt]
-  Le diagramme montre sept entités. Le pipeline se lit de gauche à droite~:
-  Agent génère des Events, évalués par DetectionRule, qui créent des Alerts,
-  escaladées en Incidents. Chaque Incident génère des ProtectionActions et
-  des entrées dans l'AuditLog.
+  Sept entités structurent le modèle objet. Le pipeline se lit de gauche à droite :
+  un Agent génère des Events que les DetectionRules évaluent pour produire des Alerts.
+  Ces alertes s'escaladent en Incidents, qui génèrent des ProtectionActions
+  soumises à approbation, et des entrées dans l'AuditLog pour la traçabilité complète.
 }
 
 % ─── Modèle de données ────────────────────────────────────────────────────
@@ -799,8 +812,11 @@
 \end{frame}
 \note{
   \textbf{[MODÈLE DE DONNÉES — 10:15]}\\[4pt]
-  Le modèle repose sur huit tables MySQL. Chaque action est horodatée avec l'identité
-  de l'opérateur qui l'a validée.
+  Le modèle de données traduit directement le pipeline de traitement.
+  Huit tables MySQL couvrent l'ensemble du cycle, de la collecte des événements
+  jusqu'à l'archivage des décisions.
+  La traçabilité est intégrée au schéma : chaque action de protection est liée
+  à l'identité de l'opérateur qui l'a validée et conservée dans l'audit log.
 }
 
 % =========================================================================
@@ -857,8 +873,11 @@
 \end{frame}
 \note{
   \textbf{[CHOIX TECHNIQUES — 11:30]}\\[4pt]
-  Backend Laravel 11, agent Python avec Watchdog, frontend Chart.js en local,
-  tests sur 3 VMs KVM avec 2FA TOTP.
+  Les choix techniques ont été guidés par trois critères : la portabilité,
+  la légèreté d'installation, et la capacité à démontrer le système en conditions réelles.
+  Laravel 11 pour l'API REST et la console, Python avec Watchdog pour l'agent
+  multi-plateforme, Chart.js intégré en local pour le frontend, et un environnement
+  de test sur trois machines virtuelles KVM avec authentification 2FA TOTP.
 }
 
 % ─── Agent Python + Moteur ────────────────────────────────────────────────
@@ -912,8 +931,11 @@
 \end{frame}
 \note{
   \textbf{[AGENT — 12:45]}\\[4pt]
-  Un fichier renommé en \texttt{.locked} (+80) et une note de rançon (+55) donnent
-  135 points : alerte critique et incident créés en moins de cinq secondes.
+  Pour illustrer le scoring : un fichier renommé avec l'extension \texttt{.locked}
+  déclenche un signal à +80, la création d'une note de rançon ajoute +55.
+  Le score cumulé de 135 dépasse le seuil critique fixé à 100 :
+  une alerte est générée et un incident est ouvert automatiquement
+  en moins de cinq secondes.
 }
 
 % ─── Console SOC ──────────────────────────────────────────────────────────
@@ -952,9 +974,11 @@
 \end{frame}
 \note{
   \textbf{[CONSOLE SOC — 14:00]}\\[4pt]
-  La console centralise neuf pages. Toute action passe par la file d'approbation~:
-  l'analyste valide ou rejette explicitement. Les notifications partent sur quatre
-  canaux simultanément.
+  La console couvre l'ensemble du cycle opérationnel en neuf pages.
+  Chaque action de protection passe obligatoirement par la file d'approbation :
+  l'analyste valide ou rejette explicitement --- aucune exécution silencieuse n'est possible.
+  Les notifications sont envoyées simultanément sur quatre canaux :
+  web, e-mail SMTP, son et webhook.
 }
 
 % ─── Tests de validation ──────────────────────────────────────────────────
@@ -1001,8 +1025,11 @@
 \end{frame}
 \note{
   \textbf{[TESTS — 15:15]}\\[4pt]
-  Cinq scénarios validés, de 5 à 22 événements, tous détectés en moins de cinq
-  secondes. Je précise une limite~: tests Linux uniquement.
+  Cinq scénarios d'attaque ont été exécutés, de 5 à 22 événements.
+  Tous ont été détectés en moins de cinq secondes, sans perte d'événement.
+  Le pipeline complet --- de la collecte à l'incident --- a été validé bout en bout.
+  Une limite est à noter : les tests ont été conduits sur Linux uniquement,
+  ce qui constitue la première perspective d'évolution du projet.
 }
 
 % ─────────────────────────────────────────────────────────────────────────
@@ -1081,8 +1108,13 @@
 \end{frame}
 \note{
   \textbf{[CONCLUSION — 20:00]}\\[4pt]
-  RansomShield couvre tout le cycle d'un incident. Ses limites sont assumées~: tests
-  Linux, LAN sans HTTPS. Les perspectives visent HTTPS, RBAC, ML et MITRE ATT\&CK.
+  RansomShield couvre l'intégralité du cycle de traitement d'un incident :
+  collecte, analyse, alerte, réponse et audit.
+  Ses limites sont assumées : les tests ont été conduits sur Linux,
+  et la communication reste en HTTP sur un réseau local contrôlé.
+  Les perspectives visent le chiffrement TLS en production, l'introduction de rôles
+  distincts via RBAC, un moteur de détection par Machine Learning,
+  et un alignement sur le référentiel MITRE ATT\&CK.
 }
 
 % ─────────────────────────────────────────────────────────────────────────
@@ -1103,24 +1135,9 @@
     \fill[dprimary]
       (current page.south west) rectangle
       ([yshift=0.40cm]current page.south east);
-    % Grande inscription blanche centrée
     \node[anchor=center,font=\fontsize{34}{34}\selectfont\bfseries,text=white]
-      at ([yshift=1.4cm]current page.center)
-      {Merci de votre attention\,!};
-    % Séparateur fin blanc
-    \draw[white,opacity=0.45,line width=0.8pt]
-      ([xshift=-6cm,yshift=0.35cm]current page.center) --
-      ([xshift= 6cm,yshift=0.35cm]current page.center);
-    % Identité
-    \node[anchor=center,font=\large\bfseries,text=white]
-      at ([yshift=-0.5cm]current page.center)
-      {Codjo Fréjus Loïc SANGRONIO};
-    \node[anchor=center,font=\normalsize,text=white!80]
-      at ([yshift=-1.15cm]current page.center)
-      {\texttt{lsangronio@gmail.com} \textbar{} IFRI-UAC · 2023--2024};
-    \node[anchor=center,font=\small,text=white!65]
-      at ([yshift=-1.75cm]current page.center)
-      {Encadreur : Ing. Guy KPEDJO};
+      at (current page.center)
+      {Merci pour votre attention};
   \end{tikzpicture}
 \end{frame}
 }

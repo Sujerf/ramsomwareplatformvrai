@@ -1,0 +1,429 @@
+% =========================================================================
+%  Guide de démonstration — Phase de démo soutenance RansomShield
+%  Codjo Fréjus Loïc SANGRONIO — IFRI-UAC — Licence Sécurité Informatique
+%  Durée totale : 4 minutes | 5 étapes | 3 VMs KVM
+%  Compilateur : pdfLaTeX
+% =========================================================================
+
+\documentclass[a4paper,11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{geometry}
+\geometry{top=1.6cm,bottom=1.6cm,left=2cm,right=2cm}
+\usepackage{xcolor}
+\usepackage{tcolorbox}
+\tcbuselibrary{skins,breakable}
+\usepackage{fontawesome5}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{enumitem}
+% titlesec remplacé par redéfinition directe
+\usepackage{fancyhdr}
+\usepackage[colorlinks=true,linkcolor=blue!60!black]{hyperref}
+\usepackage{multicol}
+
+% ── Couleurs ──────────────────────────────────────────────────────────────
+\definecolor{ifriblue} {RGB}{  0,  82, 165}
+\definecolor{darkblue} {RGB}{ 10,  40,  90}
+\definecolor{accentred}{RGB}{220,  70,  30}
+\definecolor{normgreen}{RGB}{ 22, 128,  65}
+\definecolor{darkbg}   {RGB}{ 18,  30,  60}
+\definecolor{lightblue}{RGB}{232, 240, 252}
+\definecolor{warnbg}   {RGB}{255, 248, 220}
+\definecolor{critbg}   {RGB}{254, 236, 236}
+
+% ── Boîtes ────────────────────────────────────────────────────────────────
+
+% Boîte de timing (bleue)
+\newtcolorbox{etapebox}[2]{
+  colback=ifriblue!8, colframe=ifriblue,
+  fonttitle=\bfseries\normalsize\color{white},
+  title={\faStopwatch\quad Étape #1 \hfill \textit{\normalfont\small #2}},
+  boxrule=1.2pt, arc=5pt,
+  left=7pt, right=7pt, top=5pt, bottom=5pt,
+  breakable
+}
+
+% Boîte "À DIRE" (gris foncé italique)
+\newtcolorbox{direbox}{
+  colback=darkbg!92, colframe=darkbg,
+  fontupper=\itshape\small\color{white!90!darkbg},
+  boxrule=0pt, arc=3pt,
+  left=8pt, right=8pt, top=4pt, bottom=4pt,
+  title={\faCommentDots\quad \textbf{\normalfont\small À DIRE}},
+  coltitle=white, fonttitle=\bfseries\small,
+  attach boxed title to top left,
+  boxed title style={colback=darkbg,arc=2pt,boxrule=0pt},
+  breakable
+}
+
+% Boîte "À MONTRER / CLIQUER" (bleue claire)
+\newtcolorbox{montrerbox}{
+  colback=lightblue, colframe=ifriblue!70,
+  boxrule=0.8pt, arc=3pt,
+  left=6pt, right=6pt, top=3pt, bottom=3pt,
+  title={\faMousePointer\quad \textbf{\normalfont\small À MONTRER / CLIQUER}},
+  coltitle=white, fonttitle=\bfseries\small,
+  attach boxed title to top left,
+  boxed title style={colback=ifriblue,arc=2pt,boxrule=0pt},
+  breakable
+}
+
+% Boîte terminal / commande (fond noir)
+\newtcolorbox{cmdbox}{
+  colback=darkbg, colframe=darkbg!60!black,
+  fontupper=\ttfamily\small\color{normgreen!90!white},
+  boxrule=0.8pt, arc=3pt,
+  left=8pt, right=8pt, top=4pt, bottom=4pt,
+  breakable
+}
+
+% Boîte alerte / plan de secours (orange)
+\newtcolorbox{warnbox}[1]{
+  colback=warnbg, colframe=accentred!70,
+  fonttitle=\bfseries\small\color{accentred!80!black},
+  title={\faExclamationTriangle\quad #1},
+  boxrule=1pt, arc=3pt,
+  left=6pt, right=6pt, top=4pt, bottom=4pt,
+  breakable
+}
+
+% Boîte checklist (verte)
+\newtcolorbox{checkbox}[1]{
+  colback=normgreen!8, colframe=normgreen!70,
+  fonttitle=\bfseries\small\color{normgreen!70!black},
+  title={\faCheckSquare\quad #1},
+  boxrule=1pt, arc=3pt,
+  left=6pt, right=6pt, top=4pt, bottom=4pt,
+  breakable
+}
+
+% ── En-têtes / pieds de page ──────────────────────────────────────────────
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.5pt}
+\fancyhead[L]{\small\color{gray} Guide de démonstration --- RansomShield}
+\fancyhead[R]{\small\color{gray} Loïc SANGRONIO --- IFRI-UAC --- Sécurité Informatique}
+\fancyfoot[C]{\small\thepage}
+
+% ── Titres de sections ────────────────────────────────────────────────────
+\makeatletter
+\renewcommand{\section}{\@startsection{section}{1}{\z@}%
+  {1.5ex \@plus 1ex \@minus .2ex}%
+  {1ex \@plus .2ex}%
+  {\large\bfseries\color{ifriblue}}}
+\makeatother
+
+\setlength{\parskip}{4pt}
+\setlength{\parindent}{0pt}
+
+% ── Macros utiles ─────────────────────────────────────────────────────────
+\newcommand{\ok}{\textcolor{normgreen}{\faCheckCircle}\ }
+\newcommand{\clic}[1]{\texttt{\small #1}}
+\newcommand{\resultat}[1]{\textbf{\textcolor{ifriblue}{$\Rightarrow$ #1}}}
+
+% =========================================================================
+\begin{document}
+% =========================================================================
+
+% ── Page de titre ─────────────────────────────────────────────────────────
+\begin{center}
+  {\LARGE\bfseries\color{ifriblue} Guide de la Phase de Démonstration — 4 minutes}\\[6pt]
+  {\Large\bfseries RansomShield}\\[4pt]
+  {\large Système de détection et de réponse aux attaques ransomware}\\[8pt]
+  \hrule height 1.5pt
+  \vspace{4pt}
+  {\small Loïc SANGRONIO \quad\textbar\quad IFRI-UAC
+    \quad\textbar\quad Licence Sécurité Informatique
+    \quad\textbar\quad 2023--2024}
+  \vspace{4pt}
+  \hrule height 1.5pt
+\end{center}
+
+\vspace{6pt}
+
+% ── Vue d'ensemble ────────────────────────────────────────────────────────
+\begin{tcolorbox}[colback=lightblue,colframe=ifriblue,arc=5pt,boxrule=1pt]
+  \begin{center}
+  \renewcommand{\arraystretch}{1.3}
+  \begin{tabular}{@{}c l c l@{}}
+    \toprule
+    \textbf{\#} & \textbf{Ce qu'on montre} & \textbf{Durée} & \textbf{Résultat attendu} \\
+    \midrule
+    1 & Tableau de bord + agents actifs   & 40 s       & Vue globale de la console SOC \\
+    2 & Attaque réelle depuis une VM      & 1 min      & Événements injectés en SSH \\
+    3 & Détection en temps réel           & 50 s       & Alerte critique + incident auto \\
+    4 & Réponse SOC + timeline d'audit    & 55 s       & Approbation + rollback + audit \\
+    5 & Simulation kill chain complète    & 35 s       & 22 événements, pipeline validé \\
+    \midrule
+    & \textbf{Total} & \textbf{4 min} & \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+\end{tcolorbox}
+
+% =========================================================================
+\section{Préparation (5 minutes avant la démo)}
+% =========================================================================
+
+\begin{checkbox}{Ce qu'il faut vérifier avant de commencer}
+\begin{itemize}[leftmargin=1.5em,itemsep=3pt]
+  \item[\ok] Démarrer le serveur SOC~:
+    \begin{cmdbox}
+cd /home/sangronio/ransomshield/backend-laravel\\
+php artisan serve --host=0.0.0.0 --port=8000
+    \end{cmdbox}
+
+  \item[\ok] Vérifier que les 3 VMs sont actives~:
+    \begin{cmdbox}
+virsh list --all
+\# Résultat attendu : rs-client-1, rs-fileserver, rs-attacker en "running"
+    \end{cmdbox}
+
+  \item[\ok] Ouvrir le navigateur sur
+    \clic{http://localhost:8000/console/dashboard} et se connecter~:
+    \begin{itemize}[leftmargin=1em]
+      \item E-mail~: \texttt{admin@ransomshield.local}
+      \item Mot de passe + code 2FA TOTP (application Google Authenticator)
+    \end{itemize}
+
+  \item[\ok] Ouvrir deux fenêtres côte à côte~:
+    fenêtre 1 = navigateur SOC \quad|\quad fenêtre 2 = terminal SSH.
+
+  \item[\ok] Nettoyer les événements de test précédents si la console est bruyante
+    (optionnel, pour une démonstration propre).
+\end{itemize}
+\end{checkbox}
+
+\vspace{4pt}
+
+\begin{warnbox}{Si un agent VM est hors ligne}
+\begin{cmdbox}
+ssh ubuntu@10.20.0.81     \# mot de passe : ransomshield2026\\
+sudo systemctl restart ransomshield-agent\\
+sudo systemctl status ransomshield-agent    \# doit afficher "active (running)"
+\end{cmdbox}
+Vérifier ensuite dans la console que le heartbeat se met à jour.
+\end{warnbox}
+
+\newpage
+
+% =========================================================================
+\section{Déroulé étape par étape}
+% =========================================================================
+
+% ─── ÉTAPE 1 ──────────────────────────────────────────────────────────────
+\begin{etapebox}{1}{0:00 -- 0:40 \textnormal{(40 secondes)}}
+
+\begin{montrerbox}
+\begin{enumerate}[leftmargin=1.5em,itemsep=3pt]
+  \item Aller sur \clic{/console/dashboard}.
+  \item Montrer les compteurs en haut~: alertes actives, incidents en cours, agents critiques, actions en attente.
+  \item Montrer le graphique d'événements (mis à jour toutes les 30\,s).
+  \item Aller sur \clic{/console/agents}.
+  \item Montrer les 3 VMs actives avec leur IP, heartbeat et niveau de risque~:\\
+    \texttt{rs-client-1 (10.20.0.81)} \quad \texttt{rs-fileserver (10.20.0.38)} \quad \texttt{rs-attacker (10.20.0.72)}.
+\end{enumerate}
+\end{montrerbox}
+
+\vspace{5pt}
+
+\begin{direbox}
+« Voici la console SOC de RansomShield — elle centralise la supervision de tous les terminaux.
+Les compteurs en haut donnent l'état en temps réel : alertes actives, incidents, agents critiques, actions en attente.
+Trois agents Python tournent sur trois machines virtuelles KVM en réseau isolé, chacun avec un heartbeat toutes les 30 secondes. »
+\end{direbox}
+
+\end{etapebox}
+
+\vspace{6pt}
+
+% ─── ÉTAPE 2 ──────────────────────────────────────────────────────────────
+\begin{etapebox}{2 --- Attaque réelle depuis une VM}{0:40 -- 1:40 \textnormal{(1 minute)}}
+
+\begin{montrerbox}
+Basculer sur le terminal SSH (fenêtre 2) et jouer les commandes suivantes~:
+\end{montrerbox}
+
+\begin{cmdbox}
+\# Se connecter à la VM victime\\
+ssh ubuntu@10.20.0.81\\
+\\
+\# Créer un fichier document normal\\
+touch /home/ubuntu/Documents/rapport\_demo.docx\\
+sleep 2\\
+\\
+\# Chiffrement simulé : renommer avec extension .locked\\
+mv /home/ubuntu/Documents/rapport\_demo.docx \textbackslash\\
+\quad /home/ubuntu/Documents/rapport\_demo.docx.locked\\
+sleep 2\\
+\\
+\# Déposer une note de rançon\\
+echo "Your files are encrypted. Pay 1 BTC." \textbackslash\\
+\quad > /home/ubuntu/HOW\_TO\_DECRYPT.txt
+\end{cmdbox}
+
+\vspace{4pt}
+
+\begin{direbox}
+« Je me connecte en SSH sur la VM victime et simule un chiffrement :
+renommage avec l'extension \texttt{.locked}, puis dépôt d'une note de rançon.
+L'agent Python surveille ce dossier via Watchdog et inotify.
+Ces événements sont placés dans la file locale SQLite, puis transmis au SOC via l'API sécurisée. »
+\end{direbox}
+
+\end{etapebox}
+
+\vspace{6pt}
+
+% ─── ÉTAPE 3 ──────────────────────────────────────────────────────────────
+\begin{etapebox}{3 --- Détection en temps réel}{1:40 -- 2:30 \textnormal{(50 secondes)}}
+
+\begin{montrerbox}
+Revenir sur le navigateur (fenêtre 1) --- ne pas rafraîchir manuellement.
+\begin{enumerate}[leftmargin=1.5em,itemsep=3pt]
+  \item \clic{/console/events} --- l'événement \texttt{file\_encrypted\_extension}
+    de \texttt{rs-client-1} est apparu avec un score de \textbf{135} et le niveau \textbf{Critique}.
+  \item \clic{/console/alerts} --- l'alerte critique a été générée automatiquement
+    avec ses signaux (extension suspecte + note de rançon) et l'agent source.
+  \item \clic{/console/incidents} --- l'incident a été ouvert automatiquement.
+    Cliquer dessus pour afficher la fiche~: alertes rattachées, signaux, actions proposées.
+\end{enumerate}
+\end{montrerbox}
+
+\vspace{5pt}
+
+\begin{direbox}
+« En moins de 5 secondes après le renommage sur la machine virtuelle,
+le moteur de détection a calculé un score de 135 à partir des signaux cumulés~:
++80 pour l'extension suspecte, +55 pour la note de rançon.
+Ce score dépasse le seuil critique configuré à 100.
+Une alerte a été générée et un incident de sécurité a été ouvert automatiquement dans la console. »
+\end{direbox}
+
+\resultat{Score 135 → Niveau Critique → Alerte + Incident ouverts automatiquement en $< 5$\,s}
+
+\end{etapebox}
+
+\vspace{6pt}
+
+% ─── ÉTAPE 4 ──────────────────────────────────────────────────────────────
+\begin{etapebox}{4 --- Réponse SOC et timeline d'audit}{2:30 -- 3:25 \textnormal{(55 secondes)}}
+
+\begin{montrerbox}
+\begin{enumerate}[leftmargin=1.5em,itemsep=3pt]
+  \item \clic{/console/protection-actions} --- montrer la file d'approbation~:
+    actions proposées par le moteur (scan actif, isolation réseau).
+  \item Cliquer \textbf{Approuver} sur l'action \textit{scan actif}~: l'agent reçoit la commande et exécute le scan.
+  \item Si l'action ``isolation réseau'' est disponible~: l'approuver, puis montrer
+    le bouton \textbf{Rollback} pour lever l'isolation.
+  \item \clic{/console/incidents/\{id\}/timeline} --- afficher la timeline chronologique~:
+    événement reçu $\to$ alerte créée $\to$ incident ouvert $\to$ action proposée $\to$ action approuvée.
+\end{enumerate}
+\end{montrerbox}
+
+\vspace{5pt}
+
+\begin{direbox}
+« Dans RansomShield, le moteur propose — l'opérateur décide.
+J'approuve l'action de scan : l'agent reçoit la commande et l'exécute.
+Si j'avais isolé la machine, le bouton rollback permet de lever cette isolation en un clic.
+Chaque décision est horodatée dans la timeline : de la détection à la réponse, tout est tracé. »
+\end{direbox}
+
+\resultat{Timeline complète~: de la détection à la décision, tout est tracé et horodaté}
+
+\end{etapebox}
+
+\vspace{6pt}
+
+% ─── ÉTAPE 5 ──────────────────────────────────────────────────────────────
+\begin{etapebox}{5 --- Simulation de la kill chain complète}{3:25 -- 4:00 \textnormal{(35 secondes)}}
+
+\begin{montrerbox}
+\begin{enumerate}[leftmargin=1.5em,itemsep=3pt]
+  \item Aller sur \clic{/console/simulation}.
+  \item Sélectionner l'agent cible~: \textbf{rs-client-1}.
+  \item Choisir le scénario \textbf{``Kill chain complète''} (22 événements).
+  \item Cliquer \textbf{Lancer la simulation}.
+  \item Observer la cascade d'alertes sur \clic{/console/alerts}.
+\end{enumerate}
+\end{montrerbox}
+
+\vspace{5pt}
+
+\begin{direbox}
+« Le simulateur injecte 22 événements dans le même pipeline que pour une vraie attaque.
+Tous sont marqués \texttt{is\_simulation=true} pour un nettoyage facile.
+Cela démontre la résilience du moteur face à un volume élevé d'événements, sans toucher l'environnement réel. »
+\end{direbox}
+
+\resultat{22 événements traités, aucun perdu~: la résilience de la file SQLite est démontrée}
+
+\end{etapebox}
+
+% =========================================================================
+\section{Récapitulatif des capacités démontrées}
+% =========================================================================
+
+\begin{checkbox}{Ce que le jury a pu observer}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{@{}l l c@{}}
+\toprule
+\textbf{Capacité} & \textbf{Prouvée par} & \textbf{Étape} \\
+\midrule
+Multi-agents sur VMs réelles       & 3 agents actifs en console          & 1 \\
+Surveillance en temps réel         & Événement détecté en $<$ 5\,s       & 2--3 \\
+Analyse comportementale            & Score 135, niveau critique auto     & 3 \\
+Incident auto-ouvert               & Fiche incident avec signaux         & 3 \\
+Contrôle humain                    & File d'approbation (approuver/rejeter) & 4 \\
+Rollback                           & Isolation réseau levée en un clic  & 4 \\
+Timeline d'audit complète          & Chronologie horodatée              & 4 \\
+Résilience du pipeline             & 22 événements sans perte            & 5 \\
+\bottomrule
+\end{tabular}
+\end{checkbox}
+
+% =========================================================================
+\section{Plan de secours (si quelque chose échoue)}
+% =========================================================================
+
+\begin{warnbox}{La VM ne répond pas en SSH}
+Injecter un événement directement via \texttt{curl} depuis le poste local~:
+\begin{cmdbox}
+curl -s -X POST http://127.0.0.1:8000/api/agent/events \textbackslash\\
+  -H "Content-Type: application/json" \textbackslash\\
+  -H "X-Agent-Secret: y0QUhoaW57aYsc0xd9tI7vbj2M18HogBDWPIAIe9xh2mTEo104Bv3vrNisdu" \textbackslash\\
+  -d '\{"agent\_uuid":"96c75bc2-afcd-442f-8888-1f28b7b661ad",\\
+        "event\_type":"file\_encrypted\_extension",\\
+        "file\_path":"/home/ubuntu/rapport\_demo.docx.locked",\\
+        "file\_extension":".locked","file\_name":"rapport\_demo.docx.locked"\}'
+\end{cmdbox}
+La réponse JSON confirme~: score, niveau de risque, alerte créée, incident ouvert.\\
+Passer directement à l'\textbf{étape 5} (simulation) si les étapes 2--3 posent problème.
+\end{warnbox}
+
+\vspace{4pt}
+
+\begin{warnbox}{Le navigateur ne montre pas les nouvelles alertes}
+Forcer un rafraîchissement manuel (F5) ou aller directement sur
+\clic{/console/events} et filtrer par niveau ``Critique''.
+\end{warnbox}
+
+\vspace{4pt}
+
+\begin{warnbox}{La simulation ne se lance pas}
+Vérifier qu'un agent \textbf{actif} (heartbeat $<$ 2 min) est sélectionné.
+Utiliser l'agent local \texttt{DESKTOP-TEST01} en dernier recours.
+\end{warnbox}
+
+\vspace{6pt}
+\begin{center}
+\small\color{gray}
+Document interne --- soutenance RansomShield\\
+Loïc SANGRONIO --- IFRI-UAC --- 2023--2024
+\end{center}
+
+\end{document}
