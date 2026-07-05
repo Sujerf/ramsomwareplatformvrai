@@ -227,7 +227,7 @@
 \end{frame}
 }
 \note{
-  \textbf{[OUVERTURE — 0:00]}\\[4pt]
+  \textbf{[OUVERTURE]}\\[4pt]
   Monsieur le Président du jury, Mesdames et Messieurs les membres du jury, bonjour.
   Je vous remercie pour l'occasion qui m'est donnée de présenter mon travail portant sur
   la conception et la mise en place d'un système de détection et de réponse aux attaques
@@ -261,7 +261,7 @@
   \vfill
 \end{frame}
 \note{
-  \textbf{[SOMMAIRE — 0:30]}\\[4pt]
+  \textbf{[SOMMAIRE]}\\[4pt]
   Ma présentation s'articule en cinq parties~: le contexte et la problématique,
   la revue de littérature, la conception, la réalisation et les résultats, puis
   la conclusion. Je terminerai par une courte démonstration live.
@@ -297,7 +297,7 @@
 
 \end{frame}
 \note{
-  \textbf{[CONTEXTE — 1:00]}\\[4pt]
+  \textbf{[CONTEXTE]}\\[4pt]
   Les organisations dépendent aujourd'hui fortement de leurs systèmes informatiques,
   ce qui les expose de plus en plus aux cyberattaques — en particulier au ransomware.
   Selon l'ENISA, ces attaques ont augmenté de 73\,\% en 2023~; sans outil dédié,
@@ -340,7 +340,7 @@
 
 \end{frame}
 \note{
-  \textbf{[PROBLÉMATIQUE — 2:00]}\\[4pt]
+  \textbf{[PROBLÉMATIQUE]}\\[4pt]
   La détection comportementale en temps réel des attaques ransomware, combinée
   à une réponse maîtrisée avec validation humaine systématique, constitue une solution
   efficace et démontrable pour protéger un parc de machines hétérogène sans déployer
@@ -367,7 +367,7 @@
 
 \end{frame}
 \note{
-  \textbf{[OBJECTIFS — 3:00]}\\[4pt]
+  \textbf{[OBJECTIFS]}\\[4pt]
   L'objectif général est de concevoir et mettre en œuvre un système de détection
   et de réponse aux attaques ransomware, basé sur la surveillance comportementale
   des fichiers et des processus, avec une console de supervision traçable.
@@ -412,7 +412,7 @@
 
 \end{frame}
 \note{
-  \textbf{[DÉFINITION — 3:50]}\\[4pt]
+  \textbf{[DÉFINITION]}\\[4pt]
   Un ransomware laisse des traces comportementales avant que les dégâts soient
   irréversibles : extensions suspectes, note de rançon, suppression VSS, LOLBins.
   Ce sont ces signaux qui forment la base de notre détection.
@@ -448,7 +448,7 @@
 
 \end{frame}
 \note{
-  \textbf{[SOLUTIONS — 5:15]}\\[4pt]
+  \textbf{[SOLUTIONS]}\\[4pt]
   Les antivirus ne couvrent que les variantes connues par leur signature.
   Les SIEM collectent des journaux, mais sans corrélation comportementale.
   Les EDR commerciaux sont efficaces, mais leur coût les rend inaccessibles
@@ -518,7 +518,7 @@
  \faLock\ Aucune action automatique --- l'opérateur valide systématiquement avant exécution}
 \end{frame}
 \note{
-  \textbf{[ARCHITECTURE — 6:15]}\\[4pt]
+  \textbf{[ARCHITECTURE]}\\[4pt]
   L'architecture suit un pipeline en cinq maillons.
   L'agent collecte les événements sur la machine et les envoie à l'API Laravel.
   Le moteur de détection analyse les signaux et calcule un score de risque.
@@ -561,7 +561,7 @@
 
 \end{frame}
 \note{
-  \textbf{[4 COMPOSANTS — 7:15]}\\[4pt]
+  \textbf{[4 COMPOSANTS]}\\[4pt]
   RansomShield repose sur quatre composants distincts.
   L'agent Python surveille les fichiers en temps réel et maintient une file locale
   SQLite pour ne perdre aucun événement en cas de coupure réseau.
@@ -646,7 +646,7 @@
 \end{center}
 \end{frame}
 \note{
-  \textbf{[USE CASE — 8:30]}\\[4pt]
+  \textbf{[USE CASE]}\\[4pt]
   Deux acteurs interagissent avec le système.
   L'administrateur gère le parc : il enrôle les agents, configure les règles
   de détection et lance les simulations.
@@ -759,7 +759,7 @@
 \end{center}
 \end{frame}
 \note{
-  \textbf{[DIAGRAMME DE CLASSES — 9:15]}\\[4pt]
+  \textbf{[DIAGRAMME DE CLASSES]}\\[4pt]
   Sept entités structurent le modèle objet. Le pipeline se lit de gauche à droite :
   un Agent génère des Events que les DetectionRules évaluent pour produire des Alerts.
   Ces alertes s'escaladent en Incidents, qui génèrent des ProtectionActions
@@ -811,7 +811,7 @@
 
 \end{frame}
 \note{
-  \textbf{[MODÈLE DE DONNÉES — 10:15]}\\[4pt]
+  \textbf{[MODÈLE DE DONNÉES]}\\[4pt]
   Le modèle de données traduit directement le pipeline de traitement.
   Huit tables MySQL couvrent l'ensemble du cycle, de la collecte des événements
   jusqu'à l'archivage des décisions.
@@ -872,7 +872,7 @@
 
 \end{frame}
 \note{
-  \textbf{[CHOIX TECHNIQUES — 11:30]}\\[4pt]
+  \textbf{[CHOIX TECHNIQUES]}\\[4pt]
   Les choix techniques ont été guidés par trois critères : la portabilité,
   la légèreté d'installation, et la capacité à démontrer le système en conditions réelles.
   Laravel 11 pour l'API REST et la console, Python avec Watchdog pour l'agent
@@ -930,7 +930,7 @@
 
 \end{frame}
 \note{
-  \textbf{[AGENT — 12:45]}\\[4pt]
+  \textbf{[AGENT]}\\[4pt]
   Pour illustrer le scoring : un fichier renommé avec l'extension \texttt{.locked}
   déclenche un signal à +80, la création d'une note de rançon ajoute +55.
   Le score cumulé de 135 dépasse le seuil critique fixé à 100 :
@@ -973,7 +973,7 @@
 
 \end{frame}
 \note{
-  \textbf{[CONSOLE SOC — 14:00]}\\[4pt]
+  \textbf{[CONSOLE SOC]}\\[4pt]
   La console couvre l'ensemble du cycle opérationnel en neuf pages.
   Chaque action de protection passe obligatoirement par la file d'approbation :
   l'analyste valide ou rejette explicitement --- aucune exécution silencieuse n'est possible.
@@ -1024,7 +1024,7 @@
 
 \end{frame}
 \note{
-  \textbf{[TESTS — 15:15]}\\[4pt]
+  \textbf{[TESTS]}\\[4pt]
   Cinq scénarios d'attaque ont été exécutés, de 5 à 22 événements.
   Tous ont été détectés en moins de cinq secondes, sans perte d'événement.
   Le pipeline complet --- de la collecte à l'incident --- a été validé bout en bout.
@@ -1049,26 +1049,21 @@
       (current page.south west) rectangle
       ([yshift=0.40cm]current page.south east);
     \node[anchor=center,font=\Huge\bfseries\color{white}]
-      at ([yshift=0.8cm]current page.center)
+      at (current page.center)
       {\faPlay\quad Démonstration Live};
-    \node[anchor=center,font=\large\color{white!85}]
-      at ([yshift=-0.5cm]current page.center)
-      {5 minutes --- système réel sur VMs KVM};
   \end{tikzpicture}
 \end{frame}
 }
 \note{
-  \textbf{[DÉMO LIVE — 16:00, checklist 5 min, hors chrono présentation]}\\[4pt]
-  1. Ouvrir \texttt{http://10.20.0.1} (console SOC)\\[3pt]
-  2. Se connecter : identifiants + \textbf{code 2FA}\\[3pt]
-  3. Vérifier : 3 agents en ligne (heartbeat vert)\\[3pt]
-  4. \textbf{Agents} $\to$ VM-02 $\to$ \textbf{Lancer simulation} $\to$ "Kill chain complète"\\[3pt]
-  5. \textbf{Dashboard} : le score monte en temps réel\\[3pt]
-  6. \textbf{Alertes} : niveau Critique\\[3pt]
-  7. \textbf{Incidents} : ouvrir l'incident auto-créé\\[3pt]
-  8. \textbf{File d'approbation} : approuver l'isolation réseau\\[3pt]
-  9. \textbf{Timeline} : tout est horodaté et tracé\\[3pt]
-  \textit{Rester calme, ne pas se précipiter.}
+  \textbf{[DÉMONSTRATION LIVE]}\\[4pt]
+  Suivre le guide de démonstration.\\[6pt]
+  \textbf{Checklist rapide :}\\[3pt]
+  1. Console SOC ouverte --- 3 agents en ligne\\[3pt]
+  2. SSH sur \texttt{rs-client-1} --- renommage \texttt{.locked} + note de rançon\\[3pt]
+  3. Revenir sur la console --- alerte critique apparue en moins de 5 secondes\\[3pt]
+  4. File d'approbation --- approuver l'action, montrer le rollback\\[3pt]
+  5. Timeline --- tout est horodaté\\[3pt]
+  6. Simulation kill chain complète --- 22 événements
 }
 
 % =========================================================================
@@ -1107,7 +1102,7 @@
 
 \end{frame}
 \note{
-  \textbf{[CONCLUSION — 20:00]}\\[4pt]
+  \textbf{[CONCLUSION]}\\[4pt]
   RansomShield couvre l'intégralité du cycle de traitement d'un incident :
   collecte, analyse, alerte, réponse et audit.
   Ses limites sont assumées : les tests ont été conduits sur Linux,
