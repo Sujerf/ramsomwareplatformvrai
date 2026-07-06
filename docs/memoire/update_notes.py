@@ -38,7 +38,7 @@ r"""[CONTEXTE — 1:00 | ~45 sec]
 
 Imaginez : vos fichiers se renomment les uns après les autres, les sauvegardes disparaissent, et un message s'affiche — « payez, ou perdez tout ». C'est un ransomware.
 
-L'ENISA a mesuré une hausse de 73 % de ces attaques en 2023. Sans outil dédié, il faut en moyenne 21 jours pour détecter l'incident — et le coût dépasse souvent le million de dollars.
+L'ENISA a mesuré une hausse de 73\,\% de ces attaques en 2023. Sans outil dédié, il faut en moyenne 21 jours pour détecter l'incident — et le coût dépasse souvent le million de dollars.
 
 Les cibles ne sont plus seulement les grandes entreprises : les hôpitaux, les PME, les universités sont touchés.
 
