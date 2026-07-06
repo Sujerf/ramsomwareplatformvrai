@@ -1023,25 +1023,25 @@
 
 \end{frame}
 \note{
-\textbf{[CONCLUSION]}\\[4pt]
-  Nous voilà dans la cinquième et dernière partie de notre exposé.\\[4pt]
+\textbf{[CONCLUSION]}\\[2pt]
+  Nous voilà dans la cinquième et dernière partie de notre exposé.\\[2pt]
   Monsieur le Président du jury, Mesdames et Messieurs les membres du jury,
-  permettez-moi de vous présenter la synthèse de ce travail.\\[4pt]
+  permettez-moi de vous présenter la synthèse de ce travail.\\[2pt]
   RansomShield couvre l'intégralité du cycle de traitement d'un incident de sécurité :
   la détection sur le terminal, l'analyse comportementale, la génération de l'alerte,
   la décision de l'opérateur, et l'archivage complet de toutes les actions.
-  Il est opérationnel, démontrable, et construit sans aucun malware réel.\\[4pt]
+  Il est opérationnel, démontrable, et construit sans aucun malware réel.\\[2pt]
   Je suis conscient que ce travail, mené dans un cadre académique avec des ressources
   et un temps limités, n'est pas exempt de lacunes. Les tests ont été conduits sur Linux
   uniquement, et les communications restent en HTTP. Ce sont des limites que j'assume
-  pleinement et que j'ai tenu à nommer clairement.\\[4pt]
+  pleinement et que j'ai tenu à nommer clairement.\\[2pt]
   C'est pourquoi je compte sur vos observations, vos critiques et vos recommandations
   pour enrichir ce travail. Chaque remarque du jury est pour moi une opportunité
-  de progresser et de mieux faire.\\[4pt]
+  de progresser et de mieux faire.\\[2pt]
   Les perspectives sont tracées : sécuriser les communications pour la production,
   affiner les rôles selon le profil de chaque utilisateur, et doter le moteur
   d'un apprentissage automatique pour qu'il apprenne à reconnaître les comportements
-  normaux et signale les anomalies avec encore plus de précision.\\[6pt]
+  normaux et signale les anomalies avec encore plus de précision.\\[4pt]
   \textcolor{transition}{$\hookrightarrow$ Je reste à votre disposition pour vos questions.}
 }
 
@@ -1070,32 +1070,23 @@
 \end{frame}
 }
 \note{
-\textbf{[MERCI — MOT DE CLÔTURE]}\\[4pt]
-  Un mot pour finir, avant les échanges avec le jury.\\[4pt]
-  Dans un monde où les systèmes informatiques automatisent de plus en plus
-  nos décisions, RansomShield rappelle une conviction simple :
-  la machine peut détecter, mais c'est l'humain qui doit décider.
-  Cette philosophie n'est pas une contrainte technique — c'est un choix éthique.\\[4pt]
-  Merci, merci pour votre aimable attention et pour le temps précieux
-  que vous avez bien voulu accorder à ce travail.\\[8pt]
-  \textbf{[POINTS DE RÉPONSE AU JURY]}\\[4pt]
-  \textbullet\ \textbf{Sur le choix de Python :}
-  Python dispose de bibliothèques de surveillance système natives, très légères,
-  qui fonctionnent sur Windows, Linux et macOS sans modification. Choix de portabilité
-  et de rapidité de développement.\\[3pt]
-  \textbullet\ \textbf{Sur les fausses alertes :}
-  Les seuils sont configurables. Et même quand une alerte est levée, l'analyste
-  valide ou rejette avant toute action. Le système ne peut pas agir seul.\\[3pt]
-  \textbullet\ \textbf{Sur l'absence de HTTPS :}
-  Limite assumée du cadre académique. Le chiffrement des communications est la
-  première perspective pour un déploiement en production.\\[3pt]
-  \textbullet\ \textbf{Sur la différence avec un antivirus :}
-  Un antivirus reconnaît les menaces par leur empreinte. RansomShield observe
-  ce que le programme fait, pas ce qu'il est — les variantes inédites sont couvertes.\\[3pt]
-  \textbullet\ \textbf{Sur les tests Windows :}
-  Limite assumée : tests conduits sur Linux uniquement.
-  L'extension à Windows est la première perspective d'évolution.\\[3pt]
-  \textit{Garder les \textbf{captures d'écran et annexes} prêtes.}
+\textbf{[MERCI — MOT DE CLÔTURE]}\\[2pt]
+  Dans un monde où les systèmes automatisent nos décisions, RansomShield rappelle
+  une conviction simple : la machine peut détecter, mais c'est l'humain qui décide.
+  Ce n'est pas une contrainte technique — c'est un choix éthique.\\[1pt]
+  Merci pour votre aimable attention et pour le temps accordé à ce travail.\\[3pt]
+  \textbf{[POINTS DE RÉPONSE AU JURY]}\\[1pt]
+  \textbullet\ \textbf{Python vs C/Go :}
+  Watchdog exploite inotify nativement — CPU minimal, portable Linux/Windows/macOS sans recompilation.\\[1pt]
+  \textbullet\ \textbf{Fausses alertes :}
+  Seuils configurables. L'analyste valide ou rejette avant toute action — le système ne peut pas agir seul.\\[1pt]
+  \textbullet\ \textbf{Absence de HTTPS :}
+  LAN contrôlé pour ce projet. Chiffrement TLS = première perspective pour la production.\\[1pt]
+  \textbullet\ \textbf{Différence avec un antivirus :}
+  L'antivirus reconnaît les empreintes. RansomShield observe le comportement — variantes inédites couvertes.\\[1pt]
+  \textbullet\ \textbf{Tests Windows :}
+  Limite assumée — Linux uniquement. Extension à Windows = première perspective d'évolution.\\[2pt]
+  \textit{Reformuler la question avant de répondre. Garder les \textbf{captures d'écran} prêtes.}
 }
 
 \end{document}
