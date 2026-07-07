@@ -228,13 +228,16 @@
 }
 \note{
 \textbf{[OUVERTURE]}\\[4pt]
-  Monsieur le Président du jury, Mesdames et Messieurs les membres du jury, bonjour.\\[4pt]
-  Permettez-moi, avant toute chose, de vous exprimer ma profonde reconnaissance
-  pour avoir répondu présents à ce rendez-vous. Ce jour revêt pour moi un cachet
+  Excellence Monsieur le Président du jury, Mesdames et Messieurs les membres du jury, bonjour.\\[4pt]
+  Permettez-nous, avant toute chose, de vous exprimer notre profonde reconnaissance
+  pour avoir répondu présents à ce rendez-vous. Ce jour revêt pour nous un cachet
   tout particulier : il est l'aboutissement de ces années de formation, et un moment
-  qui restera gravé dans mon parcours.\\[4pt]
-  C'est avec fierté et humilité que je vous présente aujourd'hui RansomShield —
-  un système que j'ai conçu et mis en place de bout en bout pour détecter et contrer
+  qui restera gravé dans notre parcours.\\[4pt]
+  Le sujet ayant fait l'objet de notre étude est intitulé : \textit{Conception et mise
+  en place d'un système de détection et de réponse aux attaques ransomware dans un
+  environnement contrôlé}.\\[4pt]
+  C'est avec fierté et humilité que nous vous présentons aujourd'hui RansomShield —
+  un système conçu et mis en place de bout en bout pour détecter et contrer
   les attaques ransomware, de manière contrôlée et traçable, avec une validation
   humaine à chaque étape décisive.\\[6pt]
   \textcolor{transition}{$\hookrightarrow$ Voici comment s'articule cette présentation.}
@@ -268,11 +271,11 @@
 \end{frame}
 \note{
 \textbf{[SOMMAIRE]}\\[4pt]
-  Monsieur le Président du jury, Mesdames et Messieurs les membres du jury,\\[4pt]
-  Ma présentation s'articule en cinq parties. Nous partirons du contexte et de la
+  Excellence Monsieur le Président du jury, Mesdames et Messieurs les membres du jury,\\[4pt]
+  Notre présentation s'articule en cinq parties. Nous partirons du contexte et de la
   problématique qui ont motivé ce travail, pour aller vers un état des lieux des solutions
-  existantes, puis la conception et la réalisation du système. Je conclurai par les
-  perspectives et terminerai par une démonstration en conditions réelles.\\[6pt]
+  existantes, puis la conception et la réalisation du système. Nous conclurons par les
+  perspectives et terminerons par une démonstration en conditions réelles.\\[6pt]
   \textcolor{transition}{$\hookrightarrow$ Commençons par le contexte et la problématique.}
 }
 
@@ -434,7 +437,7 @@
 \end{frame}
 \note{
 \textbf{[DÉFINITION]}\\[4pt]
-  Monsieur le Président du jury, Mesdames et Messieurs les membres du jury,\\[4pt]
+  Excellence Monsieur le Président du jury, Mesdames et Messieurs les membres du jury,\\[4pt]
   Nous entrons dans la deuxième partie de notre exposé : la revue de littérature.
   Permettez-moi de commencer par définir précisément ce qu'est un ransomware.\\[4pt]
   Un ransomware agit toujours selon le même schéma. Il commence par accéder à vos
@@ -554,7 +557,7 @@
 \end{frame}
 \note{
 \textbf{[ARCHITECTURE]}\\[4pt]
-  Monsieur le Président du jury, Mesdames et Messieurs les membres du jury,\\[4pt]
+  Excellence Monsieur le Président du jury, Mesdames et Messieurs les membres du jury,\\[4pt]
   Nous entrons dans la troisième partie : l'analyse et la conception de RansomShield.
   Voici l'architecture générale du système — vous pouvez la lire de gauche à droite.\\[4pt]
   Un agent, installé sur chaque terminal de l'organisation, observe en permanence
@@ -756,13 +759,13 @@
 \end{frame}
 \note{
 \textbf{[CHOIX TECHNIQUES]}\\[4pt]
-  Monsieur le Président du jury, Mesdames et Messieurs les membres du jury,\\[4pt]
+  Excellence Monsieur le Président du jury, Mesdames et Messieurs les membres du jury,\\[4pt]
   Nous voici dans la quatrième partie de notre exposé, consacrée à la réalisation
   et aux résultats. Commençons par les choix techniques.\\[4pt]
   Trois critères ont guidé ces choix : fonctionner sur différents systèmes
   d'exploitation, être facile à installer, et être démontrable en conditions réelles
   sans infrastructure coûteuse.\\[4pt]
-  Pour le serveur et la console, j'ai choisi Laravel — un cadre de développement
+  Pour le serveur et la console, le choix s'est porté sur Laravel — un cadre de développement
   web robuste et éprouvé. Pour l'agent de surveillance, Python, qui offre une
   excellente portabilité sur Windows, Linux et macOS. L'environnement de test
   repose sur trois machines virtuelles isolées, reproduisant les conditions
@@ -934,19 +937,19 @@
 \textbf{[TESTS ET VALIDATION]}\\[4pt]
   Après la réalisation, venons-en aux tests et à la validation du système
   en conditions représentatives.\\[4pt]
-  J'ai adopté une démarche en trois étapes complémentaires.\\[4pt]
-  Premièrement, j'ai défini cinq scénarios d'attaque représentatifs, couvrant
+  Une démarche en trois étapes complémentaires a été adoptée.\\[4pt]
+  Premièrement, cinq scénarios d'attaque représentatifs ont été définis, couvrant
   différents niveaux de complexité : du chiffrement simple à la chaîne d'attaque
   complète en 22 événements. Ces scénarios ont été construits à partir des comportements
   réels documentés dans la littérature sur les ransomwares.\\[4pt]
-  Deuxièmement, j'ai mis en place un environnement de test réel sur trois machines
-  virtuelles en réseau isolé, pour reproduire les conditions d'un vrai parc informatique,
-  sans jamais déployer de malware réel.\\[4pt]
-  Troisièmement, pour chaque scénario, j'ai mesuré trois indicateurs précis :
+  Deuxièmement, un environnement de test réel sur trois machines virtuelles en
+  réseau isolé a été mis en place, pour reproduire les conditions d'un vrai parc
+  informatique, sans jamais déployer de malware réel.\\[4pt]
+  Troisièmement, pour chaque scénario, trois indicateurs précis ont été mesurés :
   le délai de détection, l'intégrité des données transmises, et la complétude
   de la chaîne jusqu'à la décision de l'opérateur.\\[4pt]
   Les résultats sont constants : cinq scénarios exécutés, cinq détectés en moins
-  de cinq secondes, zéro événement perdu. Je note honnêtement une limite :
+  de cinq secondes, zéro événement perdu. Notons honnêtement une limite :
   les tests ont été conduits sur Linux uniquement — c'est la première perspective
   d'évolution du projet.\\[6pt]
   \textcolor{transition}{$\hookrightarrow$ Place maintenant à la démonstration live.}
@@ -1025,24 +1028,25 @@
 \note{
 \textbf{[CONCLUSION]}\\[2pt]
   Nous voilà dans la cinquième et dernière partie de notre exposé.\\[2pt]
-  Monsieur le Président du jury, Mesdames et Messieurs les membres du jury,
-  permettez-moi de vous présenter la synthèse de ce travail.\\[2pt]
+  Excellence Monsieur le Président du jury, Mesdames et Messieurs les membres du jury,
+  permettez-nous de vous présenter la synthèse de ce travail.\\[2pt]
   RansomShield couvre l'intégralité du cycle de traitement d'un incident de sécurité :
   la détection sur le terminal, l'analyse comportementale, la génération de l'alerte,
   la décision de l'opérateur, et l'archivage complet de toutes les actions.
   Il est opérationnel, démontrable, et construit sans aucun malware réel.\\[2pt]
-  Je suis conscient que ce travail, mené dans un cadre académique avec des ressources
-  et un temps limités, n'est pas exempt de lacunes. Les tests ont été conduits sur Linux
-  uniquement, et les communications restent en HTTP. Ce sont des limites que j'assume
-  pleinement et que j'ai tenu à nommer clairement.\\[2pt]
-  C'est pourquoi je compte sur vos observations, vos critiques et vos recommandations
-  pour enrichir ce travail. Chaque remarque du jury est pour moi une opportunité
+  Conscients que ce travail, mené dans un cadre académique avec des ressources
+  et un temps limités, n'est pas exempt de lacunes : les tests ont été conduits sur Linux
+  uniquement, et les communications restent en HTTP. Ce sont des limites assumées
+  pleinement et nommées clairement.\\[2pt]
+  Nous n'avons nullement la prétention d'avoir épuisé le sujet.
+  C'est pourquoi nous comptons sur vos observations, vos critiques et vos recommandations
+  pour enrichir ce travail. Chaque remarque du jury est pour nous une opportunité
   de progresser et de mieux faire.\\[2pt]
   Les perspectives sont tracées : sécuriser les communications pour la production,
   affiner les rôles selon le profil de chaque utilisateur, et doter le moteur
   d'un apprentissage automatique pour qu'il apprenne à reconnaître les comportements
   normaux et signale les anomalies avec encore plus de précision.\\[4pt]
-  \textcolor{transition}{$\hookrightarrow$ Je reste à votre disposition pour vos questions.}
+  \textcolor{transition}{$\hookrightarrow$ Nous restons à votre disposition pour vos questions.}
 }
 
 % ─────────────────────────────────────────────────────────────────────────

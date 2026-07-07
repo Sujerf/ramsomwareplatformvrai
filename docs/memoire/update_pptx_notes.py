@@ -17,11 +17,13 @@ NOTES = [
 # ── Slide 1 — OUVERTURE ──────────────────────────────────────────────────────
 """[OUVERTURE — 0:00 | ~30 sec]
 
-Monsieur le Président du jury, Mesdames et Messieurs les membres du jury, bonjour.
+Excellence Monsieur le Président du jury, Mesdames et Messieurs les membres du jury, bonjour.
 
-Je m'appelle Loïc SANGRONIO. Je vais vous présenter aujourd'hui RansomShield : un système de détection et de réponse aux attaques ransomware, dans un environnement contrôlé.
+Permettez-nous de vous exprimer notre profonde reconnaissance pour avoir répondu présents à ce rendez-vous.
 
-Dix minutes de présentation. Cinq minutes de démonstration live, sur des machines virtuelles réelles. Je serai à votre disposition pour vos questions à la fin.
+Le sujet ayant fait l'objet de notre étude est intitulé : Conception et mise en place d'un système de détection et de réponse aux attaques ransomware dans un environnement contrôlé — RansomShield.
+
+Dix minutes de présentation. Cinq minutes de démonstration live, sur des machines virtuelles réelles. Nous resterons à votre disposition pour vos questions à la fin.
 
 → Commençons par un coup d'œil au plan.""",
 
@@ -204,7 +206,7 @@ Vous allez voir tout ça dans quelques instants.
 
 Cinq scénarios d'attaque, de 7 à 22 événements. Détection en moins de 5 secondes à chaque fois. Zéro perte d'événement. Pipeline validé de bout en bout — de l'événement jusqu'à la timeline d'audit.
 
-Une limite que j'assume honnêtement : les tests ont été conduits uniquement sur Linux. Un attaquant qui ralentirait délibérément son rythme resterait moins visible.
+Notons honnêtement une limite : les tests ont été conduits uniquement sur Linux. Un attaquant qui ralentirait délibérément son rythme resterait moins visible.
 
 → Maintenant, place à la démonstration.""",
 
@@ -233,13 +235,15 @@ Rester calme. Laisser le temps aux événements d'arriver. Ne pas se précipiter
 # ── Slide 23 — CONCLUSION & PERSPECTIVES ──────────────────────────────────────
 """[CONCLUSION — après démo | ~45 sec]
 
+Excellence Monsieur le Président du jury, Mesdames et Messieurs les membres du jury, permettez-nous de vous présenter la synthèse de ce travail.
+
 RansomShield couvre tout le cycle de traitement d'un incident : collecte, analyse, alerte, réponse, audit. Agent multi-plateforme. Console complète. Moteur réactif. Contrôle humain systématique.
 
-Ce travail a ses limites : environnement contrôlé, réponses partiellement simulées, tests sur Linux uniquement.
+Ce travail a ses limites : environnement contrôlé, réponses partiellement simulées, tests sur Linux uniquement. Nous n'avons nullement la prétention d'avoir épuisé le sujet.
 
 Les perspectives sont claires : d'abord le chiffrement HTTPS, puis des rôles utilisateurs distincts, puis à terme du machine learning pour affiner la détection, et une intégration SIEM.
 
-Je vous remercie pour votre attention. Je suis à votre disposition pour vos questions.""",
+Nous vous remercions pour votre attention. Nous restons à votre disposition pour vos questions.""",
 
 # ── Slide 24 — QUESTIONS DU JURY ──────────────────────────────────────────────
 """[QUESTIONS DU JURY — réponses prêtes]
