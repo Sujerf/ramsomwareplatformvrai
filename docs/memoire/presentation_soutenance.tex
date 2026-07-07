@@ -166,9 +166,9 @@
             anchor=center]
         at ([xshift=3.05cm, yshift=4.68cm]current page.south west) {#1};
       % Titre de section (panneau droit, centré verticalement)
-      \node[font=\fontsize{22}{30}\selectfont\bfseries\color{dprimary},
-            anchor=center, text width=9.2cm, align=center]
-        at ([xshift=11.05cm, yshift=4.68cm]current page.south west) {#2};
+      \node[font=\fontsize{20}{26}\selectfont\bfseries\color{dprimary},
+            anchor=center, text width=9.5cm, align=center]
+        at ([xshift=11.05cm, yshift=4.68cm]current page.south west) {\hyphenpenalty=10000 #2};
       % Pied-de-page bleu
       \fill[primary]
         (current page.south west) rectangle
@@ -497,8 +497,8 @@
   \begin{block}{Limites des solutions existantes}
     \begin{itemize}\setlength\itemsep{2pt}
       \item \bad Contournables par variantes nouvelles, obfuscation ou LOLBins
-      \item \bad Coût élevé des EDR commerciaux (hors portée académique)
-      \item \bad Absence d'outil open-source académique démontrable en conditions réelles
+      \item \bad Coût élevé des EDR commerciaux (inaccessibles pour PME, hôpitaux, administrations)
+      \item \bad Aucun outil open-source comportemental démontrable en conditions réelles
     \end{itemize}
   \end{block}
 
@@ -1086,22 +1086,43 @@
 % ─────────────────────────────────────────────────────────────────────────
 {
 \setbeamertemplate{headline}{}
-\setbeamertemplate{footline}{}
 \setbeamertemplate{background}{}
 \begin{frame}[plain,noframenumbering]
   \begin{tikzpicture}[overlay,remember picture]
     % Fond bleu IFRI plein
     \fill[primary](current page.north west) rectangle (current page.south east);
-    % Liseré foncé en haut et en bas
-    \fill[dprimary]
+    % Liseré accent en haut
+    \fill[accent]
       (current page.north west) rectangle
-      ([yshift=-0.40cm]current page.north east);
+      ([yshift=-0.20cm]current page.north east);
+    \fill[dprimary]
+      ([yshift=-0.20cm]current page.north west) rectangle
+      ([yshift=-0.36cm]current page.north east);
+    % Pied-de-page dprimary
     \fill[dprimary]
       (current page.south west) rectangle
-      ([yshift=0.40cm]current page.south east);
-    \node[anchor=center,font=\fontsize{34}{34}\selectfont\bfseries,text=white]
-      at (current page.center)
+      ([yshift=0.68cm]current page.south east);
+    % Texte pied-de-page
+    \node[anchor=west,font=\tiny\color{white},inner sep=0pt]
+      at ([xshift=8pt,yshift=0.34cm]current page.south west)
+      {Codjo Fréjus Loïc SANGRONIO};
+    \node[anchor=center,font=\tiny\color{white}]
+      at ([yshift=0.34cm]current page.south)
+      {RansomShield \textbar\ Détection \& Réponse ransomware};
+    \node[anchor=east,font=\tiny\color{white},inner sep=0pt]
+      at ([xshift=-8pt,yshift=0.34cm]current page.south east)
+      {24 juin 2026};
+    % Titre principal
+    \node[anchor=center,font=\fontsize{36}{36}\selectfont\bfseries,text=white]
+      at ([yshift=1.2cm]current page.center)
       {Merci pour votre attention};
+    % Sous-titre
+    \node[anchor=center,font=\fontsize{13}{16}\selectfont,text=white!80]
+      at ([yshift=0.0cm]current page.center)
+      {Codjo Fréjus Loïc SANGRONIO};
+    \node[anchor=center,font=\fontsize{11}{14}\selectfont,text=white!65]
+      at ([yshift=-0.7cm]current page.center)
+      {Licence Informatique — Option Sécurité Informatique \textbar\ IFRI-UAC};
   \end{tikzpicture}
 \end{frame}
 }
