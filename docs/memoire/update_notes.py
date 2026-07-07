@@ -102,10 +102,12 @@ r"""\textbf{[SOLUTIONS]}\\[4pt]
   de données. Les SIEM — systèmes de centralisation des journaux d'activité — collectent
   des informations, mais sans chercher activement des comportements suspects. Les EDR
   — solutions de surveillance avancée des terminaux — sont très efficaces, mais leur coût
-  les rend totalement inaccessibles dans un cadre académique.\\[4pt]
+  les rend inaccessibles pour la grande majorité des organisations — PME, hôpitaux,
+  administrations, associations — qui n'ont pas les budgets des grands groupes.\\[4pt]
   RansomShield occupe cet espace laissé vacant : une solution libre, comportementale,
-  qui fonctionne sur différents systèmes d'exploitation, démontrable sur des machines
-  réelles, et avec un contrôle humain intégré à chaque étape.\\[6pt]
+  déployable sur n'importe quelle infrastructure, avec un contrôle humain intégré
+  à chaque étape — conçue pour les entreprises et organisations qui veulent se
+  protéger sans dépendre de solutions propriétaires coûteuses.\\[6pt]
   \textcolor{transition}{$\hookrightarrow$ Voyons maintenant comment ce système a été conçu.}""",
 
 # ── 8. ARCHITECTURE ───────────────────────────────────────────────────────
@@ -242,8 +244,8 @@ r"""\textbf{[CONCLUSION]}\\[2pt]
   la détection sur le terminal, l'analyse comportementale, la génération de l'alerte,
   la décision de l'opérateur, et l'archivage complet de toutes les actions.
   Il est opérationnel, démontrable, et construit sans aucun malware réel.\\[2pt]
-  Conscients que ce travail, mené dans un cadre académique avec des ressources
-  et un temps limités, n'est pas exempt de lacunes : les tests ont été conduits sur Linux
+  Conscients que cette première implémentation, menée avec des ressources
+  et un délai contraints, n'est pas exempte de lacunes : les tests ont été conduits sur Linux
   uniquement, et les communications restent en HTTP. Ce sont des limites assumées
   pleinement et nommées clairement.\\[2pt]
   Nous n'avons nullement la prétention d'avoir épuisé le sujet.

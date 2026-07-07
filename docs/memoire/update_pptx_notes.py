@@ -102,7 +102,7 @@ Ce sont précisément ces signaux comportementaux que notre moteur surveille.
 
 Les antivirus ? Signatures connues — inefficaces sur les variantes nouvelles.
 Les SIEM ? Ils collectent des journaux, sans corrélation comportementale ciblée.
-Les EDR commerciaux — CrowdStrike, SentinelOne — sont efficaces, mais hors de portée dans un contexte académique.
+Les EDR commerciaux — CrowdStrike, SentinelOne — sont efficaces, mais hors de portée pour la majorité des entreprises, hôpitaux et organisations à budget limité.
 
 RansomShield se positionne dans cet espace : approche comportementale, open-source, avec un opérateur humain dans la boucle à chaque décision.
 
