@@ -131,7 +131,7 @@
 \newcommand{\warn}{\textcolor{high}{\faExclamationCircle}\ }
 \newcommand{\arr} {\textcolor{primary}{\small\faChevronRight}\ }
 
-% Slide séparateur de section — fond bleu, titre encadré de filets accent
+% Slide séparateur de section — fond bleu foncé, carte blanche centrée
 \newcommand{\sectionslide}[2]{%
   {%
   \setbeamercolor{background canvas}{bg=primary}%
@@ -140,10 +140,17 @@
   \begin{frame}[plain,noframenumbering]%
     \vfill
     \begin{center}
-      {\color{accent}\rule{5cm}{1.5pt}}\\[14pt]
-      {\fontsize{28}{34}\selectfont\bfseries\color{white}%
-        \hyphenpenalty=10000 #2}\\[14pt]
-      {\color{accent}\rule{5cm}{1.5pt}}
+      \begin{tcolorbox}[
+        enhanced,
+        colback=white,colframe=white,
+        arc=8pt,boxrule=0pt,
+        halign=center,
+        left=28pt,right=28pt,top=20pt,bottom=20pt,
+        drop shadow
+      ]
+        {\fontsize{26}{32}\selectfont\bfseries\color{primary}%
+          \hyphenpenalty=10000 #2}
+      \end{tcolorbox}
     \end{center}
     \vfill
   \end{frame}%
