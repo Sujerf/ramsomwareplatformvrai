@@ -131,51 +131,23 @@
 \newcommand{\warn}{\textcolor{high}{\faExclamationCircle}\ }
 \newcommand{\arr} {\textcolor{primary}{\small\faChevronRight}\ }
 
-% Slide séparateur de section — panneau bleu gauche + titre à droite
+% Slide séparateur de section — fond bleu plein, titre centré
 \newcommand{\sectionslide}[2]{%
+  {%
+  \setbeamercolor{background canvas}{bg=primary}%
+  \setbeamertemplate{headline}{}%
+  \setbeamertemplate{footline}{}%
   \begin{frame}[plain,noframenumbering]%
-    \begin{tikzpicture}[overlay,remember picture]
-      % Fond blanc
-      \fill[white](current page.north west) rectangle (current page.south east);
-      % Panneau bleu gauche (38 % de la largeur = 6.1 cm sur 16 cm)
-      \fill[primary]
-        (current page.south west) rectangle
-        ([xshift=6.1cm]current page.north west);
-      % Liseré accent bleu clair en haut (pleine largeur)
-      \fill[accent]
-        (current page.north west) rectangle
-        ([yshift=-0.20cm]current page.north east);
-      % Fine bande dprimary sous le liseré
-      \fill[dprimary]
-        ([yshift=-0.20cm]current page.north west) rectangle
-        ([yshift=-0.36cm]current page.north east);
-      % Filet séparateur vertical (accent) entre les deux panneaux
-      \draw[accent, line width=1.8pt]
-        ([xshift=6.1cm, yshift=0.68cm]current page.south west) --
-        ([xshift=6.1cm, yshift=-0.36cm]current page.north west);
-      % Numéro fantôme (décoratif, très transparent)
-      \node[font=\fontsize{108}{108}\selectfont\bfseries,
-            text=white, opacity=0.09, anchor=center]
-        at ([xshift=3.05cm, yshift=4.68cm]current page.south west) {#1};
-      % Label "PARTIE" au-dessus du numéro
-      \node[font=\fontsize{7.5}{7.5}\selectfont\bfseries,
-            text=white!65, anchor=south]
-        at ([xshift=3.05cm, yshift=5.8cm]current page.south west)
-        {\MakeUppercase{Partie}};
-      % Numéro de section (premier plan)
-      \node[font=\fontsize{60}{60}\selectfont\bfseries\color{white},
-            anchor=center]
-        at ([xshift=3.05cm, yshift=4.68cm]current page.south west) {#1};
-      % Titre de section (panneau droit, centré verticalement)
-      \node[font=\fontsize{20}{26}\selectfont\bfseries\color{dprimary},
-            anchor=center, text width=9.5cm, align=center]
-        at ([xshift=11.05cm, yshift=4.68cm]current page.south west) {\hyphenpenalty=10000 #2};
-      % Pied-de-page bleu
-      \fill[primary]
-        (current page.south west) rectangle
-        ([yshift=0.68cm]current page.south east);
-    \end{tikzpicture}
+    \vfill
+    \begin{center}
+      {\fontsize{9}{9}\selectfont\bfseries\color{white!60}
+        \MakeUppercase{Partie} #1}\\[14pt]
+      {\fontsize{26}{32}\selectfont\bfseries\color{white}
+        \hyphenpenalty=10000 #2}
+    \end{center}
+    \vfill
   \end{frame}%
+  }%
 }
 
 % =========================================================================
@@ -1077,45 +1049,20 @@
 %  SLIDE FINAL — MERCI / QUESTIONS  (fond bleu IFRI, sobre et élégant)
 % ─────────────────────────────────────────────────────────────────────────
 {
+\setbeamercolor{background canvas}{bg=primary}
 \setbeamertemplate{headline}{}
-\setbeamertemplate{background}{}
+\setbeamertemplate{footline}{}
 \begin{frame}[plain,noframenumbering]
-  \begin{tikzpicture}[overlay,remember picture]
-    % Fond bleu IFRI plein
-    \fill[primary](current page.north west) rectangle (current page.south east);
-    % Liseré accent en haut
-    \fill[accent]
-      (current page.north west) rectangle
-      ([yshift=-0.20cm]current page.north east);
-    \fill[dprimary]
-      ([yshift=-0.20cm]current page.north west) rectangle
-      ([yshift=-0.36cm]current page.north east);
-    % Pied-de-page dprimary
-    \fill[dprimary]
-      (current page.south west) rectangle
-      ([yshift=0.68cm]current page.south east);
-    % Texte pied-de-page
-    \node[anchor=west,font=\tiny\color{white},inner sep=0pt]
-      at ([xshift=8pt,yshift=0.34cm]current page.south west)
-      {Codjo Fréjus Loïc SANGRONIO};
-    \node[anchor=center,font=\tiny\color{white}]
-      at ([yshift=0.34cm]current page.south)
-      {RansomShield \textbar\ Détection \& Réponse ransomware};
-    \node[anchor=east,font=\tiny\color{white},inner sep=0pt]
-      at ([xshift=-8pt,yshift=0.34cm]current page.south east)
-      {24 juin 2026};
-    % Titre principal
-    \node[anchor=center,font=\fontsize{36}{36}\selectfont\bfseries,text=white]
-      at ([yshift=1.2cm]current page.center)
-      {Merci pour votre attention};
-    % Sous-titre
-    \node[anchor=center,font=\fontsize{13}{16}\selectfont,text=white!80]
-      at ([yshift=0.0cm]current page.center)
-      {Codjo Fréjus Loïc SANGRONIO};
-    \node[anchor=center,font=\fontsize{11}{14}\selectfont,text=white!65]
-      at ([yshift=-0.7cm]current page.center)
-      {Licence Informatique — Option Sécurité Informatique \textbar\ IFRI-UAC};
-  \end{tikzpicture}
+  \vfill
+  \begin{center}
+    {\fontsize{34}{34}\selectfont\bfseries\color{white}
+      Merci pour votre attention}\\[16pt]
+    {\normalsize\color{white!80}
+      Codjo Fréjus Loïc SANGRONIO}\\[6pt]
+    {\small\color{white!65}
+      Licence Informatique \textbar\ Option Sécurité Informatique \textbar\ IFRI-UAC}
+  \end{center}
+  \vfill
 \end{frame}
 }
 \note{
