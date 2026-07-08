@@ -6,7 +6,7 @@ set -euo pipefail
 
 DISK_DIR="/var/lib/libvirt/images"
 PASSWORD="ransomshield2026"
-SOC_IP="10.15.55.88"
+SOC_IP="10.20.0.1"
 SOC_API="http://${SOC_IP}:8000/api"
 API_SECRET="ee726fa4d84f8327c81b40b1b522860a1478ed343d23c936d7b628bfc8849bb5"
 
