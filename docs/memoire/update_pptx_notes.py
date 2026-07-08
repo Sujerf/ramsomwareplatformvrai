@@ -277,20 +277,22 @@ Reformuler la question avant de répondre. Garder les captures d'écran prêtes.
 # ─────────────────────────────────────────────────────────────────────────────
 
 def set_notes(slide, text):
+    from lxml import etree
+    from pptx.oxml.ns import qn
     notes_slide = slide.notes_slide
     tf = notes_slide.notes_text_frame
-    for para in tf.paragraphs[1:]:
-        p = para._p
-        p.getparent().remove(p)
+    txBody = tf._txBody
+    # Supprimer tous les paragraphes existants
+    for p in txBody.findall(qn('a:p')):
+        txBody.remove(p)
+    # Réécrire les paragraphes ligne par ligne
     lines = text.split("\n") if text else [""]
-    p0 = tf.paragraphs[0]
-    if p0.runs:
-        p0.runs[0].text = lines[0]
-    else:
-        p0.text = lines[0]
-    for line in lines[1:]:
-        para = tf.add_paragraph()
-        para.text = line
+    for line in lines:
+        p_elem = etree.SubElement(txBody, qn('a:p'))
+        if line.strip():
+            r_elem = etree.SubElement(p_elem, qn('a:r'))
+            t_elem = etree.SubElement(r_elem, qn('a:t'))
+            t_elem.text = line
 
 
 prs = Presentation(PPTX)
