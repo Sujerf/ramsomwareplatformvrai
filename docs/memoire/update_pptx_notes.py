@@ -67,7 +67,7 @@ Trois défis ont structuré ce travail : les variantes inconnues que les outils 
 
 Pour répondre à cette problématique, six objectifs précis ont guidé ce travail.
 
-Premièrement, surveiller en temps réel les activités fichiers sur chaque terminal. Deuxièmement, analyser ces activités pour calculer un niveau de risque. Troisièmement, déclencher automatiquement des alertes dès qu'un comportement suspect est détecté. Quatrièmement — et c'est un principe fondateur — soumettre chaque action proposée à la décision d'un opérateur humain. Cinquièmement, sécuriser l'accès à la console par une double authentification : mot de passe et code temporaire valide 30 secondes. Et sixièmement, valider l'ensemble sur des scénarios d'attaque représentatifs.
+D'abord, surveiller en temps réel les activités fichiers sur chaque terminal. Ensuite, analyser ces activités pour calculer un niveau de risque. Puis, déclencher automatiquement des alertes dès qu'un comportement suspect est détecté. Le principe fondateur de ce travail : soumettre chaque action proposée à la décision d'un opérateur humain. L'accès à la console est en outre sécurisé par une double authentification — mot de passe et code temporaire valide 30 secondes. Et pour valider l'ensemble, des scénarios d'attaque représentatifs ont été définis et exécutés.
 
 → Voyons maintenant les fondements théoriques de ce travail.""",
 
@@ -117,11 +117,11 @@ Un agent, installé sur chaque terminal de l'organisation, observe en permanence
 
 Voyons maintenant de plus près les quatre composants qui constituent ce système.
 
-Premièrement, l'agent de surveillance : installé sur chaque machine, il observe en temps réel toute activité inhabituelle sur les fichiers et conserve ces informations localement, pour ne rien perdre même en cas de coupure réseau.
+L'agent de surveillance, d'abord : installé sur chaque machine, il observe en temps réel toute activité inhabituelle sur les fichiers et conserve ces informations localement, pour ne rien perdre même en cas de coupure réseau.
 
-Deuxièmement, la console de supervision : c'est le poste de commandement, là où l'opérateur suit les alertes, prend ses décisions et consulte l'historique complet de toutes les actions.
+La console de supervision, ensuite : c'est le poste de commandement, là où l'opérateur suit les alertes, prend ses décisions et consulte l'historique complet de toutes les actions.
 
-Troisièmement, le module de découverte réseau : il signale automatiquement les nouvelles machines, mais aucune n'est intégrée au système sans accord explicite de l'administrateur.
+Le module de découverte réseau : il signale automatiquement les nouvelles machines, mais aucune n'est intégrée au système sans accord explicite de l'administrateur.
 
 Enfin, le simulateur : il reproduit des scénarios d'attaque réalistes, sans déployer le moindre malware réel — ce qui a permis de valider le système en toute sécurité.
 
@@ -189,11 +189,11 @@ Après la réalisation, venons-en aux tests et à la validation du système en c
 
 Une démarche en trois étapes complémentaires a été adoptée.
 
-Premièrement, cinq scénarios d'attaque représentatifs ont été définis, couvrant différents niveaux de complexité : du chiffrement simple à la chaîne d'attaque complète en 22 événements. Ces scénarios ont été construits à partir des comportements réels documentés dans la littérature sur les ransomwares.
+D'abord, cinq scénarios d'attaque représentatifs ont été définis, couvrant différents niveaux de complexité : du chiffrement simple à la chaîne d'attaque complète en 22 événements. Ces scénarios ont été construits à partir des comportements réels documentés dans la littérature sur les ransomwares.
 
-Deuxièmement, un environnement de test réel sur trois machines virtuelles en réseau isolé a été mis en place, pour reproduire les conditions d'un vrai parc informatique, sans jamais déployer de malware réel.
+Ensuite, un environnement de test réel sur trois machines virtuelles en réseau isolé a été mis en place, pour reproduire les conditions d'un vrai parc informatique, sans jamais déployer de malware réel.
 
-Troisièmement, pour chaque scénario, trois indicateurs précis ont été mesurés : le délai de détection, l'intégrité des données transmises, et la complétude de la chaîne jusqu'à la décision de l'opérateur.
+Enfin, pour chaque scénario, trois indicateurs précis ont été mesurés : le délai de détection, l'intégrité des données transmises, et la complétude de la chaîne jusqu'à la décision de l'opérateur.
 
 Les résultats sont constants : cinq scénarios exécutés, cinq détectés en moins de cinq secondes, zéro événement perdu. Notons honnêtement une limite : les tests ont été conduits sur Linux uniquement — c'est la première perspective d'évolution du projet.
 
