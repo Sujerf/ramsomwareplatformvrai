@@ -34,179 +34,209 @@
 \vspace{2pt}
 \hrule
 
-\notehead{1/25}{OUVERTURE — 0:00}
+\notehead{1/24}{OUVERTURE --- 0:00}
 Excellence Monsieur le Président du jury, Mesdames et Messieurs les membres du jury, bonjour.
-  Permettez-nous de vous exprimer notre profonde reconnaissance pour avoir répondu présents
-  à ce rendez-vous. Le sujet ayant fait l'objet de notre étude est intitulé~:
+  Permettez-nous de vous exprimer notre profonde gratitude pour avoir bien voulu accepter
+  d'évaluer ce travail malgré vos agendas sûrement chargés.
+  Le sujet ayant fait l'objet de notre étude est intitulé~:
   \textit{Conception et mise en place d'un système de détection et de réponse aux attaques
   ransomware dans un environnement contrôlé}~: RansomShield.
-  Cette présentation durera dix minutes, suivie d'une démonstration live de cinq minutes
-  sur des machines virtuelles réelles. Nous restons à votre disposition pour vos questions
-  à la fin.
-\pivot{Voici comment s'articule cette présentation.}
+  Cette présentation se déroulera en dix minutes, suivie d'une démonstration live de cinq minutes
+  sur des machines virtuelles réelles. Nous resterons à votre entière disposition pour vos questions
+  à l'issue de cet exposé.
+\pivot{Voici comment s'articule notre présentation.}
 
-\notehead{2/25}{SOMMAIRE — 0:30}
-Notre présentation s'articule en cinq parties~: le contexte et la problématique,
-  la revue de littérature, la conception de la solution, sa réalisation avec les
-  résultats obtenus, puis la conclusion. Nous terminerons par une courte démonstration
-  du système en fonctionnement.
-\pivot{Commençons par le contexte et la problématique.}
+\notehead{2/24}{SOMMAIRE --- 0:30}
+Notre présentation s'articule en cinq grandes parties.
+  Nous aborderons dans un premier temps le contexte et la problématique qui ont motivé ce travail.
+  Nous passerons ensuite en revue la littérature existante sur le sujet.
+  Nous présenterons par la suite la conception et la réalisation du système.
+  Nous exposerons les résultats obtenus avant de conclure par une synthèse et les perspectives
+  d'évolution. Le tout sera couronné d'une démonstration du système en conditions réelles.
+\pivot{Commençons par le contexte qui a motivé notre démarche.}
 
-\notehead{4/25}{CONTEXTE \& PROBLÉMATIQUE — 1:00}
-Les organisations dépendent aujourd'hui fortement de leurs systèmes informatiques,
-  ce qui les expose de plus en plus aux cyberattaques — en particulier au ransomware,
-  ce logiciel malveillant qui chiffre les données puis exige une rançon.
-  Selon l'ENISA, ces attaques ont augmenté de 73\,\% en 2023~; sans outil dédié,
-  il faut en moyenne 21 jours pour les détecter, pour un coût qui dépasse souvent
-  le million de dollars. Le problème, c'est que les antivirus classiques, basés
-  sur des signatures, ne suffisent plus face à des comportements inconnus.
-  D'où la question centrale de ce travail~: comment détecter et répondre à un
-  comportement ransomware, dans un environnement contrôlé, sans déployer de vrai malware~?
-\pivot{Cette question a défini les objectifs que voici.}
+\notehead{4/24}{CONTEXTE --- 1:00}
+Nous vivons à une époque où les organisations dépendent fortement de leurs systèmes informatiques.
+  Cette dépendance les expose à une menace croissante~: le ransomware. Il s'agit d'un logiciel
+  malveillant qui chiffre les données d'une organisation, puis réclame une rançon pour en rétablir
+  l'accès. L'ENISA a enregistré une hausse de 73\,\% de ces attaques en 2023~; sans outil dédié,
+  il faut en moyenne 21 jours pour détecter un tel incident, pour un coût qui dépasse souvent
+  le million de dollars. Les cibles ne se limitent plus aux grandes entreprises~: les hôpitaux,
+  les PME et les universités sont désormais tout aussi exposés.
+\pivot{Ce constat soulève une problématique précise.}
 
-\notehead{5/25}{OBJECTIFS — 2:30}
-L'objectif général est de concevoir un système de détection et de réponse aux
-  attaques ransomware, basé sur la surveillance comportementale des fichiers et
-  des processus. Concrètement, il s'agit de surveiller les événements en temps réel,
-  de calculer un score de risque, de générer automatiquement des alertes et des
-  incidents, de proposer des actions de protection avec un contrôle humain
-  systématique, de sécuriser la console par une double authentification, et de
-  valider le tout sur des scénarios d'attaque réalistes.
-\pivot{Voyons maintenant comment le mémoire est structuré.}
+\notehead{5/24}{PROBLÉMATIQUE --- 1:45}
+Le problème fondamental réside dans les limites des outils traditionnels~: les antivirus classiques
+  détectent les malwares par empreinte connue et se révèlent inefficaces face aux nouvelles variantes.
+  Trois défis structurent ce constat.
+  \textbf{Premier défi}~: les variantes inconnues. Nous avons besoin d'un système capable de détecter
+  le comportement, et non la signature.
+  \textbf{Deuxième défi}~: le parc hétérogène. Une organisation réelle gère des machines sous Windows,
+  Linux et macOS. L'agent doit fonctionner sur toutes ces plateformes.
+  \textbf{Troisième défi}~: la réponse automatique non contrôlée est risquée. Isoler une machine sans
+  vérification peut paralyser un service critique. Le contrôle humain n'est pas une contrainte
+  --- c'est une garantie.
+  D'où la question centrale~: comment détecter un comportement ransomware, dans un environnement
+  contrôlé, sans déployer de vrai malware~?
+\pivot{C'est précisément ce que RansomShield cherche à réaliser.}
 
-\notehead{6/25}{ORGANISATION DU MÉMOIRE — 3:15}
-Le mémoire suit le canevas IFRI en trois chapitres~: la revue de littérature,
-  l'analyse et la conception du système, puis sa réalisation et ses résultats.
-  Voyons d'abord les fondements théoriques.
-\pivot{Commençons par définir ce qu'est un ransomware.}
+\notehead{6/24}{OBJECTIFS --- 2:30}
+Pour répondre à cette problématique, nous nous sommes fixé six objectifs spécifiques~:
+  surveiller les événements fichiers en temps réel~;
+  analyser les comportements et calculer un score de risque configurable~;
+  générer automatiquement des alertes et des incidents de sécurité~;
+  proposer des actions de protection tout en garantissant un contrôle humain à chaque étape~;
+  sécuriser la console par une double authentification~;
+  valider l'ensemble sur des scénarios d'attaque représentatifs.
+\pivot{Voyons maintenant les fondements théoriques qui ont guidé notre démarche.}
 
-\notehead{8/25}{DÉFINITION \& COMPORTEMENTS — 3:50}
-Selon le NIST, un ransomware est un logiciel malveillant qui bloque l'accès aux
-  données, le plus souvent par chiffrement, pour ensuite réclamer une rançon.
-  Ce qui compte pour nous, c'est que ce type d'attaque laisse des signes avant que
-  les dégâts ne soient irréversibles~: renommage massif de fichiers, apparition
-  d'extensions suspectes comme \texttt{.locked}, création d'une note de rançon,
-  suppression des sauvegardes système, ou encore utilisation détournée d'outils
-  légitimes. Ce sont ces signaux qui constituent la base de notre détection
-  comportementale.
-\pivot{Mais pourquoi les outils existants ne suffisent-ils pas~?}
+\notehead{8/24}{DÉFINITION \& COMPORTEMENTS --- 3:45}
+Le NIST définit le ransomware comme un logiciel malveillant qui bloque l'accès aux données ---
+  le plus souvent par chiffrement --- pour ensuite réclamer une rançon à la victime.
+  Ce qui présente un intérêt particulier pour notre travail, c'est que ces attaques ne sont pas
+  silencieuses. Elles laissent des traces identifiables avant que les dégâts ne deviennent
+  irréversibles~: un renommage massif de fichiers avec une extension suspecte telle que
+  \texttt{.locked}, la création d'une note de rançon, la suppression des points de restauration,
+  ou encore le recours à des outils légitimes détournés --- ce que l'on appelle les LOLBins.
+  Ce sont précisément ces signaux comportementaux que notre moteur de détection surveille.
+\pivot{Mais pourquoi les outils existants ne permettent-ils pas de répondre à ce défi~?}
 
-\notehead{9/25}{SOLUTIONS EXISTANTES — 5:15}
-Les solutions existantes ont chacune leurs limites. Les antivirus classiques
-  détectent par signatures, donc ils passent à côté des nouvelles variantes.
-  Les SIEM collectent des journaux mais sans corrélation comportementale spécifique.
-  Les EDR commerciaux, comme CrowdStrike ou SentinelOne, sont efficaces mais hors
-  de portée pour la majorité des entreprises, hôpitaux et organisations à budget
-  limité. C'est dans cet espace que se positionne RansomShield~: une solution
-  comportementale, open-source, déployable sur toute infrastructure, avec un
-  contrôle humain garanti à chaque étape. Voyons maintenant comment ce système a été conçu.
+\notehead{9/24}{SOLUTIONS EXISTANTES --- 4:30}
+Les solutions du marché présentent chacune des limites significatives.
+  Les antivirus classiques opèrent par reconnaissance d'empreintes connues et se révèlent aveugles
+  aux nouvelles variantes. Les SIEM collectent des journaux d'activité sans offrir de corrélation
+  comportementale ciblée. Quant aux EDR commerciaux --- tels que CrowdStrike ou SentinelOne ---
+  ils sont efficaces mais inaccessibles pour la majorité des organisations~: PME, hôpitaux,
+  administrations, qui ne disposent pas des budgets requis.
+  C'est dans cet espace que se positionne RansomShield~: une approche comportementale, open-source,
+  déployable sur toute infrastructure, avec un opérateur humain dans la boucle à chaque décision.
+\pivot{Voyons maintenant comment nous avons conçu ce système.}
 
-\notehead{11/25}{ARCHITECTURE — 6:15}
-L'architecture repose sur un flux simple. Les agents Python, installés sur les
-  machines surveillées, envoient les événements à l'API Laravel via une clé propre
-  à chaque agent. Le moteur de détection analyse ces événements, calcule un score
-  de risque, et déclenche une alerte puis un incident si le seuil est dépassé.
-  L'opérateur consulte la console SOC et valide chaque action avant son exécution~:
-  c'est notre règle d'or, aucune action automatique sans validation humaine.
-\pivot{Voyons maintenant les quatre composants de ce système.}
+\notehead{11/24}{ARCHITECTURE --- 5:15}
+L'architecture de RansomShield repose sur un flux simple que l'on peut lire de gauche à droite,
+  en cinq étapes. Les agents Python, installés sur les machines surveillées, collectent les
+  événements fichiers et les transmettent à l'API Laravel. Chaque agent dispose d'une clé qui
+  lui est propre. L'API authentifie et achemine les données vers le moteur de détection, qui
+  calcule un score de risque. Lorsque le seuil configuré est franchi, une alerte est créée et
+  un incident s'ouvre automatiquement. L'analyste SOC consulte alors la console et valide chaque
+  action avant son exécution.
+  Règle d'or~: aucune action n'est exécutée sans validation humaine préalable.
+\pivot{Détaillons les quatre composants qui constituent ce système.}
 
-\notehead{12/25}{LES 4 COMPOSANTS — 7:15}
-Le système repose sur quatre composants. L'agent Python surveille les fichiers
-  en temps réel et conserve une file locale pour ne rien perdre en cas de coupure
-  réseau. La console SOC centralise le suivi~: alertes, incidents, et validation
-  des actions. La découverte réseau scanne automatiquement les sous-réseaux, mais
-  aucun agent ne peut s'enrôler sans validation manuelle de l'administrateur.
-  Enfin, le module de simulation permet de rejouer des scénarios d'attaque
-  réalistes, jusqu'à vingt-deux événements, sans jamais toucher à un vrai malware.
-\pivot{Voyons maintenant qui interagit avec ce système.}
+\notehead{12/24}{LES 4 COMPOSANTS --- 6:00}
+Notre système repose sur quatre composants complémentaires.
+  L'\textbf{agent Python} surveille les fichiers en temps réel et conserve une file locale en
+  SQLite pour ne perdre aucun événement, même en cas de coupure réseau.
+  La \textbf{console SOC} centralise les alertes, les incidents, la file d'approbation et la
+  timeline. Les notifications sont diffusées sur quatre canaux~: web, e-mail, son et webhook.
+  La \textbf{découverte réseau} détecte automatiquement les nouvelles machines, mais aucune ne
+  peut rejoindre le système sans validation explicite de l'administrateur.
+  Le \textbf{simulateur d'attaques} rejoue jusqu'à vingt-deux événements sans recourir à un
+  vrai malware.
+\pivot{Qui sont les acteurs qui interagissent avec ce système~?}
 
-\notehead{13/25}{DIAGRAMME UML — 8:45}
-Le système distingue deux acteurs. L'administrateur gère les agents, configure
-  le système et lance les simulations. L'analyste SOC, lui, se concentre sur le
-  traitement opérationnel~: il visualise les alertes et les incidents, approuve
-  ou rejette les actions de protection, et consulte la timeline d'audit — mais
-  n'a pas accès à la configuration.
-\pivot{Comment les données sont-elles structurées en base~?}
+\notehead{13/24}{DIAGRAMME USE CASE --- 6:40}
+Notre système distingue deux acteurs aux rôles bien définis.
+  L'administrateur assure la configuration du système, la gestion des agents et le lancement des
+  simulations.
+  L'analyste SOC se concentre quant à lui sur le traitement opérationnel~: il visualise les alertes
+  et les incidents, approuve ou rejette les actions de protection, et consulte la timeline d'audit.
+  Il n'a cependant pas accès à la configuration.
+  Cette séparation garantit qu'un analyste ne peut pas modifier les seuils de détection, et qu'un
+  administrateur ne gère pas les incidents au quotidien.
+\pivot{Comment les entités du système sont-elles structurées entre elles~?}
 
-\notehead{14/25}{MODÈLE DE DONNÉES — 9:45}
-Le modèle de données repose sur huit tables MySQL. Le pipeline se lit de gauche
-  à droite~: un agent génère des événements, qui déclenchent des alertes, qui
-  créent des incidents, qui donnent lieu à des actions de protection — le tout
-  tracé dans un journal d'audit. Chaque action est horodatée avec l'identité de
-  l'opérateur qui l'a validée. Passons maintenant à la réalisation concrète.
+\notehead{14/24}{DIAGRAMME DE CLASSES --- 7:05}
+Notre modèle objet distingue sept entités principales.
+  Le pipeline se lit de gauche à droite~: un Agent génère des Events, que les DetectionRules
+  évaluent. Lorsque le score dépasse le seuil, une Alert est créée, puis escaladée en Incident.
+  Chaque Incident génère des ProtectionActions. L'ensemble est tracé dans un AuditLog.
+\pivot{Comment ces entités se traduisent-elles en base de données~?}
 
-\notehead{16/25}{CHOIX TECHNIQUES — 11:00}
-Côté technique, le backend repose sur Laravel 11 et PHP 8.3, avec une base MySQL
-  et une API sécurisée par une clé propre à chaque agent. L'agent de surveillance
-  est écrit en Python avec la bibliothèque Watchdog, et conserve ses événements
-  dans une file SQLite locale. Le frontend utilise Chart.js en local, sans
-  dépendance externe. Les tests ont été menés sur trois machines virtuelles KVM,
-  avec une authentification à double facteur.
-\pivot{Voyons concrètement comment l'agent et le moteur fonctionnent.}
+\notehead{15/24}{MODÈLE DE DONNÉES --- 7:25}
+Notre modèle de données repose sur huit tables MySQL.
+  Le pipeline se lit de gauche à droite~: agent, événement, alerte, incident, action, journal
+  d'audit. Chaque action est signée~: on sait qui l'a validée, et à quel moment. Aucune décision
+  n'est anonyme dans notre système.
+\pivot{Passons maintenant à la réalisation concrète.}
 
-\notehead{17/25}{AGENT \& MOTEUR — 12:15}
-Au démarrage, l'agent s'enrôle via un token à usage unique qui lui donne une clé
-  API permanente, puis il surveille les dossiers avec Watchdog et envoie un signal
-  de présence toutes les trente secondes. Le moteur de détection calcule un score
-  cumulatif configurable. Par exemple~: un fichier renommé en \texttt{.locked}
-  vaut 80 points, une note de rançon 55 points~; le total de 135 déclenche
-  immédiatement une alerte critique et la création d'un incident. Tout ce
-  processus prend moins de cinq secondes.
-\pivot{Côté analyste, voici ce que la console SOC offre.}
+\notehead{17/24}{CHOIX TECHNIQUES --- 7:55}
+Nos choix techniques ont été guidés par trois critères~: la portabilité, la légèreté et la
+  capacité à démontrer le système en conditions réelles.
+  Le backend repose sur Laravel~11 avec PHP~8.3, une base de données MySQL et une API sécurisée
+  par une clé propre à chaque agent. L'agent de surveillance utilise Python avec Watchdog et
+  une file locale SQLite. Le frontend intègre Chart.js localement, sans dépendance CDN externe.
+  L'infrastructure de test est constituée de trois machines virtuelles KVM avec une
+  authentification à double facteur.
+\pivot{Voyons comment l'agent et le moteur de détection fonctionnent concrètement.}
 
-\notehead{18/25}{CONSOLE SOC — 13:30}
-La console SOC centralise dix pages fonctionnelles, avec un tableau de bord mis
-  à jour automatiquement toutes les trente secondes. Le point important, c'est que
-  toute action de protection passe par une file d'approbation~: l'analyste doit
-  explicitement valider ou rejeter chaque action avant qu'elle ne s'exécute.
-  Les notifications partent simultanément par quatre canaux~: le web, l'e-mail,
-  le son, et un webhook. Vous verrez tout cela dans la démonstration.
-\pivot{Mais d'abord, voyons ce que les tests ont donné.}
+\notehead{18/24}{AGENT \& MOTEUR --- 8:20}
+Au premier démarrage, l'agent s'enrôle auprès du serveur à l'aide d'un jeton à usage unique.
+  Il obtient en retour une clé API permanente. Il débute ensuite la surveillance des dossiers
+  configurés grâce à Watchdog et envoie un signal de présence toutes les trente secondes.
+  Notre moteur de détection calcule un score cumulatif configurable. Exemple concret~: un fichier
+  renommé en \texttt{.locked} rapporte 80 points~; la création d'une note de rançon ajoute
+  55 points. Le total de 135 points franchit le seuil critique~: une alerte et un incident sont
+  créés automatiquement en moins de cinq secondes.
+\pivot{Voyons ce que la console SOC offre à l'analyste.}
 
-\notehead{19/25}{TESTS \& RÉSULTATS — 14:45}
-Nous avons validé le système sur cinq scénarios d'attaque, de sept à vingt-deux
-  événements. Tous ont été détectés en moins de cinq secondes, sans perte
-  d'événement, avec un pipeline complet validé de bout en bout, de l'événement
-  jusqu'à la timeline. Notons honnêtement une limite~: les tests ont été
-  conduits uniquement sur Linux, et un attaquant qui ralentirait son rythme
-  resterait moins visible. Passons maintenant à la démonstration du système.
+\notehead{19/24}{CONSOLE SOC --- 9:10}
+La console SOC regroupe dix pages fonctionnelles. Le tableau de bord se rafraîchit automatiquement
+  toutes les trente secondes. Le principe fondamental~: toute action de protection passe par une
+  file d'approbation. L'analyste doit explicitement valider ou rejeter chaque action avant
+  qu'elle ne s'exécute. Les notifications sont envoyées simultanément sur quatre canaux~: le web,
+  l'e-mail, le son et un webhook.
+  Nous vous invitons à constater cela de visu lors de la démonstration.
+\pivot{Examinons d'abord les résultats de nos tests de validation.}
 
-\notehead{20/25}{DÉMO LIVE — 15:00, checklist 5 min, hors chrono présentation}
+\notehead{20/24}{TESTS \& RÉSULTATS --- 9:40}
+Nous avons validé notre système sur cinq scénarios d'attaque, allant de sept à vingt-deux
+  événements. Dans tous les cas, la détection s'est effectuée en moins de cinq secondes, sans
+  perte d'événement. Le pipeline a été validé de bout en bout, de l'événement initial jusqu'à
+  la timeline d'audit.
+  Il convient de noter honnêtement une limite~: les tests ont été conduits exclusivement sur
+  Linux. Un attaquant qui ralentirait délibérément son rythme resterait moins visible au moteur.
+\pivot{Passons maintenant à la démonstration.}
+
+\notehead{21/24}{DÉMO LIVE --- 10:00, checklist 5 min, hors chrono présentation}
 1. Ouvrir \texttt{http://10.20.0.1} (console SOC)\\[3pt]
   2. Se connecter : identifiants + \textbf{code 2FA}\\[3pt]
-  3. Vérifier : 3 agents en ligne (heartbeat vert)\\[3pt]
-  4. \textbf{Agents} $\to$ VM-02 $\to$ \textbf{Lancer simulation} $\to$ "Kill chain complète" (22 évts)\\[3pt]
-  5. \textbf{Dashboard} : le score monte en temps réel\\[3pt]
+  3. Vérifier : 3 agents en ligne (voyant vert)\\[3pt]
+  4. \textbf{Agents} $\to$ VM-02 $\to$ \textbf{Lancer simulation} $\to$ «~Kill chain complète~» (22 évts)\\[3pt]
+  5. \textbf{Dashboard} : observer le score monter en temps réel\\[3pt]
   6. \textbf{Alertes} : niveau Critique + signaux détectés\\[3pt]
-  7. \textbf{Incidents} : ouvrir l'incident auto-créé\\[3pt]
+  7. \textbf{Incidents} : ouvrir l'incident auto-créé, montrer les détails\\[3pt]
   8. \textbf{File d'approbation} : approuver l'isolation réseau\\[3pt]
   9. \textbf{Timeline} : tout est horodaté et tracé\\[3pt]
-  \textit{Rester calme, ne pas se précipiter — chaque étape a le temps qu'il faut.}
-\pivot{Revenir à la présentation pour la conclusion.}
+  \textit{Rester calme. Laisser le temps aux événements d'arriver. Ne pas se précipiter.}
+\pivot{Revenir à la présentation pour conclure.}
 
 \newpage
-\notehead{22/25}{CONCLUSION \& PERSPECTIVES — 20:00}
+\notehead{23/24}{CONCLUSION \& PERSPECTIVES --- après démo}
 Excellence Monsieur le Président du jury, Mesdames et Messieurs les membres du jury,
-  RansomShield est une solution fonctionnelle qui couvre tout le cycle
-  de traitement d'un incident~: collecte, analyse, alerte, réponse et audit.
-  Elle repose sur un agent multi-plateforme, une console complète, un moteur de
-  détection réactif, et un contrôle humain à chaque étape. Ce travail a ses
-  limites~: il a été testé dans un environnement contrôlé, avec des réponses en
-  partie simulées. Nous n'avons nullement la prétention d'avoir épuisé le sujet.
-  Les perspectives sont claires~: ajouter le chiffrement HTTPS,
-  des rôles distincts pour les utilisateurs, puis à terme du machine learning
-  pour affiner la détection, et une intégration avec les outils SIEM du marché.
-  Nous vous remercions pour votre attention et restons à votre disposition pour vos
-  questions.
+  permettez-nous de vous présenter la synthèse de ce travail.
+  RansomShield est une solution opérationnelle qui couvre l'ensemble du cycle de traitement
+  d'un incident de sécurité~: collecte, analyse, alerte, réponse et audit. Elle repose sur
+  un agent de surveillance multi-plateforme, une console complète, un moteur de détection
+  réactif et un contrôle humain systématique à chaque décision.
+  Ce travail présente des limites que nous assumons pleinement~: il a été réalisé dans un
+  environnement contrôlé, avec des réponses partiellement simulées, et testé exclusivement
+  sur Linux. Nous n'avons nullement la prétention d'avoir épuisé le sujet.
+  Les perspectives sont clairement identifiées~: intégration du chiffrement HTTPS, mise en
+  place de rôles utilisateurs distincts, puis à terme du machine learning pour affiner la
+  détection, et une intégration avec les outils SIEM du marché.
+  Nous vous remercions pour l'attention que vous avez bien voulu accorder à notre travail.
+  Nous restons à votre entière disposition pour vos questions.
 \pivot{Sourire, poser les mains, attendre les questions.}
 
 \vspace{14pt}
-\notehead{23/25}{QUESTIONS DU JURY — aide-mémoire}
+\notehead{24/24}{QUESTIONS DU JURY --- aide-mémoire}
 \textbullet\ \ \textbf{Pourquoi Python et pas C/Go ?} $\to$ Watchdog exploite inotify nativement, CPU minimal, portable Linux/Windows/macOS\\[3pt]
-  \textbullet\ \ \textbf{Faux positifs ?} $\to$ seuils configurables, \textbf{opérateur humain} valide ou rejette chaque action\\[3pt]
-  \textbullet\ \ \textbf{Pourquoi pas HTTPS ?} $\to$ LAN contrôlé ; c'est la 1\textsuperscript{re} perspective pour la prod\\[3pt]
-  \textbullet\ \ \textbf{Différence avec un antivirus ?} $\to$ comportement, pas signature ; fonctionne sur variantes inconnues\\[3pt]
-  \textbullet\ \ \textbf{Testé sur Windows ?} $\to$ Non, limite assumée : Linux uniquement\\[3pt]
-  \textit{Garder les \textbf{annexes} prêtes (file d'approbation, captures d'écran).}
+  \textbullet\ \ \textbf{Faux positifs ?} $\to$ Seuils configurables~; l'\textbf{opérateur humain} valide ou rejette chaque action\\[3pt]
+  \textbullet\ \ \textbf{Pourquoi pas HTTPS ?} $\to$ LAN contrôlé~; c'est la 1\textsuperscript{re} perspective pour la production\\[3pt]
+  \textbullet\ \ \textbf{Différence avec un antivirus ?} $\to$ Comportement, pas signature~; fonctionne sur variantes inconnues\\[3pt]
+  \textbullet\ \ \textbf{Testé sur Windows ?} $\to$ Non, limite assumée~; l'agent est compatible via Watchdog, non testé dans ce travail\\[3pt]
+  \textbullet\ \ \textbf{Passage à l'échelle ?} $\to$ Tests sur 3 VM~; l'API Laravel est conçue pour monter en charge, tests de perf à conduire\\[3pt]
+  \textit{Reformuler la question avant de répondre. Garder les \textbf{captures d'écran} prêtes.}
 
 \end{document}
