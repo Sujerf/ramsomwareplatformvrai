@@ -10,9 +10,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 PPTX = os.path.join(HERE, "presentation_soutenance.pptx")
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Discours — 24 entrées (source : \note{} de presentation_soutenance.tex)
-# Slides 3, 7, 10, 16, 22 = transitions de section → vides
-# Slides 14, 15 = orphelins PPTX (pas dans le PDF)
+# Discours — 22 entrées (source : \note{} de presentation_soutenance.tex)
+# Slides 3, 7, 10, 14, 20 = transitions de section → vides
 # ─────────────────────────────────────────────────────────────────────────────
 NOTES = [
 
@@ -141,28 +140,10 @@ Cette séparation des rôles est volontaire : l'analyste ne peut pas modifier la
 
 → Passons maintenant à la réalisation concrète.""",
 
-# ── Slide 14 — DIAGRAMME DE CLASSES (orphelin PPTX) ───────────────────────────
-"""[DIAGRAMME DE CLASSES]
-
-Notre modèle objet distingue sept entités principales.
-
-Le pipeline se lit de gauche à droite : un Agent génère des Events, que les DetectionRules évaluent. Lorsque le score dépasse le seuil, une Alert est créée, puis escaladée en Incident. Chaque Incident génère des ProtectionActions. L'ensemble est tracé dans un AuditLog.
-
-→ Comment ces entités se traduisent-elles en base de données ?""",
-
-# ── Slide 15 — MODÈLE DE DONNÉES (orphelin PPTX) ─────────────────────────────
-"""[MODÈLE DE DONNÉES]
-
-Notre modèle de données repose sur huit tables MySQL.
-
-Le pipeline se lit de gauche à droite : agent, événement, alerte, incident, action, journal d'audit. Chaque action est signée : on sait qui l'a validée, et à quel moment. Aucune décision n'est anonyme dans notre système.
-
-→ Passons maintenant à la réalisation concrète.""",
-
-# ── Slide 16 — Transition : Réalisation et Résultats ─────────────────────────
+# ── Slide 14 — Transition : Réalisation et Résultats ─────────────────────────
 "",
 
-# ── Slide 17 — CHOIX TECHNIQUES ───────────────────────────────────────────────
+# ── Slide 15 — CHOIX TECHNIQUES ───────────────────────────────────────────────
 """[CHOIX TECHNIQUES]
 
 Excellence Monsieur le Président du jury, Mesdames et Messieurs les membres du jury,
@@ -177,7 +158,7 @@ L'accès à la console est protégé par une double authentification : après le
 
 → Voyons concrètement comment l'agent et le moteur fonctionnent.""",
 
-# ── Slide 18 — AGENT & MOTEUR DE DÉTECTION ────────────────────────────────────
+# ── Slide 16 — AGENT & MOTEUR DE DÉTECTION ────────────────────────────────────
 """[AGENT & MOTEUR DE DÉTECTION]
 
 Entrons dans le cœur du système : l'agent de surveillance et le moteur de scoring.
@@ -188,7 +169,7 @@ Pour illustrer le moteur de scoring : imaginons qu'un fichier soit renommé avec
 
 → Côté analyste, voici ce que la console SOC offre.""",
 
-# ── Slide 19 — CONSOLE SOC ────────────────────────────────────────────────────
+# ── Slide 17 — CONSOLE SOC ────────────────────────────────────────────────────
 """[CONSOLE SOC]
 
 Venons-en maintenant à la console SOC — l'interface que l'opérateur utilise au quotidien pour surveiller, réagir et rendre des comptes.
@@ -201,7 +182,7 @@ Dès qu'une alerte est levée, l'opérateur est notifié simultanément par quat
 
 → Qu'est-ce que les tests ont donné ?""",
 
-# ── Slide 20 — TESTS & RÉSULTATS ──────────────────────────────────────────────
+# ── Slide 18 — TESTS & RÉSULTATS ──────────────────────────────────────────────
 """[TESTS ET VALIDATION]
 
 Après la réalisation, venons-en aux tests et à la validation du système en conditions représentatives.
@@ -218,7 +199,7 @@ Les résultats sont constants : cinq scénarios exécutés, cinq détectés en m
 
 → Place maintenant à la démonstration live.""",
 
-# ── Slide 21 — DÉMONSTRATION LIVE ────────────────────────────────────────────
+# ── Slide 19 — DÉMONSTRATION LIVE ────────────────────────────────────────────
 """[DÉMONSTRATION LIVE]
 
 Suivre le guide de démonstration.
@@ -234,10 +215,10 @@ Suivre le guide de démonstration.
 
 → Revenir à la présentation pour conclure.""",
 
-# ── Slide 22 — Transition : Conclusion et Perspectives ───────────────────────
+# ── Slide 20 — Transition : Conclusion et Perspectives ───────────────────────
 "",
 
-# ── Slide 23 — CONCLUSION & PERSPECTIVES ──────────────────────────────────────
+# ── Slide 21 — CONCLUSION & PERSPECTIVES ──────────────────────────────────────
 """[CONCLUSION]
 
 Nous voilà dans la cinquième et dernière partie de notre exposé.
@@ -254,7 +235,7 @@ Les perspectives sont tracées : sécuriser les communications pour la productio
 
 → Nous restons à votre disposition pour vos questions.""",
 
-# ── Slide 24 — MERCI / QUESTIONS DU JURY ──────────────────────────────────────
+# ── Slide 22 — MERCI / QUESTIONS DU JURY ──────────────────────────────────────
 """[MERCI — MOT DE CLÔTURE]
 
 Dans un monde où les systèmes automatisent nos décisions, RansomShield rappelle une conviction simple : la machine peut détecter, mais c'est l'humain qui décide. Ce n'est pas une contrainte technique — c'est un choix éthique.

@@ -12,33 +12,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 PPTX = os.path.join(HERE, "presentation_soutenance.pptx")
 IMG_PREFIX = "/tmp/pptx_slides"   # pdftoppm -r 150 -png → /tmp/pptx_slides-01.png
 
-# PPTX slide (1-based) → PDF page (1-based), None = garder l'ancienne image
-MAPPING = {
-     1:  1,   # Titre
-     2:  2,   # Sommaire
-     3:  3,   # Section 01 — Introduction Générale  ← NOUVEAU
-     4:  4,   # Contexte
-     5:  5,   # Problématique
-     6:  6,   # Objectifs
-     7:  7,   # Section 02 — Revue de littérature   ← NOUVEAU
-     8:  8,   # Définition
-     9:  9,   # Solutions existantes
-    10: 10,   # Section 03 — Analyse et Conception  ← NOUVEAU
-    11: 11,   # Architecture
-    12: 12,   # 4 Composants
-    13: 13,   # USE CASE
-    14: None, # Diagramme de Classes (orphelin — pas dans le PDF actuel)
-    15: None, # Modèle de Données   (orphelin — pas dans le PDF actuel)
-    16: 14,   # Section 04 — Réalisation et Résultats ← NOUVEAU
-    17: 15,   # Choix techniques
-    18: 16,   # Agent & Moteur
-    19: 17,   # Console SOC
-    20: 18,   # Tests & Résultats
-    21: 19,   # Démonstration live
-    22: 20,   # Section 05 — Conclusion              ← NOUVEAU
-    23: 21,   # Conclusion & Perspectives
-    24: 22,   # Merci / Questions du jury
-}
+# PPTX slide (1-based) → PDF page (1-based) — mapping 1-to-1 (22 slides = 22 pages)
+MAPPING = {i: i for i in range(1, 23)}
 
 
 def replace_image(slide, png_path):
