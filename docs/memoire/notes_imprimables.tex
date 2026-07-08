@@ -34,7 +34,7 @@
 \vspace{2pt}
 \hrule
 
-\notehead{1/24}{OUVERTURE}
+\notehead{1/22}{OUVERTURE}
 Excellence Monsieur le Président du jury, Mesdames et Messieurs les membres du jury, bonjour.
 
 Permettez-nous, avant toute chose, de vous exprimer notre profonde reconnaissance pour avoir répondu
@@ -49,7 +49,7 @@ C'est avec fierté et humilité que nous vous présentons aujourd'hui RansomShie
   contrôlée et traçable, avec une validation humaine à chaque étape décisive.
 \pivot{Voici comment s'articule cette présentation.}
 
-\notehead{2/24}{SOMMAIRE}
+\notehead{2/22}{SOMMAIRE}
 Excellence Monsieur le Président du jury, Mesdames et Messieurs les membres du jury,
 
 Notre présentation s'articule en cinq parties. Nous partirons du contexte et de la problématique
@@ -58,7 +58,7 @@ Notre présentation s'articule en cinq parties. Nous partirons du contexte et de
   une démonstration en conditions réelles.
 \pivot{Commençons par le contexte et la problématique.}
 
-\notehead{4/24}{CONTEXTE}
+\notehead{4/22}{CONTEXTE}
 Nous entrons dans la première partie de notre exposé, consacrée au contexte et aux motivations
   de ce travail.
 
@@ -71,7 +71,7 @@ Aujourd'hui, les entreprises, les hôpitaux, les universités fonctionnent grâc
   s'accumulent en silence.
 \pivot{Ce constat nous amène à la problématique centrale.}
 
-\notehead{5/24}{PROBLÉMATIQUE}
+\notehead{5/22}{PROBLÉMATIQUE}
 Ce contexte nous amène naturellement à la problématique centrale de ce travail.
 
 Le constat est simple~: les antivirus fonctionnent par reconnaissance d'empreintes. Ils connaissent
@@ -88,7 +88,7 @@ Trois défis ont structuré ce travail~: les variantes inconnues que les outils 
   validation humaine cause elle-même des dommages.
 \pivot{Ces défis ont défini les six objectifs que voici.}
 
-\notehead{6/24}{OBJECTIFS}
+\notehead{6/22}{OBJECTIFS}
 Pour répondre à cette problématique, six objectifs précis ont guidé ce travail.
 
 Premièrement, surveiller en temps réel les activités fichiers sur chaque terminal.
@@ -100,7 +100,7 @@ Premièrement, surveiller en temps réel les activités fichiers sur chaque term
   l'ensemble sur des scénarios d'attaque représentatifs.
 \pivot{Voyons maintenant les fondements théoriques de ce travail.}
 
-\notehead{8/24}{DÉFINITION \& COMPORTEMENTS}
+\notehead{8/22}{DÉFINITION \& COMPORTEMENTS}
 Excellence Monsieur le Président du jury, Mesdames et Messieurs les membres du jury,
 
 Nous entrons dans la deuxième partie de notre exposé~: la revue de littérature. Permettez-nous de
@@ -116,7 +116,7 @@ Ce sont ces comportements observables, ces traces laissées sur le système, qui
   soient irréversibles.
 \pivot{Mais pourquoi les outils existants ne suffisent-ils pas~?}
 
-\notehead{9/24}{SOLUTIONS EXISTANTES}
+\notehead{9/22}{SOLUTIONS EXISTANTES}
 Face à cette menace bien documentée, des solutions existent. Voyons pourquoi elles restent
   insuffisantes pour notre contexte.
 
@@ -133,7 +133,7 @@ RansomShield occupe cet espace laissé vacant~: une solution libre, comportement
   coûteuses.
 \pivot{Voyons maintenant comment ce système a été conçu.}
 
-\notehead{11/24}{ARCHITECTURE}
+\notehead{11/22}{ARCHITECTURE}
 Excellence Monsieur le Président du jury, Mesdames et Messieurs les membres du jury,
 
 Nous entrons dans la troisième partie~: l'analyse et la conception de RansomShield. Voici
@@ -147,7 +147,7 @@ Un agent, installé sur chaque terminal de l'organisation, observe en permanence
   validation humaine.
 \pivot{Voyons de plus près les quatre composants.}
 
-\notehead{12/24}{LES 4 COMPOSANTS}
+\notehead{12/22}{LES 4 COMPOSANTS}
 Voyons maintenant de plus près les quatre composants qui constituent ce système.
 
 \textbf{Premièrement}, l'agent de surveillance~: installé sur chaque machine, il observe en temps
@@ -164,7 +164,7 @@ Voyons maintenant de plus près les quatre composants qui constituent ce systèm
   moindre malware réel --- ce qui a permis de valider le système en toute sécurité.
 \pivot{Qui sont les acteurs qui interagissent avec ce système~?}
 
-\notehead{13/24}{DIAGRAMME USE CASE}
+\notehead{13/22}{DIAGRAMME USE CASE}
 Ce diagramme présente les deux profils d'utilisateurs qui interagissent avec RansomShield,
   et la répartition claire de leurs responsabilités.
 
@@ -179,23 +179,7 @@ Cette séparation des rôles est volontaire~: l'analyste ne peut pas modifier la
   ce qui garantit l'intégrité du système.
 \pivot{Passons maintenant à la réalisation concrète.}
 
-\notehead{14/24}{DIAGRAMME DE CLASSES}
-Notre modèle objet distingue sept entités principales.
-
-Le pipeline se lit de gauche à droite~: un Agent génère des Events, que les DetectionRules
-  évaluent. Lorsque le score dépasse le seuil, une Alert est créée, puis escaladée en Incident.
-  Chaque Incident génère des ProtectionActions. L'ensemble est tracé dans un AuditLog.
-\pivot{Comment ces entités se traduisent-elles en base de données~?}
-
-\notehead{15/24}{MODÈLE DE DONNÉES}
-Notre modèle de données repose sur huit tables MySQL.
-
-Le pipeline se lit de gauche à droite~: agent, événement, alerte, incident, action, journal
-  d'audit. Chaque action est signée~: on sait qui l'a validée, et à quel moment. Aucune décision
-  n'est anonyme dans notre système.
-\pivot{Passons maintenant à la réalisation concrète.}
-
-\notehead{17/24}{CHOIX TECHNIQUES}
+\notehead{15/22}{CHOIX TECHNIQUES}
 Excellence Monsieur le Président du jury, Mesdames et Messieurs les membres du jury,
 
 Nous voici dans la quatrième partie de notre exposé, consacrée à la réalisation et aux résultats.
@@ -213,7 +197,7 @@ L'accès à la console est protégé par une double authentification~: après le
   l'utilisateur doit saisir un code temporaire valide 30 secondes seulement.
 \pivot{Voyons concrètement comment l'agent et le moteur fonctionnent.}
 
-\notehead{18/24}{AGENT \& MOTEUR DE DÉTECTION}
+\notehead{16/22}{AGENT \& MOTEUR DE DÉTECTION}
 Entrons dans le c\oe{}ur du système~: l'agent de surveillance et le moteur de scoring.
 
 Voici comment fonctionne l'agent au quotidien~: dès son démarrage, il est reconnu par le serveur
@@ -228,7 +212,7 @@ Pour illustrer le moteur de scoring~: imaginons qu'un fichier soit renommé avec
   dans la console. Le système attend ensuite la décision de l'opérateur.
 \pivot{Côté analyste, voici ce que la console SOC offre.}
 
-\notehead{19/24}{CONSOLE SOC}
+\notehead{17/22}{CONSOLE SOC}
 Venons-en maintenant à la console SOC --- l'interface que l'opérateur utilise au quotidien pour
   surveiller, réagir et rendre des comptes.
 
@@ -245,7 +229,7 @@ Dès qu'une alerte est levée, l'opérateur est notifié simultanément par quat
   alerte ne passe inaperçue, quelle que soit sa situation.
 \pivot{Qu'est-ce que les tests ont donné~?}
 
-\notehead{20/24}{TESTS \& RÉSULTATS}
+\notehead{18/22}{TESTS \& RÉSULTATS}
 Après la réalisation, venons-en aux tests et à la validation du système en conditions représentatives.
 
 Une démarche en trois étapes complémentaires a été adoptée.
@@ -267,7 +251,7 @@ Les résultats sont constants~: cinq scénarios exécutés, cinq détectés en m
   uniquement --- c'est la première perspective d'évolution du projet.
 \pivot{Place maintenant à la démonstration live.}
 
-\notehead{21/24}{DÉMONSTRATION LIVE --- checklist 5 min, hors chrono}
+\notehead{19/22}{DÉMONSTRATION LIVE --- checklist 5 min, hors chrono}
 Suivre le guide de démonstration.\\[6pt]
   1. Console SOC ouverte~: 3 agents en ligne\\[3pt]
   2. SSH sur \texttt{rs-client-1}~: renommage \texttt{.locked} + note de rançon\\[3pt]
@@ -278,7 +262,7 @@ Suivre le guide de démonstration.\\[6pt]
 \pivot{Revenir à la présentation pour conclure.}
 
 \newpage
-\notehead{23/24}{CONCLUSION \& PERSPECTIVES}
+\notehead{21/22}{CONCLUSION \& PERSPECTIVES}
 Nous voilà dans la cinquième et dernière partie de notre exposé.
 
 Excellence Monsieur le Président du jury, Mesdames et Messieurs les membres du jury, permettez-nous
@@ -304,7 +288,7 @@ Les perspectives sont tracées~: sécuriser les communications pour la productio
 \pivot{Nous restons à votre disposition pour vos questions.}
 
 \vspace{14pt}
-\notehead{24/24}{MERCI \& QUESTIONS DU JURY --- aide-mémoire}
+\notehead{22/22}{MERCI \& QUESTIONS DU JURY --- aide-mémoire}
 {\itshape Dans un monde où les systèmes automatisent nos décisions, RansomShield rappelle une
   conviction simple~: la machine peut détecter, mais c'est l'humain qui décide. Ce n'est pas une
   contrainte technique --- c'est un choix éthique.}\\[6pt]
