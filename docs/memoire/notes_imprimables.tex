@@ -34,7 +34,7 @@
 \vspace{2pt}
 \hrule
 
-\notehead{1/22}{OUVERTURE}
+\notehead{1/23}{OUVERTURE}
 Excellence Monsieur le Président du jury, Mesdames et Messieurs les membres du jury, bonjour.
 
 Permettez-nous d'exprimer notre profonde reconnaissance pour votre présence.
@@ -48,13 +48,13 @@ C'est avec fierté et humilité que nous vous présentons RansomShield --- un sy
   avec une validation humaine à chaque étape décisive.
 \pivot{Voici comment s'articule cette présentation.}
 
-\notehead{2/22}{SOMMAIRE}
+\notehead{2/23}{SOMMAIRE}
 Notre présentation s'articule en cinq parties. Nous partirons du contexte et de la problématique,
   pour aller vers un état des lieux des solutions existantes, puis la conception et la réalisation.
   Nous conclurons par les perspectives et terminerons par une démonstration en conditions réelles.
 \pivot{Commençons par le contexte et la problématique.}
 
-\notehead{4/22}{CONTEXTE}
+\notehead{4/23}{CONTEXTE}
 Aujourd'hui, les entreprises, les hôpitaux, les universités fonctionnent grâce à leurs données
   numériques. Le ransomware --- un logiciel malveillant qui rend les données inaccessibles puis
   exige une rançon --- exploite précisément cette dépendance. En 2023, ces attaques ont progressé
@@ -62,7 +62,7 @@ Aujourd'hui, les entreprises, les hôpitaux, les universités fonctionnent grâc
   Ce qui est grave~: sans outil adapté, une attaque passe en moyenne 21 jours sans être détectée.
 \pivot{Ce constat nous amène à la problématique centrale.}
 
-\notehead{5/22}{PROBLÉMATIQUE}
+\notehead{5/23}{PROBLÉMATIQUE}
 Les antivirus fonctionnent par reconnaissance d'empreintes~: ils connaissent les menaces répertoriées.
   Mais face à une variante inédite, ils restent aveugles --- et pendant ce temps, les données sont
   chiffrées, les sauvegardes effacées, les dommages deviennent irréversibles.
@@ -74,7 +74,7 @@ Trois défis ont structuré ce travail~: les variantes inconnues, la diversité 
   et le risque qu'une réponse automatique non validée cause elle-même des dommages.
 \pivot{Ces défis ont défini les six objectifs que voici.}
 
-\notehead{6/22}{OBJECTIFS}
+\notehead{6/23}{OBJECTIFS}
 Six objectifs précis ont guidé ce travail~: surveiller en temps réel les fichiers sur chaque
   terminal~; calculer un niveau de risque~; déclencher des alertes automatiquement. Le principe
   fondateur~: chaque action passe par la décision d'un opérateur humain. L'accès est sécurisé
@@ -82,7 +82,7 @@ Six objectifs précis ont guidé ce travail~: surveiller en temps réel les fich
   valider l'ensemble, des scénarios d'attaque représentatifs ont été définis et exécutés.
 \pivot{Voyons maintenant les fondements théoriques de ce travail.}
 
-\notehead{8/22}{DÉFINITION \& COMPORTEMENTS}
+\notehead{8/23}{DÉFINITION \& COMPORTEMENTS}
 Un ransomware agit toujours selon le même schéma~: il renomme vos fichiers avec une extension
   inhabituelle pour les rendre illisibles, dépose une note de rançon, puis efface les sauvegardes
   pour rendre toute récupération impossible. Il utilise parfois des outils légitimes pour passer
@@ -92,7 +92,7 @@ Ce sont ces comportements observables --- ces traces --- qui forment la base de 
   Surveiller ces actions en temps réel permet de réagir avant que les dommages soient irréversibles.
 \pivot{Mais pourquoi les outils existants ne suffisent-ils pas~?}
 
-\notehead{9/22}{SOLUTIONS EXISTANTES}
+\notehead{9/23}{SOLUTIONS EXISTANTES}
 Des solutions existent --- voyons pourquoi elles restent insuffisantes.
 
 Les antivirus ne reconnaissent que les menaces déjà cataloguées dans leur base de données. Les
@@ -106,9 +106,23 @@ RansomShield occupe cet espace laissé vacant~: une solution libre, comportement
   n'importe quelle infrastructure, avec un contrôle humain intégré à chaque étape --- conçue pour
   les entreprises et organisations qui veulent se protéger sans dépendre de solutions propriétaires
   coûteuses.
-\pivot{Voyons maintenant comment ce système a été conçu.}
+\pivot{Avant cela, précisons notre démarche méthodologique.}
 
-\notehead{11/22}{ARCHITECTURE}
+\notehead{10/23}{MÉTHODOLOGIE}
+Notre démarche est incrémentale~: nous avons d'abord développé et validé l'agent de surveillance
+  seul, puis l'API de communication, puis la console SOC, avant d'intégrer l'ensemble.
+
+L'environnement de test est constitué de trois machines virtuelles Linux en réseau interne isolé
+  sous VirtualBox. \texttt{rs-server} héberge l'API Laravel et la console SOC~; \texttt{rs-client-1}
+  et \texttt{rs-client-2} accueillent les agents Python. Aucune connexion Internet --- environnement
+  entièrement contrôlé.
+
+La validation repose sur cinq scénarios de simulation comportementale, exécutés sans jamais déployer
+  de malware réel. Trois indicateurs ont guidé l'évaluation~: délai de détection, intégrité des
+  données, et complétude de la chaîne jusqu'à la décision de l'opérateur.
+\pivot{Ces bases posées, voyons maintenant comment le système a été conçu.}
+
+\notehead{12/23}{ARCHITECTURE}
 Voici l'architecture générale --- à lire de gauche à droite.
 
 Un agent sur chaque terminal observe toute activité inhabituelle sur les fichiers. Ces observations
@@ -117,7 +131,7 @@ Un agent sur chaque terminal observe toute activité inhabituelle sur les fichie
   C'est lui qui prend la décision finale. Le système n'agit jamais seul.
 \pivot{Voyons de plus près les quatre composants.}
 
-\notehead{12/22}{LES 4 COMPOSANTS}
+\notehead{13/23}{LES 4 COMPOSANTS}
 \textbf{L'agent de surveillance, d'abord}~: installé sur chaque machine, il observe en temps
   réel toute activité inhabituelle sur les fichiers et conserve ces informations localement,
   pour ne rien perdre même en cas de coupure réseau.
@@ -132,7 +146,7 @@ Un agent sur chaque terminal observe toute activité inhabituelle sur les fichie
   moindre malware réel --- ce qui a permis de valider le système en toute sécurité.
 \pivot{Qui sont les acteurs qui interagissent avec ce système~?}
 
-\notehead{13/22}{DIAGRAMME USE CASE}
+\notehead{14/23}{DIAGRAMME USE CASE}
 Deux profils d'utilisateurs interagissent avec le système. L'administrateur configure et pilote~:
   il connecte les agents, définit les règles et lance les simulations. L'analyste SOC traite les
   incidents au quotidien~: il consulte les alertes, approuve ou rejette les actions proposées,
@@ -140,7 +154,7 @@ Deux profils d'utilisateurs interagissent avec le système. L'administrateur con
   séparation garantit l'intégrité du système.
 \pivot{Passons maintenant à la réalisation concrète.}
 
-\notehead{15/22}{CHOIX TECHNIQUES}
+\notehead{16/23}{CHOIX TECHNIQUES}
 Les choix techniques ont été guidés par trois critères~: portabilité multi-OS, facilité de
   déploiement, et démontrable sans infrastructure coûteuse.
 
@@ -150,7 +164,7 @@ Le serveur et la console sont développés avec Laravel. L'agent de surveillance
   puis code temporaire valide 30 secondes.
 \pivot{Voyons concrètement comment l'agent et le moteur fonctionnent.}
 
-\notehead{16/22}{AGENT \& MOTEUR DE DÉTECTION}
+\notehead{17/23}{AGENT \& MOTEUR DE DÉTECTION}
 L'agent démarre, est reconnu par le serveur grâce à un jeton sécurisé, surveille les dossiers
   et envoie un signal de vie toutes les 30 secondes.
 
@@ -160,7 +174,7 @@ Pour le moteur de scoring~: un fichier renommé \texttt{.locked} ajoute 80 point
   la console, en attente de la décision de l'opérateur.
 \pivot{Côté analyste, voici ce que la console SOC offre.}
 
-\notehead{17/22}{CONSOLE SOC}
+\notehead{18/23}{CONSOLE SOC}
 Venons-en maintenant à la console SOC --- l'interface que l'opérateur utilise au quotidien pour
   surveiller, réagir et rendre des comptes.
 
@@ -174,7 +188,7 @@ Dès qu'une alerte est levée, l'opérateur est notifié par quatre canaux simul
   web, e-mail, signal sonore et webhook.
 \pivot{Qu'est-ce que les tests ont donné~?}
 
-\notehead{18/22}{TESTS \& RÉSULTATS}
+\notehead{19/23}{TESTS \& RÉSULTATS}
 Cinq scénarios d'attaque ont été définis, du chiffrement simple à la chaîne complète en
   22 événements, exécutés sur trois machines virtuelles en réseau isolé --- sans jamais déployer
   de malware réel. Pour chaque scénario, trois indicateurs ont été mesurés~: délai de détection,
@@ -184,7 +198,7 @@ Les résultats sont constants~: cinq scénarios exécutés, cinq détectés en m
   zéro événement perdu. Limite assumée~: les tests ont été conduits sur Linux uniquement.
 \pivot{Place maintenant à la démonstration live.}
 
-\notehead{19/22}{DÉMONSTRATION LIVE --- checklist 5 min, hors chrono}
+\notehead{20/23}{DÉMONSTRATION LIVE --- checklist 5 min, hors chrono}
 Suivre le guide de démonstration.\\[6pt]
   1. Console SOC ouverte~: 3 agents en ligne\\[3pt]
   2. SSH sur \texttt{rs-client-1}~: renommage \texttt{.locked} + note de rançon\\[3pt]
@@ -195,7 +209,7 @@ Suivre le guide de démonstration.\\[6pt]
 \pivot{Revenir à la présentation pour conclure.}
 
 \newpage
-\notehead{21/22}{CONCLUSION \& PERSPECTIVES}
+\notehead{22/23}{CONCLUSION \& PERSPECTIVES}
 RansomShield couvre l'intégralité du cycle de traitement d'un incident~: détection sur le terminal,
   analyse comportementale, alerte, décision de l'opérateur, archivage complet. Il est opérationnel,
   démontrable, construit sans malware réel.
@@ -208,7 +222,7 @@ Les perspectives sont tracées~: sécuriser les communications pour la productio
 \pivot{Nous restons à votre disposition pour vos questions.}
 
 \vspace{14pt}
-\notehead{22/22}{MERCI \& QUESTIONS DU JURY --- aide-mémoire}
+\notehead{23/23}{MERCI \& QUESTIONS DU JURY --- aide-mémoire}
 {\itshape Dans un monde où les systèmes automatisent nos décisions, RansomShield rappelle une
   conviction simple~: la machine peut détecter, mais c'est l'humain qui décide. Ce n'est pas une
   contrainte technique --- c'est un choix éthique.}\\[6pt]

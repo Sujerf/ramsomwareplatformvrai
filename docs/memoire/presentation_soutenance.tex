@@ -109,7 +109,7 @@
     \hfill%
     \tiny RansomShield~\textbar~Détection \& Réponse ransomware%
     \hfill%
-    \tiny 24 juin 2026\enspace\insertframenumber/\inserttotalframenumber\hspace*{6pt}%
+    \tiny 24 juin 2026\enspace{\footnotesize\bfseries\insertframenumber/\inserttotalframenumber}\hspace*{6pt}%
   \end{beamercolorbox}%
 }
 \setbeamercolor{section in head/foot}{fg=white,bg=primary}
@@ -474,7 +474,60 @@
   déployable sur n'importe quelle infrastructure, avec un contrôle humain intégré
   à chaque étape — conçue pour les entreprises et organisations qui veulent se
   protéger sans dépendre de solutions propriétaires coûteuses.\\[6pt]
-  \textcolor{transition}{$\hookrightarrow$ Voyons maintenant comment ce système a été conçu.}
+  \textcolor{transition}{$\hookrightarrow$ Avant cela, précisons notre démarche méthodologique.}
+}
+
+% ─── Méthodologie ─────────────────────────────────────────────────────────
+\begin{frame}{Méthodologie}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+    \begin{block}{Démarche incrémentale}
+      \begin{itemize}\setlength\itemsep{3pt}
+        \item Agent Python \textbf{validé seul} avant intégration
+        \item Puis API Laravel, puis console SOC
+        \item Intégration et tests de bout en bout en dernier
+      \end{itemize}
+    \end{block}
+    \vspace{6pt}
+    \begin{block}{Environnement de test}
+      \begin{itemize}\setlength\itemsep{3pt}
+        \item \textbf{3 VMs Linux} en réseau interne (VirtualBox)
+        \item \texttt{rs-server} : API Laravel + console SOC
+        \item \texttt{rs-client-1/2} : agents Python
+        \item Réseau \textbf{isolé} — aucun accès Internet
+      \end{itemize}
+    \end{block}
+
+    \column{0.46\textwidth}
+    \begin{block}{Stratégie de validation}
+      \begin{itemize}\setlength\itemsep{3pt}
+        \item \textbf{5 scénarios} comportementaux définis
+        \item Simulateur dédié — \textbf{zéro malware réel}
+        \item 3 critères : délai de détection,\\intégrité des données, complétude
+      \end{itemize}
+    \end{block}
+    \vspace{6pt}
+    \begin{alertblock}{Principe directeur}
+      Toute action validée par \textbf{un opérateur humain}\\avant exécution — sans exception
+    \end{alertblock}
+  \end{columns}
+\end{frame}
+\note{
+\textbf{[MÉTHODOLOGIE]}\\[4pt]
+  Avant de présenter la conception, précisons comment nous avons travaillé.\\[4pt]
+  Notre démarche est incrémentale : nous avons d'abord développé et validé
+  l'agent de surveillance seul, puis l'API de communication, puis la console SOC,
+  avant d'intégrer l'ensemble.\\[4pt]
+  L'environnement de test est constitué de trois machines virtuelles Linux
+  en réseau interne isolé sous VirtualBox. \texttt{rs-server} héberge l'API
+  Laravel et la console SOC ; \texttt{rs-client-1} et \texttt{rs-client-2}
+  accueillent les agents Python. Aucune connexion Internet — environnement
+  entièrement contrôlé.\\[4pt]
+  La validation repose sur cinq scénarios de simulation comportementale,
+  exécutés sans jamais déployer de malware réel. Trois indicateurs ont guidé
+  l'évaluation : délai de détection, intégrité des données, et complétude
+  de la chaîne jusqu'à la décision de l'opérateur.\\[6pt]
+  \textcolor{transition}{$\hookrightarrow$ Ces bases posées, voyons maintenant comment le système a été conçu.}
 }
 
 % =========================================================================
