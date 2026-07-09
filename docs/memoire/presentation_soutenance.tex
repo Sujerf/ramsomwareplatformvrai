@@ -571,28 +571,27 @@
         Notifications simultanées~: web, e-mail, son et webhook.
       \end{block}
       \vspace{4pt}
-      \begin{block}{\faFlask\quad Outil de validation comportementale}
-        \small Rejoue les \textbf{comportements documentés} des ransomwares (renommage, note de rançon,
-        suppression des sauvegardes) — sans déployer de malware réel.
-        {\color{muted}\footnotesize Contrainte éthique et légale du cadre académique.}
+      \begin{block}{\faFlask\quad Simulateur de scénarios}
+        \small Rejoue les \textbf{comportements réels} des ransomwares — renommage, note de rançon,
+        suppression des sauvegardes — dans un environnement isolé.
+        Même approche qu'un \textbf{red team} en SOC professionnel.
       \end{block}
   \end{columns}
 
 \end{frame}
 \note{
 \textbf{[4 COMPOSANTS]}\\[4pt]
-  L'agent de surveillance, d'abord : installé sur chaque machine, il observe en
-  temps réel toute activité inhabituelle sur les fichiers et conserve ces informations
-  localement, pour ne rien perdre même en cas de coupure réseau.\\[4pt]
-  La console de supervision, ensuite : c'est le poste de commandement, là où
-  l'opérateur suit les alertes, prend ses décisions et consulte l'historique complet
-  de toutes les actions.\\[4pt]
-  Le module de découverte réseau : il signale automatiquement les nouvelles machines,
-  mais aucune n'est intégrée au système sans accord explicite de l'administrateur.\\[4pt]
-  Enfin, l'outil de validation : il rejoue les comportements documentés des ransomwares —
-  renommage de fichiers, dépôt de note de rançon, suppression des sauvegardes — sans déployer
-  de malware réel. C'est une contrainte éthique et légale du cadre académique ; les comportements
-  simulés restent fidèles aux cas réels documentés par l'ENISA.\\[6pt]
+  RansomShield s'articule autour de quatre composants complémentaires.\\[4pt]
+  L'agent : déployé sur chaque machine, il surveille les fichiers en temps réel
+  et stocke tout localement — même hors réseau, rien ne se perd.\\[4pt]
+  La console : le poste de commandement. L'analyste y voit tout et décide tout —
+  alertes, incidents, file d'approbation, historique complet.\\[4pt]
+  La découverte réseau : elle cartographie l'infrastructure automatiquement
+  et propose les nouvelles machines. Aucune n'est intégrée sans validation explicite
+  de l'administrateur.\\[4pt]
+  Le simulateur : il reproduit les comportements réels des ransomwares dans un
+  environnement isolé. C'est la même approche qu'un red team en SOC professionnel —
+  tester sans risquer les données de production.\\[6pt]
   \textcolor{transition}{$\hookrightarrow$ Qui sont les acteurs qui interagissent avec ce système ?}
 }
 

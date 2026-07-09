@@ -118,18 +118,20 @@ Un agent sur chaque terminal observe toute activité inhabituelle sur les fichie
 \pivot{Voyons de plus près les quatre composants.}
 
 \notehead{12/22}{LES 4 COMPOSANTS}
-\textbf{L'agent de surveillance, d'abord}~: installé sur chaque machine, il observe en temps
-  réel toute activité inhabituelle sur les fichiers et conserve ces informations localement,
-  pour ne rien perdre même en cas de coupure réseau.
+RansomShield s'articule autour de quatre composants complémentaires.
 
-\textbf{La console de supervision, ensuite}~: c'est le poste de commandement, là où l'opérateur
-  suit les alertes, prend ses décisions et consulte l'historique complet de toutes les actions.
+\textbf{L'agent}~: déployé sur chaque machine, il surveille les fichiers en temps réel et stocke
+  tout localement --- même hors réseau, rien ne se perd.
 
-\textbf{Le module de découverte réseau}~: il signale automatiquement les nouvelles
-  machines, mais aucune n'est intégrée au système sans accord explicite de l'administrateur.
+\textbf{La console}~: le poste de commandement. L'analyste y voit tout et décide tout ---
+  alertes, incidents, file d'approbation, historique complet.
 
-\textbf{Enfin}, le simulateur~: il reproduit des scénarios d'attaque réalistes, sans déployer le
-  moindre malware réel --- ce qui a permis de valider le système en toute sécurité.
+\textbf{La découverte réseau}~: elle cartographie l'infrastructure automatiquement et propose les
+  nouvelles machines. Aucune n'est intégrée sans validation explicite de l'administrateur.
+
+\textbf{Le simulateur}~: il reproduit les comportements réels des ransomwares dans un environnement
+  isolé. C'est la même approche qu'un red team en SOC professionnel --- tester sans risquer les
+  données de production.
 \pivot{Qui sont les acteurs qui interagissent avec ce système~?}
 
 \notehead{13/22}{DIAGRAMME USE CASE}
@@ -226,7 +228,7 @@ Les perspectives sont tracées~: sécuriser les communications pour la productio
   \textbullet\ \ \textbf{Pourquoi pas HTTPS~?} $\to$ LAN contrôlé~; chiffrement TLS = 1\textsuperscript{re} perspective pour la production\\[3pt]
   \textbullet\ \ \textbf{Différence avec un antivirus~?} $\to$ L'antivirus reconnaît les empreintes~; RansomShield observe le comportement\\[3pt]
   \textbullet\ \ \textbf{Testé sur Windows~?} $\to$ Non, limite assumée~; Linux uniquement~; extension Windows = 1\textsuperscript{re} priorité d'évolution\\[3pt]
-  \textbullet\ \ \textbf{Simulateur = test circulaire~?} $\to$ Le simulateur ne teste pas la logique de détection --- il reproduit les \textbf{comportements fichiers} documentés (renommage, note de rançon, suppression sauvegardes). C'est une contrainte éthique et légale~: déployer un vrai ransomware en cadre académique est illégal. Les comportements restent fidèles aux cas réels décrits par l'ENISA.\\[3pt]
+  \textbullet\ \ \textbf{Simulateur = test circulaire~?} $\to$ Le simulateur reproduit les \textbf{comportements fichiers} documentés (renommage, note de rançon, suppression sauvegardes) --- pas la logique de détection. C'est l'approche standard du red team en SOC professionnel~: tester sur des comportements réels sans déployer de malware en production. Fidèle aux cas documentés par l'ENISA.\\[3pt]
   \textit{Reformuler la question avant de répondre. Garder les \textbf{captures d'écran} prêtes.}
 
 \end{document}
