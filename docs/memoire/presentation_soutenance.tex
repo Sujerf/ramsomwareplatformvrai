@@ -268,11 +268,9 @@
 \end{frame}
 \note{
 \textbf{[SOMMAIRE]}\\[4pt]
-  Notre présentation s'articule en cinq parties. Nous partirons du contexte et de la
-  problématique, pour aller vers un état des lieux des solutions existantes,
-  puis la conception et la réalisation. Nous conclurons par les perspectives
-  et terminerons par une démonstration en conditions réelles.\\[6pt]
-  \textcolor{transition}{$\hookrightarrow$ Commençons par le contexte et la problématique.}
+  Cinq parties : contexte et problématique, solutions existantes, conception
+  et réalisation, perspectives — et une démonstration en conditions réelles.\\[6pt]
+  \textcolor{transition}{$\hookrightarrow$ Commençons par le contexte.}
 }
 
 % =========================================================================
@@ -470,10 +468,8 @@
   — solutions de surveillance avancée des terminaux — sont très efficaces, mais leur coût
   les rend inaccessibles pour la grande majorité des organisations — PME, hôpitaux,
   administrations, associations — qui n'ont pas les budgets des grands groupes.\\[4pt]
-  RansomShield occupe cet espace laissé vacant : une solution libre, comportementale,
-  déployable sur n'importe quelle infrastructure, avec un contrôle humain intégré
-  à chaque étape — conçue pour les entreprises et organisations qui veulent se
-  protéger sans dépendre de solutions propriétaires coûteuses.\\[6pt]
+  RansomShield occupe cet espace : solution libre, comportementale,
+  déployable partout, avec contrôle humain à chaque étape.\\[6pt]
   \textcolor{transition}{$\hookrightarrow$ Voyons maintenant comment ce système a été conçu.}
 }
 
@@ -581,18 +577,13 @@
 \end{frame}
 \note{
 \textbf{[4 COMPOSANTS]}\\[4pt]
-  L'agent de surveillance, d'abord : installé sur chaque machine, il observe en
-  temps réel toute activité inhabituelle sur les fichiers et conserve ces informations
-  localement, pour ne rien perdre même en cas de coupure réseau.\\[4pt]
-  La console de supervision, ensuite : c'est le poste de commandement, là où
-  l'opérateur suit les alertes, prend ses décisions et consulte l'historique complet
-  de toutes les actions.\\[4pt]
-  Le module de découverte réseau : il signale automatiquement les nouvelles machines,
-  mais aucune n'est intégrée au système sans accord explicite de l'administrateur.\\[4pt]
-  Enfin, l'outil de validation : il rejoue les comportements documentés des ransomwares —
-  renommage de fichiers, dépôt de note de rançon, suppression des sauvegardes — sans déployer
-  de malware réel. C'est une contrainte éthique et légale du cadre académique ; les comportements
-  simulés restent fidèles aux cas réels documentés par l'ENISA.\\[6pt]
+  L'agent : installé sur chaque machine, il observe les fichiers en temps réel
+  et conserve tout localement — rien n'est perdu en cas de coupure réseau.\\[4pt]
+  La console : poste de commandement de l'opérateur — alertes, décisions, historique.\\[4pt]
+  Le module réseau : détecte les nouvelles machines, mais aucune n'est intégrée
+  sans accord explicite de l'administrateur.\\[4pt]
+  L'outil de validation : rejoue les comportements documentés des ransomwares
+  sans déployer de malware réel.\\[6pt]
   \textcolor{transition}{$\hookrightarrow$ Qui sont les acteurs qui interagissent avec ce système ?}
 }
 
@@ -844,17 +835,11 @@
 \end{frame}
 \note{
 \textbf{[CONSOLE SOC]}\\[4pt]
-  Venons-en maintenant à la console SOC — l'interface que l'opérateur utilise
-  au quotidien pour surveiller, réagir et rendre des comptes.\\[4pt]
-  La console regroupe vingt-trois pages en quatre sections : supervision,
-  infrastructure, détection et réponse, et configuration.\\[4pt]
-  Ce qui est fondamental dans RansomShield, c'est que chaque action proposée
-  par le système passe obligatoirement par la file d'approbation. L'analyste
-  l'approuve ou la rejette explicitement. Aucune action ne s'exécute en silence.
-  Ce principe est non négociable.\\[4pt]
-  Dès qu'une alerte est levée, l'opérateur est notifié simultanément par quatre
-  canaux — sur l'interface web, par e-mail, par signal sonore et par webhook —
-  pour s'assurer qu'aucune alerte ne passe inaperçue, quelle que soit sa situation.\\[6pt]
+  Vingt-trois pages, quatre sections : supervision, infrastructure, détection
+  et réponse, configuration.\\[4pt]
+  Ce qui est fondamental : chaque action passe obligatoirement par la file
+  d'approbation. L'analyste approuve ou rejette. Aucune action ne s'exécute en silence.\\[4pt]
+  Dès qu'une alerte est levée : web, e-mail, signal sonore, webhook — simultanément.\\[6pt]
   \textcolor{transition}{$\hookrightarrow$ Qu'est-ce que les tests ont donné ?}
 }
 
@@ -991,11 +976,9 @@
   RansomShield couvre l'intégralité du cycle de traitement d'un incident :
   détection sur le terminal, analyse comportementale, alerte, décision de l'opérateur,
   archivage complet. Il est opérationnel, démontrable, construit sans malware réel.\\[2pt]
-  Nous n'avons pas la prétention d'avoir épuisé le sujet : chaque remarque du jury
-  est pour nous une opportunité de progresser et de mieux faire.\\[2pt]
-  Les perspectives sont tracées : sécuriser les communications pour la production,
-  affiner les rôles, et doter le moteur d'un apprentissage automatique pour reconnaître
-  les anomalies avec plus de précision.\\[4pt]
+  Chaque remarque du jury est pour nous une opportunité de progresser.\\[2pt]
+  Les perspectives : TLS en production, affinage des rôles,
+  et un moteur ML pour les anomalies inconnues.\\[4pt]
   \textcolor{transition}{$\hookrightarrow$ Nous restons à votre disposition pour vos questions.}
 }
 
