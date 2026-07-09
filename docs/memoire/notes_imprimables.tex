@@ -37,18 +37,25 @@
 \notehead{1/22}{OUVERTURE}
 Excellence Monsieur le Président du jury, Mesdames et Messieurs les membres du jury, bonjour.
 
+Permettez-nous, avant toute chose, de vous exprimer notre profonde reconnaissance pour avoir répondu
+  présents à ce rendez-vous. Ce jour revêt pour nous un cachet tout particulier~: il est
+  l'aboutissement de ces années de formation, et un moment qui restera gravé dans notre parcours.
+
 Le sujet ayant fait l'objet de notre étude est intitulé~: \textit{Conception et mise en place
   d'un système de détection et de réponse aux attaques ransomware dans un environnement contrôlé}.
 
-Nous vous présentons aujourd'hui RansomShield --- un système conçu de bout en bout pour détecter
-  et contrer les attaques ransomware, de manière contrôlée et traçable, avec une validation
-  humaine à chaque étape décisive.
+C'est avec fierté et humilité que nous vous présentons aujourd'hui RansomShield --- un système
+  conçu et mis en place de bout en bout pour détecter et contrer les attaques ransomware, de manière
+  contrôlée et traçable, avec une validation humaine à chaque étape décisive.
 \pivot{Voici comment s'articule cette présentation.}
 
 \notehead{2/22}{SOMMAIRE}
-Notre présentation s'articule en cinq parties~: contexte et problématique, revue de littérature,
-  conception, réalisation et résultats, et conclusion. Nous terminerons par une démonstration
-  en conditions réelles.
+Excellence Monsieur le Président du jury, Mesdames et Messieurs les membres du jury,
+
+Notre présentation s'articule en cinq parties. Nous partirons du contexte et de la problématique
+  qui ont motivé ce travail, pour aller vers un état des lieux des solutions existantes, puis la
+  conception et la réalisation du système. Nous conclurons par les perspectives et terminerons par
+  une démonstration en conditions réelles.
 \pivot{Commençons par le contexte et la problématique.}
 
 \notehead{4/22}{CONTEXTE}
@@ -60,13 +67,18 @@ Aujourd'hui, les entreprises, les hôpitaux, les universités fonctionnent grâc
 \pivot{Ce constat nous amène à la problématique centrale.}
 
 \notehead{5/22}{PROBLÉMATIQUE}
-Les antivirus fonctionnent par reconnaissance d'empreintes. Face à une variante inédite, ils
-  restent aveugles~: les données sont chiffrées, les sauvegardes effacées, les dommages
-  deviennent irréversibles.
+Le constat est simple~: les antivirus fonctionnent par reconnaissance d'empreintes. Ils connaissent
+  les menaces déjà répertoriées. Mais face à une variante inédite d'un ransomware, ils restent
+  complètement aveugles. Et pendant ce temps, les données sont chiffrées, les sauvegardes effacées,
+  les dommages deviennent irréversibles.
 
-Il n'existe pas de solution libre et démontrable pour détecter ces attaques par leurs comportements,
-  avec un contrôle humain à chaque étape. Trois défis ont structuré ce travail~: les variantes
-  inconnues, la diversité des systèmes, et le risque d'une réponse automatique non validée.
+Le problème que ce travail cherche à résoudre est le suivant~: il n'existe pas de solution libre
+  et démontrable en conditions réelles pour détecter ces attaques à partir de leurs comportements,
+  avec un contrôle humain intégré à chaque étape.
+
+Trois défis ont structuré ce travail~: les variantes inconnues que les outils traditionnels ne
+  voient pas, la diversité des systèmes à surveiller, et le risque qu'une réponse automatique sans
+  validation humaine cause elle-même des dommages.
 \pivot{Ces défis ont défini les six objectifs que voici.}
 
 \notehead{6/22}{OBJECTIFS}
@@ -202,14 +214,21 @@ Suivre le guide de démonstration.\\[6pt]
 
 \newpage
 \notehead{21/22}{CONCLUSION \& PERSPECTIVES}
-RansomShield couvre l'intégralité du cycle de traitement d'un incident~: détection sur le terminal,
-  analyse comportementale, alerte, décision de l'opérateur, archivage complet. Il est opérationnel,
-  démontrable, construit sans malware réel. Les limites sont assumées~: Linux uniquement, HTTP en
-  environnement contrôlé.
+Excellence Monsieur le Président du jury, Mesdames et Messieurs les membres du jury, permettez-nous
+  de vous présenter la synthèse de ce travail.
 
-Les perspectives sont tracées~: sécuriser les communications pour la production, affiner les rôles,
-  et doter le moteur d'un apprentissage automatique pour reconnaître les anomalies avec plus de
-  précision. Chaque remarque du jury est pour nous une opportunité de progresser.
+RansomShield couvre l'intégralité du cycle de traitement d'un incident de sécurité~: la détection
+  sur le terminal, l'analyse comportementale, la génération de l'alerte, la décision de l'opérateur,
+  et l'archivage complet de toutes les actions. Il est opérationnel, démontrable, et construit sans
+  aucun malware réel.
+
+Nous n'avons nullement la prétention d'avoir épuisé le sujet. Chaque remarque du jury est pour
+  nous une opportunité de progresser et de mieux faire.
+
+Les perspectives sont tracées~: sécuriser les communications pour la production, affiner les rôles
+  selon le profil de chaque utilisateur, et doter le moteur d'un apprentissage automatique pour
+  qu'il apprenne à reconnaître les comportements normaux et signale les anomalies avec encore plus
+  de précision.
 \pivot{Nous restons à votre disposition pour vos questions.}
 
 \vspace{14pt}
