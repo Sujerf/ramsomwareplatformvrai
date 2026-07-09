@@ -77,9 +77,9 @@ L'agent de surveillance, d'abord : installé sur chaque machine, il observe en t
 
 La console de supervision, ensuite : c'est le poste de commandement, là où l'opérateur suit les alertes, prend ses décisions et consulte l'historique complet de toutes les actions.
 
-Le module de découverte réseau : il signale automatiquement les nouvelles machines, mais aucune n'est intégrée sans accord explicite de l'administrateur.
+Le module de découverte réseau : il signale automatiquement les nouvelles machines, mais aucune n'est intégrée au système sans accord explicite de l'administrateur.
 
-Enfin, le simulateur : il reproduit des scénarios d'attaque réalistes, sans déployer le moindre malware réel.
+Enfin, l'outil de validation : il rejoue les comportements documentés des ransomwares — renommage de fichiers, dépôt de note de rançon, suppression des sauvegardes — sans déployer de malware réel. C'est une contrainte éthique et légale du cadre académique ; les comportements simulés restent fidèles aux cas réels documentés par l'ENISA.
 
 → Qui sont les acteurs qui interagissent avec ce système ?""",
 
