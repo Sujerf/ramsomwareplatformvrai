@@ -616,50 +616,59 @@
   }
 ]
 
+% ── Administrateur ──────────────────────────────────────────────────────
 \draw[fill=darkbg, draw=darkbg, line width=1.4pt]
-  (-0.7, 2.85) circle (0.38);
+  (-0.7, 1.60) circle (0.38);
 \draw[darkbg, line width=1.5pt]
-  (-0.7, 2.47)--(-0.7, 1.65)
-  (-1.25, 2.15)--(-0.1, 2.15)
-  (-0.7, 1.65)--(-1.2, 0.95)
-  (-0.7, 1.65)--(-0.2, 0.95);
+  (-0.7, 1.22)--(-0.7, 0.40)
+  (-1.25, 0.80)--(-0.1, 0.80)
+  (-0.7, 0.40)--(-1.2,-0.30)
+  (-0.7, 0.40)--(-0.2,-0.30);
 \node[below, font=\large\bfseries, text=darkbg, align=center]
-  at (-0.7, 0.75) {Administrateur};
-\coordinate (adminPt) at (-0.05, 2.15);
+  at (-0.7,-0.50) {Administrateur};
+\coordinate (adminPt) at (-0.05, 0.80);
 
+% ── Analyste SOC ────────────────────────────────────────────────────────
 \draw[fill=primary!75!black, draw=primary!75!black, line width=1.4pt]
-  (-0.7, -2.35) circle (0.38);
+  (-0.7,-3.20) circle (0.38);
 \draw[primary!75!black, line width=1.5pt]
-  (-0.7,-2.73)--(-0.7,-3.55)
-  (-1.25,-3.1)--(-0.1,-3.1)
-  (-0.7,-3.55)--(-1.2,-4.25)
-  (-0.7,-3.55)--(-0.2,-4.25);
+  (-0.7,-3.58)--(-0.7,-4.40)
+  (-1.25,-4.00)--(-0.1,-4.00)
+  (-0.7,-4.40)--(-1.2,-5.10)
+  (-0.7,-4.40)--(-0.2,-5.10);
 \node[below, font=\large\bfseries, text=primary!75!black, align=center]
-  at (-0.7,-4.45) {Analyste SOC};
-\coordinate (socPt) at (-0.05, -3.1);
+  at (-0.7,-5.30) {Analyste SOC};
+\coordinate (socPt) at (-0.05, -4.00);
 
+% ── Boîte système ───────────────────────────────────────────────────────
 \draw[draw=primary, line width=1.8pt, rounded corners=8pt, fill=primary!3]
-  (1.5, 4.35) rectangle (11.8, -4.7);
+  (1.5, 4.35) rectangle (11.8, -5.50);
 \node[font=\large\bfseries, text=primary, fill=white, inner sep=6pt,
       rounded corners=5pt, draw=primary, line width=1pt]
   at (6.65, 4.35) {$\ll$\,system\,$\gg$\quad\faIcon{layer-group}\enspace RansomShield};
 
-\node[uc]       (uc1) at (6.5,  3.25)  {Gérer agents \& réseaux};
-\node[uc]       (uc2) at (6.5,  1.95)  {Configurer le système};
-\node[uc]       (uc3) at (6.5,  0.65)  {Lancer une simulation};
-\node[ucshared] (uc4) at (6.5, -0.65)  {Visualiser alertes \& incidents};
-\node[ucshared] (uc5) at (6.5, -1.95)  {Approuver / rejeter\\une action};
-\node[ucshared] (uc6) at (6.5, -3.25)  {Consulter la timeline\\d'audit};
+% Admin only (4)
+\node[uc]       (uc1) at (6.5,  3.40)  {Gérer l'infrastructure};
+\node[uc]       (uc2) at (6.5,  2.25)  {Configurer le système};
+\node[uc]       (uc3) at (6.5,  1.10)  {Lancer une simulation};
+\node[uc]       (uc4) at (6.5, -0.05)  {Journal d'audit global};
+% Shared (3)
+\node[ucshared] (uc5) at (6.5, -1.20)  {Superviser les agents};
+\node[ucshared] (uc6) at (6.5, -2.35)  {Traiter alertes \& incidents};
+\node[ucshared] (uc7) at (6.5, -3.50)  {Approuver / rejeter\\une action};
 
-\foreach \uc in {uc1,uc2,uc3,uc4,uc5,uc6}
+% Flèches admin → tous
+\foreach \uc in {uc1,uc2,uc3,uc4,uc5,uc6,uc7}
   \draw[gray!55, thin] (adminPt) -- (\uc.west);
 
-\foreach \uc in {uc4,uc5,uc6}
+% Flèches analyste → partagés
+\foreach \uc in {uc5,uc6,uc7}
   \draw[primary!55, thin, dashed] (socPt) -- (\uc.west);
 
+% Légende
 \draw[draw=muted!60, rounded corners=4pt, fill=white]
-  (2.5, -4.15) rectangle (11.0, -4.5);
-\node[font=\small, text=textdark, align=center] at (6.75, -4.325) {
+  (2.5, -4.95) rectangle (11.0, -5.30);
+\node[font=\small, text=textdark, align=center] at (6.75, -5.125) {
   \tikz{\draw[primary,fill=light](0,0)ellipse(0.28 and 0.15);}\ \ Admin seul
   \qquad
   \tikz{\draw[dprimary,fill=primary!20](0,0)ellipse(0.28 and 0.15);}\ \ Partagé SOC
@@ -671,16 +680,16 @@
 \end{frame}
 \note{
 \textbf{[USE CASE]}\\[4pt]
-  Ce diagramme présente les deux profils d'utilisateurs qui interagissent avec
-  RansomShield, et la répartition claire de leurs responsabilités.\\[4pt]
-  L'administrateur configure et pilote le système : il connecte les agents,
-  définit les règles de détection et lance les simulations.\\[4pt]
-  L'analyste SOC — pour Security Operations Center, c'est-à-dire le centre
-  opérationnel de sécurité — traite les incidents au quotidien : il consulte
-  les alertes, approuve ou rejette les actions proposées, et suit l'historique
-  complet des événements.\\[4pt]
-  Cette séparation des rôles est volontaire : l'analyste ne peut pas modifier
-  la configuration, ce qui garantit l'intégrité du système.\\[6pt]
+  Ce diagramme reflète la répartition exacte des droits telle qu'elle est codée
+  dans le système.\\[4pt]
+  L'administrateur contrôle l'intégralité : il gère l'infrastructure — réseaux
+  et enrôlement des agents —, configure les règles de détection, lance les
+  simulations et consulte le journal d'audit complet du système.\\[4pt]
+  L'analyste SOC opère sur les événements au quotidien : il supervise les agents
+  en leur envoyant des commandes opérationnelles, traite les alertes et incidents,
+  et approuve ou rejette chaque action de protection avant exécution.\\[4pt]
+  La ligne de partage est nette : l'analyste ne peut ni modifier la configuration,
+  ni consulter le journal d'audit global, ni lancer de simulation.\\[6pt]
   \textcolor{transition}{$\hookrightarrow$ Passons maintenant à la réalisation concrète.}
 }
 

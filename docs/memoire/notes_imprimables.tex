@@ -133,11 +133,17 @@ Un agent sur chaque terminal observe toute activité inhabituelle sur les fichie
 \pivot{Qui sont les acteurs qui interagissent avec ce système~?}
 
 \notehead{13/22}{DIAGRAMME USE CASE}
-Deux profils d'utilisateurs interagissent avec le système. L'administrateur configure et pilote~:
-  il connecte les agents, définit les règles et lance les simulations. L'analyste SOC traite les
-  incidents au quotidien~: il consulte les alertes, approuve ou rejette les actions proposées,
-  et suit l'historique des événements. L'analyste ne peut pas modifier la configuration --- cette
-  séparation garantit l'intégrité du système.
+Ce diagramme reflète la répartition exacte des droits codée dans le système.
+
+L'administrateur contrôle tout~: il gère l'infrastructure (réseaux, enrôlement des agents),
+  configure les règles, lance les simulations et consulte le journal d'audit complet.
+
+L'analyste SOC opère sur les événements~: il supervise les agents en leur envoyant des
+  commandes opérationnelles, traite les alertes et incidents, et approuve ou rejette
+  chaque action de protection avant exécution.
+
+La ligne de partage est nette~: l'analyste ne peut ni modifier la configuration, ni consulter
+  le journal d'audit global, ni lancer de simulation.
 \pivot{Passons maintenant à la réalisation concrète.}
 
 \notehead{15/22}{CHOIX TECHNIQUES}
