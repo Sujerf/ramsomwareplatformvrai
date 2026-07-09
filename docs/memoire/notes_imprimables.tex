@@ -49,9 +49,10 @@ C'est avec fierté et humilité que nous vous présentons RansomShield --- un sy
 \pivot{Voici comment s'articule cette présentation.}
 
 \notehead{2/22}{SOMMAIRE}
-Cinq parties : contexte et problématique, solutions existantes, conception et réalisation,
-  perspectives --- et une démonstration en conditions réelles pour clore.
-\pivot{Commençons par le contexte.}
+Notre présentation s'articule en cinq parties. Nous partirons du contexte et de la problématique,
+  pour aller vers un état des lieux des solutions existantes, puis la conception et la réalisation.
+  Nous conclurons par les perspectives et terminerons par une démonstration en conditions réelles.
+\pivot{Commençons par le contexte et la problématique.}
 
 \notehead{4/22}{CONTEXTE}
 Aujourd'hui, les entreprises, les hôpitaux, les universités fonctionnent grâce à leurs données
@@ -101,8 +102,10 @@ Les antivirus ne reconnaissent que les menaces déjà cataloguées dans leur bas
   des organisations --- PME, hôpitaux, administrations, associations --- qui n'ont pas les budgets
   des grands groupes.
 
-RansomShield occupe cet espace : solution libre, comportementale, déployable partout,
-  avec contrôle humain à chaque étape.
+RansomShield occupe cet espace laissé vacant~: une solution libre, comportementale, déployable sur
+  n'importe quelle infrastructure, avec un contrôle humain intégré à chaque étape --- conçue pour
+  les entreprises et organisations qui veulent se protéger sans dépendre de solutions propriétaires
+  coûteuses.
 \pivot{Voyons maintenant comment ce système a été conçu.}
 
 \notehead{11/22}{ARCHITECTURE}
@@ -115,16 +118,18 @@ Un agent sur chaque terminal observe toute activité inhabituelle sur les fichie
 \pivot{Voyons de plus près les quatre composants.}
 
 \notehead{12/22}{LES 4 COMPOSANTS}
-\textbf{L'agent de surveillance}~: installé sur chaque machine, il observe les fichiers en temps
-  réel et conserve tout localement --- rien n'est perdu en cas de coupure réseau.
+\textbf{L'agent de surveillance, d'abord}~: installé sur chaque machine, il observe en temps
+  réel toute activité inhabituelle sur les fichiers et conserve ces informations localement,
+  pour ne rien perdre même en cas de coupure réseau.
 
-\textbf{La console de supervision}~: poste de commandement de l'opérateur --- alertes, décisions, historique.
+\textbf{La console de supervision, ensuite}~: c'est le poste de commandement, là où l'opérateur
+  suit les alertes, prend ses décisions et consulte l'historique complet de toutes les actions.
 
-\textbf{Le module de découverte réseau}~: il détecte les nouvelles machines, mais aucune n'est
-  intégrée sans accord explicite de l'administrateur.
+\textbf{Le module de découverte réseau}~: il signale automatiquement les nouvelles
+  machines, mais aucune n'est intégrée au système sans accord explicite de l'administrateur.
 
-\textbf{L'outil de validation}~: rejoue les comportements documentés des ransomwares sans
-  déployer de malware réel.
+\textbf{Enfin}, le simulateur~: il reproduit des scénarios d'attaque réalistes, sans déployer le
+  moindre malware réel --- ce qui a permis de valider le système en toute sécurité.
 \pivot{Qui sont les acteurs qui interagissent avec ce système~?}
 
 \notehead{13/22}{DIAGRAMME USE CASE}
@@ -156,7 +161,11 @@ Pour le moteur de scoring~: un fichier renommé \texttt{.locked} ajoute 80 point
 \pivot{Côté analyste, voici ce que la console SOC offre.}
 
 \notehead{17/22}{CONSOLE SOC}
-Vingt-trois pages, quatre sections~: supervision, infrastructure, détection et réponse, configuration.
+Venons-en maintenant à la console SOC --- l'interface que l'opérateur utilise au quotidien pour
+  surveiller, réagir et rendre des comptes.
+
+La console regroupe vingt-trois pages en quatre sections~: supervision, infrastructure, détection
+  et réponse, et configuration.
 
 Ce qui est fondamental~: chaque action proposée passe obligatoirement par la file d'approbation.
   L'analyste l'approuve ou la rejette explicitement. Aucune action ne s'exécute en silence.
@@ -191,10 +200,11 @@ RansomShield couvre l'intégralité du cycle de traitement d'un incident~: déte
   analyse comportementale, alerte, décision de l'opérateur, archivage complet. Il est opérationnel,
   démontrable, construit sans malware réel.
 
-Chaque remarque du jury est pour nous une opportunité de progresser.
+Nous n'avons pas la prétention d'avoir épuisé le sujet~: chaque remarque du jury est pour nous
+  une opportunité de progresser et de mieux faire.
 
-Les perspectives sont tracées~: TLS en production, affinage des rôles,
-  et un moteur ML pour reconnaître les anomalies avec plus de précision.
+Les perspectives sont tracées~: sécuriser les communications pour la production, affiner les rôles,
+  et doter le moteur d'un apprentissage automatique pour reconnaître les anomalies avec plus de précision.
 \pivot{Nous restons à votre disposition pour vos questions.}
 
 \vspace{14pt}
