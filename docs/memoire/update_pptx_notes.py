@@ -1,291 +1,190 @@
 #!/usr/bin/env python3
-"""
-Met à jour les notes orateur du PPTX depuis les \note{} de presentation_soutenance.tex.
-Usage : python3 update_pptx_notes.py
-"""
-import os
+"""Met à jour les notes orateur du PPTX avec le texte allégé."""
 from pptx import Presentation
+from pptx.oxml.ns import qn
+from lxml import etree
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-PPTX = os.path.join(HERE, "presentation_soutenance.pptx")
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Discours — 22 entrées (source : \note{} de presentation_soutenance.tex)
-# Slides 3, 7, 10, 14, 20 = transitions de section → vides
-# ─────────────────────────────────────────────────────────────────────────────
-NOTES = [
-
-# ── Slide 1 — TITRE / OUVERTURE ──────────────────────────────────────────────
-"""[OUVERTURE]
+NOTES = {
+    1: """[OUVERTURE]
 
 Excellence Monsieur le Président du jury, Mesdames et Messieurs les membres du jury, bonjour.
 
-Permettez-nous, avant toute chose, de vous exprimer notre profonde reconnaissance pour avoir répondu présents à ce rendez-vous. Ce jour revêt pour nous un cachet tout particulier : il est l'aboutissement de ces années de formation, et un moment qui restera gravé dans notre parcours.
+Permettez-nous d'exprimer notre profonde reconnaissance pour votre présence. Ce jour est l'aboutissement de ces années de formation, un moment qui restera gravé dans notre parcours.
 
-Le sujet ayant fait l'objet de notre étude est intitulé : Conception et mise en place d'un système de détection et de réponse aux attaques ransomware dans un environnement contrôlé.
+Le sujet de notre étude est intitulé : Conception et mise en place d'un système de détection et de réponse aux attaques ransomware dans un environnement contrôlé.
 
-C'est avec fierté et humilité que nous vous présentons aujourd'hui RansomShield — un système conçu et mis en place de bout en bout pour détecter et contrer les attaques ransomware, de manière contrôlée et traçable, avec une validation humaine à chaque étape décisive.
+C'est avec fierté et humilité que nous vous présentons RansomShield — un système conçu de bout en bout pour détecter et contrer les attaques ransomware, de manière contrôlée et traçable, avec une validation humaine à chaque étape décisive.
 
 → Voici comment s'articule cette présentation.""",
 
-# ── Slide 2 — SOMMAIRE ───────────────────────────────────────────────────────
-"""[SOMMAIRE]
+    2: """[SOMMAIRE]
 
-Excellence Monsieur le Président du jury, Mesdames et Messieurs les membres du jury,
-
-Notre présentation s'articule en cinq parties. Nous partirons du contexte et de la problématique qui ont motivé ce travail, pour aller vers un état des lieux des solutions existantes, puis la conception et la réalisation du système. Nous conclurons par les perspectives et terminerons par une démonstration en conditions réelles.
+Notre présentation s'articule en cinq parties. Nous partirons du contexte et de la problématique, pour aller vers un état des lieux des solutions existantes, puis la conception et la réalisation. Nous conclurons par les perspectives et terminerons par une démonstration en conditions réelles.
 
 → Commençons par le contexte et la problématique.""",
 
-# ── Slide 3 — Transition : Introduction Générale ─────────────────────────────
-"",
+    4: """[CONTEXTE]
 
-# ── Slide 4 — CONTEXTE ───────────────────────────────────────────────────────
-"""[CONTEXTE]
-
-Nous entrons dans la première partie de notre exposé, consacrée au contexte et aux motivations de ce travail.
-
-Aujourd'hui, les entreprises, les hôpitaux, les universités fonctionnent grâce à leurs données numériques. Le ransomware — c'est-à-dire un logiciel malveillant qui rend les données inaccessibles puis exige une rançon — exploite précisément cette dépendance. En 2023, ces attaques ont progressé de 73 % selon l'ENISA, avec un coût moyen de plus d'un million de dollars par incident. Ce qui est particulièrement grave : sans outil adapté, une attaque passe en moyenne 21 jours sans être détectée. C'est 21 jours pendant lesquels les dommages s'accumulent en silence.
+Aujourd'hui, les entreprises, les hôpitaux, les universités fonctionnent grâce à leurs données numériques. Le ransomware — un logiciel malveillant qui rend les données inaccessibles puis exige une rançon — exploite précisément cette dépendance. En 2023, ces attaques ont progressé de 73 % selon l'ENISA, avec un coût moyen de plus d'un million de dollars par incident. Ce qui est grave : sans outil adapté, une attaque passe en moyenne 21 jours sans être détectée.
 
 → Ce constat nous amène à la problématique centrale.""",
 
-# ── Slide 5 — PROBLÉMATIQUE ───────────────────────────────────────────────────
-"""[PROBLÉMATIQUE]
+    5: """[PROBLÉMATIQUE]
 
-Ce contexte nous amène naturellement à la problématique centrale de ce travail.
+Les antivirus fonctionnent par reconnaissance d'empreintes : ils connaissent les menaces répertoriées. Mais face à une variante inédite, ils restent aveugles — et pendant ce temps, les données sont chiffrées, les sauvegardes effacées, les dommages deviennent irréversibles.
 
-Le constat est simple : les antivirus fonctionnent par reconnaissance d'empreintes. Ils connaissent les menaces déjà répertoriées. Mais face à une variante inédite d'un ransomware, ils restent complètement aveugles. Et pendant ce temps, les données sont chiffrées, les sauvegardes effacées, les dommages deviennent irréversibles.
+Il n'existe pas de solution libre et démontrable pour détecter ces attaques à partir de leurs comportements, avec un contrôle humain intégré à chaque étape.
 
-Le problème que ce travail cherche à résoudre est le suivant : il n'existe pas de solution libre et démontrable en conditions réelles pour détecter ces attaques à partir de leurs comportements, avec un contrôle humain intégré à chaque étape.
-
-Trois défis ont structuré ce travail : les variantes inconnues que les outils traditionnels ne voient pas, la diversité des systèmes à surveiller, et le risque qu'une réponse automatique sans validation humaine cause elle-même des dommages.
+Trois défis ont structuré ce travail : les variantes inconnues, la diversité des systèmes à surveiller, et le risque qu'une réponse automatique non validée cause elle-même des dommages.
 
 → Ces défis ont défini les six objectifs que voici.""",
 
-# ── Slide 6 — OBJECTIFS ───────────────────────────────────────────────────────
-"""[OBJECTIFS]
+    6: """[OBJECTIFS]
 
-Pour répondre à cette problématique, six objectifs précis ont guidé ce travail.
-
-D'abord, surveiller en temps réel les activités fichiers sur chaque terminal. Ensuite, analyser ces activités pour calculer un niveau de risque. Puis, déclencher automatiquement des alertes dès qu'un comportement suspect est détecté. Le principe fondateur de ce travail : soumettre chaque action proposée à la décision d'un opérateur humain. L'accès à la console est en outre sécurisé par une double authentification — mot de passe et code temporaire valide 30 secondes. Et pour valider l'ensemble, des scénarios d'attaque représentatifs ont été définis et exécutés.
+Six objectifs précis ont guidé ce travail : surveiller en temps réel les fichiers sur chaque terminal ; calculer un niveau de risque ; déclencher des alertes automatiquement. Le principe fondateur : chaque action passe par la décision d'un opérateur humain. L'accès est sécurisé par double authentification — mot de passe et code temporaire valide 30 secondes. Et pour valider l'ensemble, des scénarios d'attaque représentatifs ont été définis et exécutés.
 
 → Voyons maintenant les fondements théoriques de ce travail.""",
 
-# ── Slide 7 — Transition : Revue de littérature ──────────────────────────────
-"",
+    8: """[DÉFINITION]
 
-# ── Slide 8 — DÉFINITION & COMPORTEMENTS ─────────────────────────────────────
-"""[DÉFINITION]
+Un ransomware agit toujours selon le même schéma : il renomme vos fichiers avec une extension inhabituelle pour les rendre illisibles, dépose une note de rançon, puis efface les sauvegardes pour rendre toute récupération impossible. Il utilise parfois des outils légitimes pour passer inaperçu.
 
-Excellence Monsieur le Président du jury, Mesdames et Messieurs les membres du jury,
-
-Nous entrons dans la deuxième partie de notre exposé : la revue de littérature. Permettez-nous de commencer par définir précisément ce qu'est un ransomware.
-
-Un ransomware agit toujours selon le même schéma. Il commence par accéder à vos fichiers, les renomme avec une extension inhabituelle pour les rendre illisibles, dépose une note de rançon, puis efface les sauvegardes automatiques pour rendre toute récupération impossible. Enfin, il utilise parfois des outils légitimes du système pour masquer sa présence et passer inaperçu.
-
-Ce sont ces comportements observables, ces traces laissées sur le système, qui forment la base de notre approche. Si l'on surveille ces actions en temps réel, on peut réagir avant que les dommages soient irréversibles.
+Ce sont ces comportements observables — ces traces — qui forment la base de notre approche. Surveiller ces actions en temps réel permet de réagir avant que les dommages soient irréversibles.
 
 → Mais pourquoi les outils existants ne suffisent-ils pas ?""",
 
-# ── Slide 9 — SOLUTIONS EXISTANTES ────────────────────────────────────────────
-"""[SOLUTIONS EXISTANTES]
+    9: """[SOLUTIONS EXISTANTES]
 
-Face à cette menace bien documentée, des solutions existent. Voyons pourquoi elles restent insuffisantes pour notre contexte.
+Des solutions existent — voyons pourquoi elles restent insuffisantes.
 
-Les antivirus ne reconnaissent que les menaces déjà cataloguées dans leur base de données. Les SIEM — systèmes de centralisation des journaux d'activité — collectent des informations, mais sans chercher activement des comportements suspects. Les EDR — solutions de surveillance avancée des terminaux — sont très efficaces, mais leur coût les rend inaccessibles pour la grande majorité des organisations — PME, hôpitaux, administrations, associations — qui n'ont pas les budgets des grands groupes.
+Les antivirus ne reconnaissent que les menaces déjà cataloguées. Les SIEM collectent des informations, mais sans chercher activement des comportements suspects. Les EDR sont très efficaces, mais leur coût les rend inaccessibles pour la majorité des organisations — PME, hôpitaux, administrations — qui n'ont pas les budgets des grands groupes.
 
-RansomShield occupe cet espace laissé vacant : une solution libre, comportementale, déployable sur n'importe quelle infrastructure, avec un contrôle humain intégré à chaque étape — conçue pour les entreprises et organisations qui veulent se protéger sans dépendre de solutions propriétaires coûteuses.
+RansomShield occupe cet espace laissé vacant : une solution libre, comportementale, déployable sur n'importe quelle infrastructure, avec un contrôle humain à chaque étape.
 
 → Voyons maintenant comment ce système a été conçu.""",
 
-# ── Slide 10 — Transition : Analyse et Conception ────────────────────────────
-"",
+    11: """[ARCHITECTURE]
 
-# ── Slide 11 — ARCHITECTURE ──────────────────────────────────────────────────
-"""[ARCHITECTURE]
+Voici l'architecture générale — à lire de gauche à droite.
 
-Excellence Monsieur le Président du jury, Mesdames et Messieurs les membres du jury,
-
-Nous entrons dans la troisième partie : l'analyse et la conception de RansomShield. Voici l'architecture générale du système — vous pouvez la lire de gauche à droite.
-
-Un agent, installé sur chaque terminal de l'organisation, observe en permanence toute activité inhabituelle sur les fichiers. Ces observations sont transmises au serveur central, qui les analyse et calcule un score de risque. Dès que ce score dépasse un seuil configuré, une alerte est générée automatiquement et une action de protection est proposée à l'opérateur. C'est lui qui prend la décision finale. Le système n'agit jamais seul : chaque intervention est soumise à une validation humaine.
+Un agent sur chaque terminal observe toute activité inhabituelle sur les fichiers. Ces observations sont transmises au serveur central, qui calcule un score de risque. Dès que ce score dépasse le seuil configuré, une alerte est générée et une action de protection est proposée à l'opérateur. C'est lui qui prend la décision finale. Le système n'agit jamais seul.
 
 → Voyons de plus près les quatre composants.""",
 
-# ── Slide 12 — LES 4 COMPOSANTS ───────────────────────────────────────────────
-"""[4 COMPOSANTS]
-
-Voyons maintenant de plus près les quatre composants qui constituent ce système.
+    12: """[4 COMPOSANTS]
 
 L'agent de surveillance, d'abord : installé sur chaque machine, il observe en temps réel toute activité inhabituelle sur les fichiers et conserve ces informations localement, pour ne rien perdre même en cas de coupure réseau.
 
 La console de supervision, ensuite : c'est le poste de commandement, là où l'opérateur suit les alertes, prend ses décisions et consulte l'historique complet de toutes les actions.
 
-Le module de découverte réseau : il signale automatiquement les nouvelles machines, mais aucune n'est intégrée au système sans accord explicite de l'administrateur.
+Le module de découverte réseau : il signale automatiquement les nouvelles machines, mais aucune n'est intégrée sans accord explicite de l'administrateur.
 
-Enfin, le simulateur : il reproduit des scénarios d'attaque réalistes, sans déployer le moindre malware réel — ce qui a permis de valider le système en toute sécurité.
+Enfin, le simulateur : il reproduit des scénarios d'attaque réalistes, sans déployer le moindre malware réel.
 
 → Qui sont les acteurs qui interagissent avec ce système ?""",
 
-# ── Slide 13 — DIAGRAMME USE CASE ────────────────────────────────────────────
-"""[USE CASE]
+    13: """[USE CASE]
 
-Ce diagramme présente les deux profils d'utilisateurs qui interagissent avec RansomShield, et la répartition claire de leurs responsabilités.
-
-L'administrateur configure et pilote le système : il connecte les agents, définit les règles de détection et lance les simulations.
-
-L'analyste SOC — pour Security Operations Center, c'est-à-dire le centre opérationnel de sécurité — traite les incidents au quotidien : il consulte les alertes, approuve ou rejette les actions proposées, et suit l'historique complet des événements.
-
-Cette séparation des rôles est volontaire : l'analyste ne peut pas modifier la configuration, ce qui garantit l'intégrité du système.
+Deux profils d'utilisateurs interagissent avec le système. L'administrateur configure et pilote : il connecte les agents, définit les règles et lance les simulations. L'analyste SOC traite les incidents au quotidien : il consulte les alertes, approuve ou rejette les actions proposées, et suit l'historique des événements. L'analyste ne peut pas modifier la configuration — cette séparation garantit l'intégrité du système.
 
 → Passons maintenant à la réalisation concrète.""",
 
-# ── Slide 14 — Transition : Réalisation et Résultats ─────────────────────────
-"",
+    15: """[CHOIX TECHNIQUES]
 
-# ── Slide 15 — CHOIX TECHNIQUES ───────────────────────────────────────────────
-"""[CHOIX TECHNIQUES]
+Les choix techniques ont été guidés par trois critères : portabilité multi-OS, facilité de déploiement, et démontrable sans infrastructure coûteuse.
 
-Excellence Monsieur le Président du jury, Mesdames et Messieurs les membres du jury,
-
-Nous voici dans la quatrième partie de notre exposé, consacrée à la réalisation et aux résultats. Commençons par les choix techniques.
-
-Trois critères ont guidé ces choix : fonctionner sur différents systèmes d'exploitation, être facile à installer, et être démontrable en conditions réelles sans infrastructure coûteuse.
-
-Pour le serveur et la console, le choix s'est porté sur Laravel — un cadre de développement web robuste et éprouvé. Pour l'agent de surveillance, Python, qui offre une excellente portabilité sur Windows, Linux et macOS. L'environnement de test repose sur trois machines virtuelles isolées, reproduisant les conditions d'un vrai réseau d'entreprise.
-
-L'accès à la console est protégé par une double authentification : après le mot de passe, l'utilisateur doit saisir un code temporaire valide 30 secondes seulement.
+Le serveur et la console sont développés avec Laravel. L'agent de surveillance est en Python, portable sur Windows, Linux et macOS. Les tests ont été conduits sur trois machines virtuelles en réseau isolé. L'accès à la console est protégé par double authentification : mot de passe puis code temporaire valide 30 secondes.
 
 → Voyons concrètement comment l'agent et le moteur fonctionnent.""",
 
-# ── Slide 16 — AGENT & MOTEUR DE DÉTECTION ────────────────────────────────────
-"""[AGENT & MOTEUR DE DÉTECTION]
+    16: """[AGENT & MOTEUR DE DÉTECTION]
 
-Entrons dans le cœur du système : l'agent de surveillance et le moteur de scoring.
+L'agent démarre, est reconnu par le serveur grâce à un jeton sécurisé, surveille les dossiers et envoie un signal de vie toutes les 30 secondes.
 
-Voici comment fonctionne l'agent au quotidien : dès son démarrage, il est reconnu par le serveur central grâce à un jeton sécurisé à usage unique. Il commence alors à surveiller les dossiers et envoie régulièrement un signal de vie au serveur, toutes les 30 secondes.
-
-Pour illustrer le moteur de scoring : imaginons qu'un fichier soit renommé avec l'extension .locked — cette extension inhabituelle est un signal connu des ransomwares. Ce comportement ajoute 80 points au score de risque. Si en plus une note de rançon apparaît dans le même dossier, 55 points s'ajoutent. Le score atteint 135 — bien au-dessus du seuil critique de 100. En moins de cinq secondes, une alerte est générée et un incident de sécurité est ouvert dans la console. Le système attend ensuite la décision de l'opérateur.
+Pour le moteur de scoring : un fichier renommé .locked ajoute 80 points au score de risque. Une note de rançon dans le même dossier en ajoute 55. Le score atteint 135 — au-dessus du seuil critique de 100. En moins de cinq secondes, une alerte est générée et un incident est ouvert dans la console, en attente de la décision de l'opérateur.
 
 → Côté analyste, voici ce que la console SOC offre.""",
 
-# ── Slide 17 — CONSOLE SOC ────────────────────────────────────────────────────
-"""[CONSOLE SOC]
+    17: """[CONSOLE SOC]
 
 Venons-en maintenant à la console SOC — l'interface que l'opérateur utilise au quotidien pour surveiller, réagir et rendre des comptes.
 
-La console regroupe neuf pages couvrant l'ensemble du cycle de traitement : tableau de bord, gestion des agents, alertes, incidents, timeline d'audit, file d'approbation, règles de détection, recherche globale et paramètres.
+La console regroupe vingt-trois pages en quatre sections : supervision, infrastructure, détection et réponse, et configuration.
 
-Ce qui est fondamental dans RansomShield, c'est que chaque action proposée par le système passe obligatoirement par la file d'approbation. L'analyste l'approuve ou la rejette explicitement. Aucune action ne s'exécute en silence. Ce principe est non négociable.
+Ce qui est fondamental : chaque action proposée passe obligatoirement par la file d'approbation. L'analyste l'approuve ou la rejette explicitement. Aucune action ne s'exécute en silence.
 
-Dès qu'une alerte est levée, l'opérateur est notifié simultanément par quatre canaux — sur l'interface web, par e-mail, par signal sonore et par webhook — pour s'assurer qu'aucune alerte ne passe inaperçue, quelle que soit sa situation.
+Dès qu'une alerte est levée, l'opérateur est notifié par quatre canaux simultanément : interface web, e-mail, signal sonore et webhook.
 
 → Qu'est-ce que les tests ont donné ?""",
 
-# ── Slide 18 — TESTS & RÉSULTATS ──────────────────────────────────────────────
-"""[TESTS ET VALIDATION]
+    18: """[TESTS ET VALIDATION]
 
-Après la réalisation, venons-en aux tests et à la validation du système en conditions représentatives.
+Cinq scénarios d'attaque ont été définis, du chiffrement simple à la chaîne complète en 22 événements, exécutés sur trois machines virtuelles en réseau isolé — sans jamais déployer de malware réel. Pour chaque scénario, trois indicateurs ont été mesurés : délai de détection, intégrité des données, et complétude de la chaîne jusqu'à la décision de l'opérateur.
 
-Une démarche en trois étapes complémentaires a été adoptée.
-
-D'abord, cinq scénarios d'attaque représentatifs ont été définis, couvrant différents niveaux de complexité : du chiffrement simple à la chaîne d'attaque complète en 22 événements. Ces scénarios ont été construits à partir des comportements réels documentés dans la littérature sur les ransomwares.
-
-Ensuite, un environnement de test réel sur trois machines virtuelles en réseau isolé a été mis en place, pour reproduire les conditions d'un vrai parc informatique, sans jamais déployer de malware réel.
-
-Enfin, pour chaque scénario, trois indicateurs précis ont été mesurés : le délai de détection, l'intégrité des données transmises, et la complétude de la chaîne jusqu'à la décision de l'opérateur.
-
-Les résultats sont constants : cinq scénarios exécutés, cinq détectés en moins de cinq secondes, zéro événement perdu. Notons honnêtement une limite : les tests ont été conduits sur Linux uniquement — c'est la première perspective d'évolution du projet.
+Les résultats sont constants : cinq scénarios exécutés, cinq détectés en moins de cinq secondes, zéro événement perdu. Limite assumée : les tests ont été conduits sur Linux uniquement.
 
 → Place maintenant à la démonstration live.""",
 
-# ── Slide 19 — DÉMONSTRATION LIVE ────────────────────────────────────────────
-"""[DÉMONSTRATION LIVE]
+    19: """[DÉMONSTRATION LIVE]
 
 Suivre le guide de démonstration.
 
-=== Checklist rapide ===
-
 1. Console SOC ouverte : 3 agents en ligne
 2. SSH sur rs-client-1 : renommage .locked + note de rançon
-3. Revenir sur la console : alerte critique apparue en moins de 5 secondes
+3. Revenir sur la console : alerte critique en moins de 5 secondes
 4. File d'approbation : approuver l'action, montrer le rollback
 5. Timeline : tout est horodaté
 6. Simulation kill chain complète : 22 événements
 
 → Revenir à la présentation pour conclure.""",
 
-# ── Slide 20 — Transition : Conclusion et Perspectives ───────────────────────
-"",
+    21: """[CONCLUSION]
 
-# ── Slide 21 — CONCLUSION & PERSPECTIVES ──────────────────────────────────────
-"""[CONCLUSION]
+RansomShield couvre l'intégralité du cycle de traitement d'un incident : détection sur le terminal, analyse comportementale, alerte, décision de l'opérateur, archivage complet. Il est opérationnel, démontrable, construit sans malware réel.
 
-Nous voilà dans la cinquième et dernière partie de notre exposé.
+Nous n'avons pas la prétention d'avoir épuisé le sujet : chaque remarque du jury est pour nous une opportunité de progresser et de mieux faire.
 
-Excellence Monsieur le Président du jury, Mesdames et Messieurs les membres du jury, permettez-nous de vous présenter la synthèse de ce travail.
-
-RansomShield couvre l'intégralité du cycle de traitement d'un incident de sécurité : la détection sur le terminal, l'analyse comportementale, la génération de l'alerte, la décision de l'opérateur, et l'archivage complet de toutes les actions. Il est opérationnel, démontrable, et construit sans aucun malware réel.
-
-Conscients que cette première implémentation, menée avec des ressources et un délai contraints, n'est pas exempte de lacunes : les tests ont été conduits sur Linux uniquement, et les communications restent en HTTP. Ce sont des limites assumées pleinement et nommées clairement.
-
-Nous n'avons nullement la prétention d'avoir épuisé le sujet. C'est pourquoi nous comptons sur vos observations, vos critiques et vos recommandations pour enrichir ce travail. Chaque remarque du jury est pour nous une opportunité de progresser et de mieux faire.
-
-Les perspectives sont tracées : sécuriser les communications pour la production, affiner les rôles selon le profil de chaque utilisateur, et doter le moteur d'un apprentissage automatique pour qu'il apprenne à reconnaître les comportements normaux et signale les anomalies avec encore plus de précision.
+Les perspectives sont tracées : sécuriser les communications pour la production, affiner les rôles, et doter le moteur d'un apprentissage automatique pour reconnaître les anomalies avec plus de précision.
 
 → Nous restons à votre disposition pour vos questions.""",
 
-# ── Slide 22 — MERCI / QUESTIONS DU JURY ──────────────────────────────────────
-"""[MERCI — MOT DE CLÔTURE]
+    22: """[MERCI — MOT DE CLÔTURE]
 
 Dans un monde où les systèmes automatisent nos décisions, RansomShield rappelle une conviction simple : la machine peut détecter, mais c'est l'humain qui décide. Ce n'est pas une contrainte technique — c'est un choix éthique.
 
-Merci pour votre aimable attention et pour le temps accordé à ce travail.
+Merci pour votre aimable attention et pour le temps accordé à ce travail.""",
+}
 
-[POINTS DE RÉPONSE AU JURY]
-• Python vs C/Go : Watchdog exploite inotify nativement — CPU minimal, portable Linux/Windows/macOS sans recompilation.
-• Fausses alertes : Seuils configurables. L'analyste valide ou rejette avant toute action — le système ne peut pas agir seul.
-• Absence de HTTPS : LAN contrôlé pour ce projet. Chiffrement TLS = première perspective pour la production.
-• Différence avec un antivirus : L'antivirus reconnaît les empreintes. RansomShield observe le comportement — variantes inédites couvertes.
-• Tests Windows : Limite assumée — Linux uniquement. Extension à Windows = première perspective d'évolution.
-
-Reformuler la question avant de répondre. Garder les captures d'écran prêtes.""",
-
-]  # fin NOTES
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Mise à jour du PPTX
-# ─────────────────────────────────────────────────────────────────────────────
 
 def set_notes(slide, text):
-    from lxml import etree
-    from pptx.oxml.ns import qn
     notes_slide = slide.notes_slide
     tf = notes_slide.notes_text_frame
-    txBody = tf._txBody
-    # Supprimer tous les paragraphes existants
-    for p in txBody.findall(qn('a:p')):
-        txBody.remove(p)
-    # Réécrire les paragraphes ligne par ligne
-    lines = text.split("\n") if text else [""]
-    for line in lines:
-        p_elem = etree.SubElement(txBody, qn('a:p'))
-        if line.strip():
-            r_elem = etree.SubElement(p_elem, qn('a:r'))
-            t_elem = etree.SubElement(r_elem, qn('a:t'))
-            t_elem.text = line
+    # Supprimer tous les paragraphes sauf le premier
+    for para in list(tf.paragraphs)[1:]:
+        p = para._p
+        p.getparent().remove(p)
+    # Réécrire le premier paragraphe
+    first_para = tf.paragraphs[0]
+    p_elem = first_para._p
+    # Supprimer tous les runs existants
+    for r in p_elem.findall(qn('a:r')):
+        p_elem.remove(r)
+    # Créer un nouveau run avec le texte
+    r_elem = etree.SubElement(p_elem, qn('a:r'))
+    rPr = etree.SubElement(r_elem, qn('a:rPr'))
+    rPr.set('lang', 'fr-FR')
+    rPr.set('dirty', '0')
+    t_elem = etree.SubElement(r_elem, qn('a:t'))
+    t_elem.text = text
 
 
-prs = Presentation(PPTX)
+prs = Presentation('presentation_soutenance.pptx')
 
-if len(prs.slides) != len(NOTES):
-    print(f"ERREUR : {len(prs.slides)} slides dans le PPTX, {len(NOTES)} textes fournis.")
-    raise SystemExit(1)
+for i, slide in enumerate(prs.slides):
+    slide_num = i + 1
+    if slide_num in NOTES:
+        set_notes(slide, NOTES[slide_num])
+        print(f"Slide {slide_num} mise à jour.")
 
-for i, (slide, note_text) in enumerate(zip(prs.slides, NOTES), 1):
-    set_notes(slide, note_text.strip())
-    preview = "(vide)" if not note_text.strip() else note_text.strip()[:55].replace('\n', ' ')
-    print(f"Slide {i:2d}: {preview}")
-
-prs.save(PPTX)
-print(f"\nOK : {len(NOTES)} slides mis à jour → {PPTX}")
+prs.save('presentation_soutenance.pptx')
+print("PPTX sauvegardé.")
