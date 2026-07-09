@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>RansomShield — Double vue</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0d1117;
+      color: #e5edf7;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    #toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      padding: 8px 20px;
+      background: #161b22;
+      border-bottom: 1px solid #30363d;
+      flex-shrink: 0;
+      font-size: 13px;
+    }
+
+    #toolbar button {
+      background: #21262d;
+      border: 1px solid #30363d;
+      color: #e5edf7;
+      padding: 5px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    #toolbar button:hover { background: #30363d; }
+
+    #page-info {
+      font-weight: 700;
+      color: #38bdf8;
+      min-width: 90px;
+      text-align: center;
+    }
+
+    #hint {
+      color: #8b949e;
+      font-size: 12px;
+    }
+
+    #viewers {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+      gap: 2px;
+      background: #21262d;
+    }
+
+    .pane {
+      flex: 1;
+      overflow: auto;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      background: #0d1117;
+      padding: 12px;
+    }
+
+    canvas {
+      display: block;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.6);
+      border-radius: 4px;
+      max-width: 100%;
+      height: auto;
+    }
+
+    .pane-label {
+      position: sticky;
+      top: 0;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      color: #8b949e;
+      background: #0d1117;
+      padding: 4px 8px;
+      border-bottom: 1px solid #21262d;
+      z-index: 1;
+    }
+
+    .pane-wrap {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: #0d1117;
+    }
+
+    .pane-scroll {
+      flex: 1;
+      overflow: auto;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 12px;
+    }
+
+    #loading {
+      position: fixed;
+      inset: 0;
+      background: #0d1117;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      color: #8b949e;
+      z-index: 100;
+    }
+  </style>
+</head>
+<body>
+
+<div id="loading">Chargement des PDFs…</div>
+
+<div id="toolbar">
+  <button id="btn-prev">◀ Préc.</button>
+  <span id="page-info">— / —</span>
+  <button id="btn-next">Suiv. ▶</button>
+  <span id="hint">← → ou boutons</span>
+</div>
+
+<div id="viewers">
+  <div class="pane-wrap">
+    <div class="pane-label">Diaporama</div>
+    <div class="pane-scroll"><canvas id="canvas1"></canvas></div>
+  </div>
+  <div style="width:2px;background:#21262d;flex-shrink:0;"></div>
+  <div class="pane-wrap">
+    <div class="pane-label">Notes orateur</div>
+    <div class="pane-scroll"><canvas id="canvas2"></canvas></div>
+  </div>
+</div>
+
+<script>
+  const WORKER_SRC = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  pdfjsLib.GlobalWorkerOptions.workerSrc = WORKER_SRC;
+
+  const PDF1 = 'presentation_soutenance.pdf';
+  const PDF2 = 'presentation_soutenance_notes.pdf';
+
+  let pdf1, pdf2;
+  let currentPage = 1;
+  let totalPages  = 0;
+  let rendering   = false;
+
+  async function loadPdfs() {
+    [pdf1, pdf2] = await Promise.all([
+      pdfjsLib.getDocument(PDF1).promise,
+      pdfjsLib.getDocument(PDF2).promise,
+    ]);
+    totalPages = pdf1.numPages;
+    await renderPage(1);
+    document.getElementById('loading').style.display = 'none';
+  }
+
+  async function renderPage(num) {
+    if (rendering) return;
+    rendering = true;
+
+    document.getElementById('page-info').textContent = `${num} / ${totalPages}`;
+
+    await Promise.all([
+      renderToCanvas(pdf1, num, 'canvas1'),
+      renderToCanvas(pdf2, num, 'canvas2'),
+    ]);
+
+    rendering = false;
+  }
+
+  async function renderToCanvas(pdf, num, canvasId) {
+    const page     = await pdf.getPage(num);
+    const canvas   = document.getElementById(canvasId);
+    const pane     = canvas.closest('.pane-scroll');
+
+    // Attend que le navigateur ait calculé les dimensions réelles
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+    const availW   = pane.clientWidth  - 24 || window.innerWidth  / 2 - 40;
+    const availH   = pane.clientHeight - 24 || window.innerHeight - 80;
+    const base     = page.getViewport({ scale: 1 });
+    const scale    = Math.min(availW / base.width, availH / base.height);
+
+    const viewport = page.getViewport({ scale });
+    const ctx      = canvas.getContext('2d');
+    canvas.width   = viewport.width;
+    canvas.height  = viewport.height;
+    await page.render({ canvasContext: ctx, viewport }).promise;
+  }
+
+  function goTo(num) {
+    if (num < 1 || num > totalPages) return;
+    currentPage = num;
+    renderPage(currentPage);
+  }
+
+  document.getElementById('btn-prev').addEventListener('click', () => goTo(currentPage - 1));
+  document.getElementById('btn-next').addEventListener('click', () => goTo(currentPage + 1));
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ')  goTo(currentPage + 1);
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')                      goTo(currentPage - 1);
+  });
+
+  loadPdfs().catch(err => {
+    document.getElementById('loading').textContent = 'Erreur : ' + err.message;
+  });
+</script>
+</body>
+</html>
