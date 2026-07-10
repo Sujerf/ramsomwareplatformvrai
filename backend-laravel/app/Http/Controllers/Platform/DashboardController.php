@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Platform;
 use App\Http\Controllers\Controller;
 use App\Models\Agent;
 use App\Models\Alert;
+use App\Models\AlertNotification;
 use App\Models\DiscoveredHost;
 use App\Models\Incident;
 use App\Models\ManagedNetwork;
@@ -18,8 +19,9 @@ use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
-    public function __invoke(): View
+    public function __invoke(Request $request): View
     {
+        $period = in_array($request->input('period'), ['24h', 'week', 'month']) ? $request->input('period') : 'week';
         $activeAlerts = Alert::whereIn('status', ['open', 'acknowledged', 'investigating'])->count();
 
         $activeIncidents = Incident::whereIn('status', ['open', 'investigating', 'under_review', 'reopened'])->count();
@@ -64,7 +66,7 @@ class DashboardController extends Controller
             ->limit(5)
             ->get();
 
-        $chartData = $this->buildCharts();
+        $chartData = $this->buildCharts($period);
 
         $surveillanceSettings = SystemSetting::whereIn('key', [
             'protection_execution_enabled',
@@ -99,6 +101,7 @@ class DashboardController extends Controller
             'recentActions' => $recentActions,
             'networks' => $networks,
             'chartData' => $chartData,
+            'chartPeriod' => $period,
             'surveillanceSettings' => $surveillanceSettings,
         ]);
     }
@@ -137,6 +140,15 @@ class DashboardController extends Controller
                 'url'        => route('platform.incidents.show', $i->id),
             ]);
 
+        $pendingSounds = AlertNotification::where('channel', 'sound')
+            ->where('status', 'pending')
+            ->get(['id', 'message']);
+
+        if ($pendingSounds->isNotEmpty()) {
+            AlertNotification::whereIn('id', $pendingSounds->pluck('id'))
+                ->update(['status' => 'sent', 'sent_at' => now()]);
+        }
+
         return response()->json([
             'stats' => [
                 'active_alerts'    => $activeAlerts,
@@ -146,6 +158,7 @@ class DashboardController extends Controller
             ],
             'recent_alerts'    => $recentAlerts,
             'recent_incidents' => $recentIncidents,
+            'pending_sounds'   => $pendingSounds->map(fn ($n) => ['risk_level' => $n->message]),
             'updated_at'       => now()->format('H:i:s'),
         ]);
     }
@@ -165,21 +178,21 @@ class DashboardController extends Controller
             $start     = now()->subHours(23)->startOfHour();
             $end       = now()->endOfHour();
             $points    = collect(range(23, 0))->map(fn ($h) => now()->subHours($h)->startOfHour());
-            $labels    = $points->map(fn (Carbon $h) => $h->format('H\h'))->values();
+            $labels    = $points->map(fn (Carbon $h) => $h->format('H\h'))->values()->all();
             $sqlFormat = '%Y-%m-%d %H:00:00';
             $phpFormat = 'Y-m-d H:00:00';
         } elseif ($period === 'month') {
             $start     = now()->subDays(29)->startOfDay();
             $end       = now()->endOfDay();
             $points    = collect(range(29, 0))->map(fn ($d) => now()->subDays($d)->startOfDay());
-            $labels    = $points->map(fn (Carbon $d) => $d->format('d/m'))->values();
+            $labels    = $points->map(fn (Carbon $d) => $d->format('d/m'))->values()->all();
             $sqlFormat = '%Y-%m-%d';
             $phpFormat = 'Y-m-d';
         } else {
             $start     = now()->subDays(6)->startOfDay();
             $end       = now()->endOfDay();
             $points    = collect(range(6, 0))->map(fn ($d) => now()->subDays($d)->startOfDay());
-            $labels    = $points->map(fn (Carbon $d) => $d->isoFormat('ddd'))->values();
+            $labels    = $points->map(fn (Carbon $d) => $d->isoFormat('ddd'))->values()->all();
             $sqlFormat = '%Y-%m-%d';
             $phpFormat = 'Y-m-d';
         }
@@ -205,9 +218,9 @@ class DashboardController extends Controller
             ->groupBy('period')
             ->pluck('total', 'period');
 
-        $alertSeries    = $points->map(fn (Carbon $p) => (int) ($alertCounts[$p->format($phpFormat)]   ?? 0))->values();
-        $incidentSeries = $points->map(fn (Carbon $p) => (int) ($incidentCounts[$p->format($phpFormat)] ?? 0))->values();
-        $actionSeries   = $points->map(fn (Carbon $p) => (int) ($actionCounts[$p->format($phpFormat)]  ?? 0))->values();
+        $alertSeries    = $points->map(fn (Carbon $p) => (int) ($alertCounts[$p->format($phpFormat)]   ?? 0))->values()->all();
+        $incidentSeries = $points->map(fn (Carbon $p) => (int) ($incidentCounts[$p->format($phpFormat)] ?? 0))->values()->all();
+        $actionSeries   = $points->map(fn (Carbon $p) => (int) ($actionCounts[$p->format($phpFormat)]  ?? 0))->values()->all();
 
         // 2 requêtes groupées pour les distributions (au lieu de 8 counts séparés)
         $riskByAlert = Alert::query()

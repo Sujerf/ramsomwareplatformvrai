@@ -473,6 +473,8 @@
             cursor: pointer;
             transition: all 0.18s ease;
             font-family: inherit;
+            text-decoration: none;
+            display: inline-block;
         }
 
         .period-btn:hover:not(.period-btn-active) {
@@ -1079,30 +1081,86 @@
         @endif {{-- end @if(auth()->user()->isAdmin()) surveillance panel --}}
 
         {{-- ── CHARTS ───────────────────────────────────────────────────── --}}
+        @php
+            $cd      = $dashboardCharts;
+            $cp      = $chartPeriod ?? 'week';
+            $svgW    = 660; $svgH = 200; $padL = 32; $padR = 12; $padT = 14; $padB = 28;
+            $innerW  = $svgW - $padL - $padR;
+            $innerH  = $svgH - $padT - $padB;
+            $pts     = count($cd['labels']);
+            $allVals = array_merge($cd['alerts'], $cd['incidents'], $cd['actions']);
+            $maxVal  = max(1, ...$allVals);
+            $xStep   = $pts > 1 ? $innerW / ($pts - 1) : $innerW;
+            $yScale  = fn($v) => $padT + $innerH - ($v / $maxVal * $innerH);
+            $xPos    = fn($i) => $padL + $i * $xStep;
+            $polyline = function($series, $color) use ($pts, $xPos, $yScale, $padT, $innerH, $padL, $svgW, $padR) {
+                $pts2 = [];
+                for ($i = 0; $i < $pts; $i++) {
+                    $pts2[] = round($xPos($i), 1) . ',' . round($yScale($series[$i]), 1);
+                }
+                $poly       = implode(' ', $pts2);
+                $areaBottom = $padT + $innerH;
+                $area       = round($xPos(0), 1) . ",$areaBottom $poly " . round($xPos($pts - 1), 1) . ",$areaBottom";
+                return "<polygon points=\"$area\" fill=\"$color\" opacity=\"0.10\"/>"
+                     . "<polyline points=\"$poly\" fill=\"none\" stroke=\"$color\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/>";
+            };
+            $rba      = $cd['risk_by_alert'];
+            $abs      = $cd['actions_by_status'];
+            $rbaTotal = max(1, array_sum($rba));
+            $absTotal = max(1, array_sum($abs));
+            $rdTotal  = max(1, array_sum($riskDistribution));
+            $periodLabel = ['24h' => '24 heures', 'week' => '7 jours', 'month' => '30 jours'][$cp];
+        @endphp
+
         <section class="chart-grid-premium section-gap">
+            {{-- Courbe SVG : Activité SOC --}}
             <div class="chart-panel">
                 <div class="chart-head">
                     <div>
                         <h3 class="chart-title">
                             <i class="fa-solid fa-wave-square" style="color:var(--accent); margin-right:8px; font-size:15px;"></i>
-                            Activité SOC — <span id="activityPeriodLabel">7 jours</span>
+                            Activité SOC — {{ $periodLabel }}
                         </h3>
                         <p class="chart-subtitle">Alertes, incidents et actions déclenchées par le moteur.</p>
                     </div>
                     <div class="period-filter">
-                        <button class="period-btn" data-period="24h">24h</button>
-                        <button class="period-btn period-btn-active" data-period="week">7j</button>
-                        <button class="period-btn" data-period="month">30j</button>
+                        <a href="?period=24h" class="period-btn {{ $cp === '24h' ? 'period-btn-active' : '' }}">24 h</a>
+                        <a href="?period=week" class="period-btn {{ $cp === 'week' ? 'period-btn-active' : '' }}">7 j</a>
+                        <a href="?period=month" class="period-btn {{ $cp === 'month' ? 'period-btn-active' : '' }}">30 j</a>
                     </div>
                 </div>
-                <div class="chart-box" style="position:relative;">
-                    <canvas id="socActivityChart"></canvas>
-                    <div id="chartLoader" style="display:none; position:absolute; inset:0; align-items:center; justify-content:center; background:color-mix(in srgb, var(--bg-panel) 80%, transparent); border-radius:12px;">
-                        <i class="fa-solid fa-circle-notch fa-spin" style="font-size:22px; color:var(--accent);"></i>
-                    </div>
+                <div style="display:flex;gap:14px;font-size:11px;font-weight:700;margin-bottom:10px;">
+                    <span style="color:#ef4444;">● Alertes</span>
+                    <span style="color:#fb923c;">● Incidents</span>
+                    <span style="color:#38bdf8;">● Actions</span>
+                </div>
+                <div style="width:100%;overflow:hidden;border-radius:12px;">
+                    <svg viewBox="0 0 {{ $svgW }} {{ $svgH }}" preserveAspectRatio="none" width="100%" height="200px" xmlns="http://www.w3.org/2000/svg">
+                        @for($g = 0; $g <= 4; $g++)
+                            @php $gy = round($padT + $innerH * $g / 4); @endphp
+                            <line x1="{{ $padL }}" y1="{{ $gy }}" x2="{{ $svgW - $padR }}" y2="{{ $gy }}" stroke="rgba(148,163,184,0.12)" stroke-width="1"/>
+                            <text x="{{ $padL - 4 }}" y="{{ $gy + 4 }}" text-anchor="end" font-size="9" fill="#64748b">{{ round($maxVal * (4 - $g) / 4) }}</text>
+                        @endfor
+                        @foreach($cd['labels'] as $li => $label)
+                            <text x="{{ round($xPos($li)) }}" y="{{ $svgH - 4 }}" text-anchor="middle" font-size="10" fill="#64748b">{{ $label }}</text>
+                        @endforeach
+                        {!! $polyline($cd['alerts'],   '#ef4444') !!}
+                        {!! $polyline($cd['incidents'], '#fb923c') !!}
+                        {!! $polyline($cd['actions'],   '#38bdf8') !!}
+                        @foreach($cd['alerts'] as $i => $v)
+                            <circle cx="{{ round($xPos($i), 1) }}" cy="{{ round($yScale($v), 1) }}" r="3.5" fill="#ef4444"/>
+                        @endforeach
+                        @foreach($cd['incidents'] as $i => $v)
+                            <circle cx="{{ round($xPos($i), 1) }}" cy="{{ round($yScale($v), 1) }}" r="3.5" fill="#fb923c"/>
+                        @endforeach
+                        @foreach($cd['actions'] as $i => $v)
+                            <circle cx="{{ round($xPos($i), 1) }}" cy="{{ round($yScale($v), 1) }}" r="3.5" fill="#38bdf8"/>
+                        @endforeach
+                    </svg>
                 </div>
             </div>
 
+            {{-- Barres : Risques des alertes --}}
             <div class="chart-panel">
                 <div class="chart-head">
                     <div>
@@ -1114,13 +1172,25 @@
                     </div>
                     <span class="badge">Analyse</span>
                 </div>
-                <div class="chart-box">
-                    <canvas id="alertRiskChart"></canvas>
+                <div style="display:grid;gap:16px;padding:4px 0;">
+                    @foreach(['critical'=>['#ef4444','Critical'],'high'=>['#fb923c','High'],'suspect'=>['#f59e0b','Suspect'],'normal'=>['#22c55e','Normal']] as $k=>[$color,$label])
+                        @php $pct = round($rba[$k] / $rbaTotal * 100); @endphp
+                        <div>
+                            <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;color:var(--text-muted);margin-bottom:7px;">
+                                <span><i class="fa-solid fa-circle" style="color:{{ $color }};font-size:8px;margin-right:6px;"></i>{{ $label }}</span>
+                                <strong style="color:var(--text-main);">{{ $rba[$k] }}</strong>
+                            </div>
+                            <div style="height:8px;border-radius:999px;background:rgba(148,163,184,0.1);overflow:hidden;">
+                                <div style="height:100%;width:{{ $pct }}%;background:{{ $color }};border-radius:999px;"></div>
+                            </div>
+                        </div>
+                    @endforeach
                 </div>
             </div>
         </section>
 
         <section class="chart-grid-equal section-gap">
+            {{-- Barres : Actions par statut --}}
             <div class="chart-panel">
                 <div class="chart-head">
                     <div>
@@ -1132,11 +1202,23 @@
                     </div>
                     <span class="badge">Réponse</span>
                 </div>
-                <div class="chart-box">
-                    <canvas id="actionStatusChart"></canvas>
+                <div style="display:grid;gap:16px;padding:4px 0;">
+                    @foreach(['pending'=>['#f59e0b','Pending'],'approved'=>['#22c55e','Approved'],'rejected'=>['#ef4444','Rejected'],'cancelled'=>['#64748b','Cancelled']] as $k=>[$color,$label])
+                        @php $pct = round($abs[$k] / $absTotal * 100); @endphp
+                        <div>
+                            <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;color:var(--text-muted);margin-bottom:7px;">
+                                <span><i class="fa-solid fa-circle" style="color:{{ $color }};font-size:8px;margin-right:6px;"></i>{{ $label }}</span>
+                                <strong style="color:var(--text-main);">{{ $abs[$k] }}</strong>
+                            </div>
+                            <div style="height:8px;border-radius:999px;background:rgba(148,163,184,0.1);overflow:hidden;">
+                                <div style="height:100%;width:{{ $pct }}%;background:{{ $color }};border-radius:999px;"></div>
+                            </div>
+                        </div>
+                    @endforeach
                 </div>
             </div>
 
+            {{-- Barres : Distribution agents --}}
             <div class="chart-panel">
                 <div class="chart-head">
                     <div>
@@ -1148,8 +1230,19 @@
                     </div>
                     <span class="badge">Agents</span>
                 </div>
-                <div class="chart-box">
-                    <canvas id="agentRiskChart"></canvas>
+                <div style="display:grid;gap:16px;padding:4px 0;">
+                    @foreach(['critical'=>['#ef4444','Critical'],'high'=>['#fb923c','High'],'suspect'=>['#f59e0b','Suspect'],'normal'=>['#22c55e','Normal']] as $k=>[$color,$label])
+                        @php $pct = round($riskDistribution[$k] / $rdTotal * 100); @endphp
+                        <div>
+                            <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;color:var(--text-muted);margin-bottom:7px;">
+                                <span><i class="fa-solid fa-circle" style="color:{{ $color }};font-size:8px;margin-right:6px;"></i>{{ $label }}</span>
+                                <strong style="color:var(--text-main);">{{ $riskDistribution[$k] }}</strong>
+                            </div>
+                            <div style="height:8px;border-radius:999px;background:rgba(148,163,184,0.1);overflow:hidden;">
+                                <div style="height:100%;width:{{ $pct }}%;background:{{ $color }};border-radius:999px;"></div>
+                            </div>
+                        </div>
+                    @endforeach
                 </div>
             </div>
         </section>
@@ -1434,9 +1527,9 @@
     </div>
 
     <script>
-    document.addEventListener('DOMContentLoaded', function () {
+    function initRansomShieldCharts() {
         if (typeof Chart === 'undefined') {
-            console.warn('[RansomShield] Chart.js non disponible — graphiques désactivés.');
+            console.error('[RansomShield] Chart.js non disponible.');
             return;
         }
 
@@ -1688,9 +1781,49 @@
             });
         });
 
-    });
+    }
+
+    // Démarrer les charts dès que Chart.js est prêt (module Vite ou load)
+    if (typeof Chart !== 'undefined') {
+        initRansomShieldCharts();
+    } else {
+        document.addEventListener('charts-ready', initRansomShieldCharts, { once: true });
+        window.addEventListener('load', initRansomShieldCharts, { once: true });
+    }
 
     // ── Auto-refresh des stats SOC (toutes les 30 s) ──────────────────────
+    // ── Alarme sonore (Web Audio API) ─────────────────────────────────────────
+    function playAlarm(riskLevel) {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+        const profiles = {
+            critical : [{ f: 880, d: 0.18 }, { f: 0, d: 0.06 }, { f: 880, d: 0.18 }, { f: 0, d: 0.06 }, { f: 880, d: 0.18 }],
+            high     : [{ f: 660, d: 0.22 }, { f: 0, d: 0.08 }, { f: 660, d: 0.22 }],
+            suspect  : [{ f: 440, d: 0.28 }, { f: 0, d: 0.10 }, { f: 440, d: 0.20 }],
+            normal   : [{ f: 330, d: 0.25 }],
+        };
+        const steps = profiles[riskLevel] || profiles.normal;
+
+        let t = ctx.currentTime + 0.05;
+        steps.forEach(({ f, d }) => {
+            if (f > 0) {
+                const osc  = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.type      = 'square';
+                osc.frequency.setValueAtTime(f, t);
+                gain.gain.setValueAtTime(0.25, t);
+                gain.gain.exponentialRampToValueAtTime(0.001, t + d);
+                osc.start(t);
+                osc.stop(t + d);
+            }
+            t += d;
+        });
+
+        setTimeout(() => ctx.close(), (t - ctx.currentTime + 0.2) * 1000);
+    }
+
     (function initLiveStats() {
         const INTERVAL   = 30_000;
         const statsRoute = '{{ route("platform.dashboard.live-stats") }}';
@@ -1791,6 +1924,14 @@
 
                 const ts = document.getElementById('live-refresh-ts');
                 if (ts) ts.textContent = 'mis à jour ' + data.updated_at;
+
+                if (Array.isArray(data.pending_sounds) && data.pending_sounds.length > 0) {
+                    const worst = data.pending_sounds.reduce((acc, n) => {
+                        const order = { critical: 3, high: 2, suspect: 1, normal: 0 };
+                        return (order[n.risk_level] ?? 0) > (order[acc] ?? 0) ? n.risk_level : acc;
+                    }, 'normal');
+                    playAlarm(worst);
+                }
 
             } catch (_) { /* réseau indisponible */ }
             finally {

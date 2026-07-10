@@ -13,11 +13,19 @@ use Illuminate\Http\Request;
 
 class SystemSettingController extends Controller
 {
+    // Ces clés sont contrôlées exclusivement depuis le tableau de bord (surveillance)
+    private const DASHBOARD_KEYS = [
+        'notification_ui_enabled',
+        'notification_sound_enabled',
+        'notification_mail_enabled',
+    ];
+
     public function index(Request $request): View
     {
         $group = $request->query('group');
 
         $query = SystemSetting::query()
+            ->whereNotIn('key', self::DASHBOARD_KEYS)
             ->orderBy('group')
             ->orderBy('key');
 

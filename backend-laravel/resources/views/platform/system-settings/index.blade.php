@@ -324,6 +324,16 @@
             </div>
         </section>
 
+        <div class="recommendation-box section-gap" style="display:flex;align-items:center;gap:12px;border-color:rgba(56,189,248,.3);">
+            <i class="fa-solid fa-circle-info" style="color:#38bdf8;font-size:18px;flex-shrink:0;"></i>
+            <span>
+                Les bascules <strong>Notifications UI</strong>, <strong>Alarme sonore</strong> et <strong>E-mail</strong>
+                sont contrôlées depuis le
+                <a href="{{ route('platform.dashboard') }}" style="color:#38bdf8;text-decoration:underline;">tableau de bord → Surveillance</a>.
+                Configurez ici uniquement le destinataire, le seuil et le webhook.
+            </span>
+        </div>
+
         <section class="soc-card section-gap">
             <div class="soc-card-header">
                 <div>
