@@ -137,7 +137,7 @@
   \vspace{4pt}
   {\small Loïc SANGRONIO \quad\textbar\quad IFRI-UAC
     \quad\textbar\quad Licence Sécurité Informatique
-    \quad\textbar\quad 2023--2024}
+    \quad\textbar\quad 11 juillet 2026}
   \vspace{4pt}
   \hrule height 1.5pt
 \end{center}
@@ -170,8 +170,10 @@
 
 \begin{checkbox}{Ce qu'il faut vérifier avant de commencer}
 \begin{itemize}[leftmargin=1.5em,itemsep=3pt]
-  \item[\ok] Démarrer le serveur SOC~:
+  \item[\ok] Vérifier que le serveur SOC est actif~:
     \begin{cmdbox}
+curl -s http://localhost:8000 | head -5\\
+\# Si rien ne répond --- relancer AVEC l'option --host=0.0.0.0 (obligatoire pour les VMs)~:\\
 cd /home/sangronio/ransomshield/backend-laravel\\
 php artisan serve --host=0.0.0.0 --port=8000
     \end{cmdbox}
@@ -182,6 +184,20 @@ virsh list --all
 \# Résultat attendu : rs-client-1, rs-fileserver, rs-attacker en "running"
     \end{cmdbox}
 
+  \item[\ok] Vérifier que l'agent est actif sur la VM victime~:
+    \begin{cmdbox}
+ssh ubuntu@10.20.0.81     \# mot de passe : ransomshield2026\\
+sudo systemctl status ransomshield-agent   \# doit afficher "active (running)"\\
+sudo journalctl -u ransomshield-agent -n 5 --no-pager   \# doit afficher "[HEARTBEAT] OK"
+    \end{cmdbox}
+
+  \item[\ok] Préparer la VM victime (fichiers propres pour la démo)~:
+    \begin{cmdbox}
+ssh ubuntu@10.20.0.81\\
+rm -f /home/ubuntu/Documents/*.locked /home/ubuntu/HOW\_TO\_DECRYPT.txt\\
+ls /home/ubuntu/Documents/   \# doit être vide (ou contenir uniquement des .docx)
+    \end{cmdbox}
+
   \item[\ok] Ouvrir le navigateur sur
     \clic{http://localhost:8000/console/dashboard} et se connecter~:
     \begin{itemize}[leftmargin=1em]
@@ -190,22 +206,24 @@ virsh list --all
     \end{itemize}
 
   \item[\ok] Ouvrir deux fenêtres côte à côte~:
-    fenêtre 1 = navigateur SOC \quad|\quad fenêtre 2 = terminal SSH.
+    fenêtre 1 = navigateur SOC \quad|\quad fenêtre 2 = terminal SSH (connexion VM).
 
-  \item[\ok] Nettoyer les événements de test précédents si la console est bruyante
-    (optionnel, pour une démonstration propre).
+  \item[\ok] Nettoyer les événements de test précédents dans la console si nécessaire
+    (filtrer par date ou niveau pour une démonstration propre).
 \end{itemize}
 \end{checkbox}
 
 \vspace{4pt}
 
 \begin{warnbox}{Si un agent VM est hors ligne}
+\textbf{Pré-requis~:} le SOC doit être lancé avec \texttt{--host=0.0.0.0} (pas \texttt{127.0.0.1}).
 \begin{cmdbox}
 ssh ubuntu@10.20.0.81     \# mot de passe : ransomshield2026\\
 sudo systemctl restart ransomshield-agent\\
-sudo systemctl status ransomshield-agent    \# doit afficher "active (running)"
+sudo systemctl status ransomshield-agent    \# doit afficher "active (running)"\\
+sudo journalctl -u ransomshield-agent -f    \# surveiller les [HEARTBEAT] OK
 \end{cmdbox}
-Vérifier ensuite dans la console que le heartbeat se met à jour.
+Vérifier ensuite dans la console que le heartbeat se met à jour (délai max~: 30~s).
 \end{warnbox}
 
 \newpage
@@ -248,21 +266,29 @@ Basculer sur le terminal SSH (fenêtre 2) et jouer les commandes suivantes~:
 \end{montrerbox}
 
 \begin{cmdbox}
-\# Se connecter à la VM victime\\
-ssh ubuntu@10.20.0.81\\
+\# 1. Se connecter à la VM victime\\
+ssh ubuntu@10.20.0.81     \# mot de passe : ransomshield2026\\
 \\
-\# Créer un fichier document normal\\
+\# 2. Créer un fichier document normal\\
 touch /home/ubuntu/Documents/rapport\_demo.docx\\
 sleep 2\\
 \\
-\# Chiffrement simulé : renommer avec extension .locked\\
-mv /home/ubuntu/Documents/rapport\_demo.docx \textbackslash\\
-\quad /home/ubuntu/Documents/rapport\_demo.docx.locked\\
+\# 3. Chiffrement simulé : renommer avec extension .locked\\
+\#    → déclenche file\_encrypted\_extension (score 135, niveau Critique)\\
+mv /home/ubuntu/Documents/rapport\_demo.docx /home/ubuntu/Documents/rapport\_demo.docx.locked\\
 sleep 2\\
 \\
-\# Déposer une note de rançon\\
-echo "Your files are encrypted. Pay 1 BTC." \textbackslash\\
-\quad > /home/ubuntu/HOW\_TO\_DECRYPT.txt
+\# 4. Déposer une note de rançon (fichier absent → ransom\_note\_created)\\
+echo "Your files are encrypted. Pay 1 BTC." > /home/ubuntu/HOW\_TO\_DECRYPT.txt
+\end{cmdbox}
+
+\vspace{3pt}
+\textit{\small Pour confirmer que l'agent envoie bien les événements~:}
+\begin{cmdbox}
+\# Dans un 3\textsuperscript{e} terminal (optionnel, utile si la console tarde)\\
+ssh ubuntu@10.20.0.81\\
+sudo journalctl -u ransomshield-agent -f\\
+\# Vous devez voir~: [EVENT] file\_encrypted\_extension ... risk=critical score=135
 \end{cmdbox}
 
 \vspace{4pt}
@@ -390,19 +416,20 @@ Résilience du pipeline             & 22 événements sans perte            & 5 
 \section{Plan de secours (si quelque chose échoue)}
 % =========================================================================
 
-\begin{warnbox}{La VM ne répond pas en SSH}
-Injecter un événement directement via \texttt{curl} depuis le poste local~:
+\begin{warnbox}{La VM ne répond pas en SSH — injection directe depuis le poste}
+Injecter un événement directement via \texttt{curl} \textbf{depuis le poste hôte}~:
 \begin{cmdbox}
 curl -s -X POST http://127.0.0.1:8000/api/agent/events \textbackslash\\
   -H "Content-Type: application/json" \textbackslash\\
-  -H "X-Agent-Secret: y0QUhoaW57aYsc0xd9tI7vbj2M18HogBDWPIAIe9xh2mTEo104Bv3vrNisdu" \textbackslash\\
-  -d '\{"agent\_uuid":"96c75bc2-afcd-442f-8888-1f28b7b661ad",\\
+  -H "X-Agent-Secret: 3cQvlo6vlmnOH2OPKzmOqumhfvQy3wRi1iG45CsaTrq3DlbbwQzxXINqIerH8q8p" \textbackslash\\
+  -d '\{"agent\_uuid":"ed71a368-13e3-4776-af73-3750dd44b6b7",\\
         "event\_type":"file\_encrypted\_extension",\\
-        "file\_path":"/home/ubuntu/rapport\_demo.docx.locked",\\
-        "file\_extension":".locked","file\_name":"rapport\_demo.docx.locked"\}'
+        "file\_path":"/home/ubuntu/Documents/rapport\_demo.docx.locked",\\
+        "file\_extension":"locked","file\_name":"rapport\_demo.docx.locked"\}'
 \end{cmdbox}
-La réponse JSON confirme~: score, niveau de risque, alerte créée, incident ouvert.\\
-Passer directement à l'\textbf{étape 5} (simulation) si les étapes 2--3 posent problème.
+La réponse JSON confirme~: \texttt{\{"risk\_level":"critical","score":135,...\}}.\\
+L'alerte et l'incident sont créés automatiquement --- passer directement à l'\textbf{étape 3}.\\[3pt]
+\textit{Note~: l'UUID ci-dessus est celui de l'agent \texttt{rs-client-1} (persisté dans son state local).}
 \end{warnbox}
 
 \vspace{4pt}
@@ -423,7 +450,7 @@ Utiliser l'agent local \texttt{DESKTOP-TEST01} en dernier recours.
 \begin{center}
 \small\color{gray}
 Document interne --- soutenance RansomShield\\
-Loïc SANGRONIO --- IFRI-UAC --- 2023--2024
+Loïc SANGRONIO --- IFRI-UAC --- 11 juillet 2026
 \end{center}
 
 \end{document}
