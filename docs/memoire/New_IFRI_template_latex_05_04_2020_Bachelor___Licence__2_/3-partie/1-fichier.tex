@@ -1,0 +1,425 @@
+% ============================================================
+%  Chapitre 3 — Version corrigée
+%  NOUVELLES FIGURES REQUISES (captures à prendre) :
+%    images/captures/protection_actions.png
+%    images/captures/simulation.png
+%    images/captures/2fa_setup.png
+%    images/captures/notifications_settings.png
+%  Figures conservées :
+%    migrate_status, api_test, agent_python_logs,
+%    dashboard, agents, alerts, incident_detail,
+%    incident_timeline, events
+% ============================================================
+
+\phantomsection
+\addcontentsline{toc}{section}{Introduction}
+\section*{Introduction}
+
+Ce chapitre décrit la mise en œuvre de RansomShield, les scénarios de validation conduits et les résultats obtenus. La démarche de validation s'inspire des recommandations du NIST pour la gestion des incidents de sécurité \cite{nistIncidentResponse2024}. Il présente également les limites identifiées et les pistes d'amélioration envisagées.
+
+% ============================================================
+\section{Environnement technique de réalisation}
+% ============================================================
+
+\subsection{Environnement matériel}
+
+Les développements ont été conduits sur un ordinateur portable jouant le rôle de serveur SOC et de poste de développement. Pour valider le fonctionnement en environnement distribué, trois machines virtuelles Linux ont été provisionnées via KVM/libvirt et connectées simultanément au serveur SOC via un réseau virtuel isolé (\texttt{10.20.0.0/24}). Ce montage a permis de tester la gestion de plusieurs agents en parallèle sans perturber l'environnement de développement. La compatibilité multiplateforme de l'agent est assurée par son architecture~: Python, Watchdog et psutil fonctionnent nativement sur Linux, Windows et macOS.
+
+\subsection{Environnement logiciel}
+
+La plateforme mobilise plusieurs technologies choisies pour leur complémentarité. Laravel assure le backend, l'\gls{api} et la console web \cite{laravelMigrations,laravelEloquent,laravelRouting}. Python gère la surveillance des terminaux grâce à Watchdog pour les événements fichiers et psutil pour les processus \cite{watchdogDocs,psutilDocs}. La communication entre l'agent et le serveur suit les recommandations OWASP pour les services REST \cite{owaspRestSecurity,owaspApiSecurity}.
+
+
+
+\begin{table}[htbp]
+\centering
+\caption{Environnement logiciel utilisé}
+\label{tab:environnement-logiciel}
+\small
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\textwidth}{|p{4cm}|X|}
+\hline
+\textbf{Technologie} & \textbf{Rôle dans le projet} \\
+\hline
+Laravel / PHP & Backend, \gls{api} de collecte et console \gls{soc} web. \\
+\hline
+MySQL 8.0 & Stockage de toutes les données de la plateforme. \\
+\hline
+Python & Agent de surveillance déployé sur les terminaux. \\
+\hline
+Watchdog & Observation des événements du système de fichiers côté agent. \\
+\hline
+psutil & Collecte des informations sur les processus en cours d'exécution côté agent. \\
+\hline
+Blade / Chart.js & Interface web et graphiques de supervision (Chart.js intégré localement). \\
+\hline
+\end{tabularx}
+\end{table}
+
+\newpage
+% ============================================================
+\section{Mise en place du backend Laravel}
+% ============================================================
+
+Le backend reçoit les données des agents, les enregistre, les analyse et expose les résultats dans la console. Il est structuré en contrôleurs, modèles Eloquent, services métier et vues Blade, ce qui permet de modifier chaque partie indépendamment.
+
+\subsection{Base de données et migrations}
+
+Les migrations Laravel ont permis de créer et de faire évoluer les tables de manière contrôlée tout au long du développement. Les principales tables mises en place sont les suivantes~:
+
+\begin{itemize}
+    \item \textbf{agents}, \textbf{events}, \textbf{alerts}, \textbf{incidents} : cœur du pipeline de détection ;
+    \item \textbf{protection\_actions}, \textbf{protection\_action\_decisions} : suivi des mesures de réponse ;
+    \item \textbf{detection\_rules}, \textbf{detection\_thresholds}, \textbf{protection\_policies} : configuration du moteur ;
+    \item \textbf{sensitive\_extensions}, \textbf{system\_settings} : paramètres globaux ;
+    \item \textbf{managed\_networks}, \textbf{discovered\_hosts} : supervision réseau ;
+    \item \textbf{alert\_notifications}, \textbf{audit\_logs}, \textbf{incident\_comments}, \textbf{simulation\_runs}, \textbf{attack\_profiles} : traçabilité et simulation.
+\end{itemize}
+\newpage
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.95\textwidth]{images/captures/migrate_status.png}
+\caption{Résultat de la commande \texttt{php artisan migrate:status}}
+\label{fig:migrations-ransomshield}
+\end{figure}
+
+\subsection{Modèles et relations}
+
+Chaque table dispose d'un modèle Eloquent. Les relations permettent de reconstituer le parcours complet d'un événement : un agent produit plusieurs événements, un événement peut déclencher une alerte, une alerte peut ouvrir un incident, et un incident regroupe les alertes liées, les actions de protection et les commentaires des opérateurs.
+
+\begin{table}[htbp]
+\centering
+\caption{Principales relations entre modèles Eloquent}
+\label{tab:relations-modeles}
+\small
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\textwidth}{|p{4cm}|p{4.2cm}|X|}
+\hline
+\textbf{Modèle} & \textbf{Relation} & \textbf{Description} \\
+\hline
+Agent & hasMany Events / Alerts & Un agent produit plusieurs événements et alertes. \\
+\hline
+Event & belongsTo Agent & Chaque événement est rattaché à son agent source. \\
+\hline
+Incident & hasMany Alerts / Actions / Comments & Un incident regroupe alertes, actions et commentaires. \\
+\hline
+ProtectionAction & hasMany Decisions & L'historique des décisions est conservé par action. \\
+\hline
+\end{tabularx}
+\end{table}
+
+% ============================================================
+\section{Implémentation de l'API de collecte}
+% ============================================================
+
+L'\gls{api} est organisée autour de deux périmètres~: un périmètre ouvert limité à l'enrôlement initial et au téléchargement des fichiers de l'agent, et un périmètre protégé par une clé API propre à chaque agent pour toutes les opérations courantes.
+
+\subsection{Collecte des événements et heartbeat}
+
+L'agent envoie un signal de présence toutes les trente secondes, permettant à la plateforme de détecter les terminaux hors ligne. Pour chaque événement détecté, il transmet à l'\gls{api} une requête \gls{json} comportant le type d'action observée, le chemin du fichier, l'extension, la date et les métadonnées contextuelles. Le backend valide la requête, enregistre l'événement et déclenche immédiatement le moteur d'analyse.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.95\textwidth]{images/captures/api_test.png}
+\caption{Test d'envoi d'un événement vers l'\gls{api} RansomShield et réponse \gls{json} obtenue}
+\label{fig:test-api-evenement}
+\end{figure}
+
+
+\noindent La figure \ref{fig:test-api-evenement} illustre un test d'envoi réalisé avec \texttt{curl}. La réponse confirme la réception, indique le niveau de risque calculé, le score et précise si une alerte et un incident ont été créés.
+
+\subsection{File de commandes}
+
+Un endpoint de polling, interrogé toutes les dix secondes, permet à la console SOC d'envoyer des instructions à un terminal~: scan actif, isolation réseau, arrêt d'un processus ou mise à jour de l'agent. Après exécution, l'agent transmet le résultat et le statut via un endpoint dédié.
+
+% ============================================================
+\section{Implémentation du moteur d'analyse}
+% ============================================================
+
+\subsection{Calcul du score et niveaux de risque}
+
+Le \gls{moteuranalyse} attribue un score numérique à chaque événement par accumulation de signaux. La configuration du moteur --- règles, seuils, extensions suspectes --- est stockée en base de données et mise en cache, ce qui permet de modifier les paramètres depuis la console sans redémarrer le serveur. Le niveau de risque est déterminé selon quatre catégories~: \textbf{normal}, \textbf{suspect}, \textbf{élevé} et \textbf{critique}.
+
+\begin{table}[htbp]
+\centering
+\caption{Critères utilisés par le moteur d'analyse}
+\label{tab:criteres-analyse}
+\small
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\textwidth}{|p{3.6cm}|p{4.5cm}|X|}
+\hline
+\textbf{Critère} & \textbf{Exemple} & \textbf{Effet attendu} \\
+\hline
+Extension suspecte & \texttt{.locked}, \texttt{.encrypted} & Passage immédiat au niveau critique. \\
+\hline
+Type d'événement & Renommage massif de fichiers & Augmentation significative du score. \\
+\hline
+Règle comportementale & Suppression des clichés instantanés & Signal critique (shadow copy deletion). \\
+\hline
+Processus suspect & \texttt{vssadmin.exe}, \texttt{wbadmin.exe} & Signal LOLBins (outil système détourné). \\
+\hline
+Nom de fichier & \texttt{HOW\_TO\_DECRYPT.txt} & Détection de note de rançon potentielle. \\
+\hline
+Fréquence d'opérations & Nombreuses modifications en quelques secondes & Signal de chiffrement en rafale. \\
+\hline
+\end{tabularx}
+\end{table}
+\newpage
+\subsection{Génération des alertes et incidents}
+
+Quand le score franchit le seuil d'alerte configuré, une \gls{alerte} est créée et les canaux de notification sont déclenchés. Si le niveau de risque atteint élevé ou critique, un \gls{incident} est ouvert dans la même opération. La distinction entre alerte et incident permet d'éviter de traiter tous les signaux au même niveau : les comportements inhabituels restent des alertes, tandis que les situations à risque important basculent vers un suivi structuré.
+
+% ============================================================
+\section{Implémentation de l'agent de surveillance}
+% ============================================================
+
+\subsection{Enrôlement et architecture}
+
+L'\gls{agent} est multi-plateforme (Linux, Windows, macOS) et fonctionne en plusieurs fils d'exécution parallèles~: observateur de système de fichiers, moniteur de processus, heartbeat, polling des commandes et vidage de la file locale. L'installation s'effectue via un code court de huit caractères généré dans la console~:
+
+\begin{verbatim}
+curl http://<ip-soc>:8080/e/<code> | sudo bash
+\end{verbatim}
+
+\noindent Ce script télécharge et configure automatiquement l'agent, génère le fichier \texttt{.env} local et installe le service systemd. Au premier démarrage, l'agent échange son token d'enrôlement contre une clé API permanente utilisée dans l'en-tête HTTP \texttt{X-Agent-Secret}.
+
+\subsection{Surveillance des fichiers, des processus et résilience}
+
+Watchdog observe les dossiers configurés dans \texttt{RANSHIELD\_MONITOR\_PATHS} et détecte les créations, modifications, renommages et suppressions de fichiers \cite{watchdogDocs}. En parallèle, psutil~\cite{psutilDocs} analyse les processus actifs et génère un événement \texttt{suspicious\_process} dès qu'un outil fréquemment détourné est identifié (\texttt{vssadmin}, \texttt{wbadmin}, \texttt{bcdedit}). Les événements sont d'abord placés dans une file SQLite locale, vidée périodiquement vers l'\gls{api}, ce qui garantit qu'aucun événement n'est perdu en cas de coupure réseau.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.75\textwidth]{images/captures/agent_python_logs.png}
+\caption{Logs de l'agent Python lors de la détection d'une extension suspecte}
+\label{fig:agent-python}
+\end{figure}
+
+\subsection{Service système et exécution des commandes}
+
+L'agent s'installe en service systemd pour démarrer automatiquement. Il interroge l'\gls{api} toutes les dix secondes pour récupérer les commandes en attente~: scan actif, isolation réseau (blocage via le pare-feu système, avec maintien du canal vers le SOC) et arrêt forcé d'un processus par PID.
+
+% ============================================================
+\section{Implémentation de la console SOC}
+% ============================================================
+
+\subsection{Tableau de bord}
+
+Le tableau de bord affiche les compteurs d'alertes actives, d'incidents en cours, d'actions en attente et d'agents critiques. Un graphique montre l'évolution des événements reçus sur les dernières heures, actualisé automatiquement toutes les trente secondes.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.95\textwidth]{images/captures/dashboard.png}
+\caption{Tableau de bord de la console SOC RansomShield}
+\label{fig:dashboard-soc}
+\end{figure}
+\newpage
+
+\subsection{Gestion des agents}
+
+La page des agents liste les terminaux enrôlés avec leur état (actif, hors ligne, critique), leur adresse IP et l'heure du dernier heartbeat. Un agent est automatiquement marqué hors ligne si aucun signal n'est reçu dans le délai configuré. L'opérateur peut déclencher un scan actif depuis cette page.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.98\textwidth]{images/captures/agents.png}
+\caption{Page de gestion des agents surveillés dans la console SOC}
+\label{fig:liste-agents}
+\end{figure}
+
+\newpage
+
+\subsection{Alertes et incidents}
+
+La page des alertes centralise les signaux générés par le moteur. Chaque alerte indique son niveau de risque, son score, le type d'événement et les signaux détectés. L'opérateur peut la résoudre, la marquer comme \gls{fauxpositif} ou la rouvrir. Un \gls{incident} regroupe les alertes et les actions de protection d'une même situation. Chaque incident dispose d'une fiche détaillée avec les alertes rattachées, les actions proposées et les signaux détectés. Les opérateurs peuvent y laisser des commentaires. Un incident peut être exporté au format CSV ou PDF et archivé sans être supprimé.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.98\textwidth]{images/captures/incident_detail.png}
+\caption{Fiche détaillée d'un incident avec alertes, actions de protection et signaux associés}
+\label{fig:detail-incident}
+\end{figure}
+
+\newpage
+
+\subsection{Actions de protection et file d'approbation}
+
+Quand un incident est ouvert, le moteur de décision propose des actions selon les politiques configurées~: scan actif, isolation réseau, arrêt d'un processus. Chaque action dispose d'un mode parmi trois~: automatique, soumis à approbation ou manuel. Les actions en attente apparaissent dans la file dédiée. Pour les actions réversibles déjà exécutées, un mécanisme de rollback permet de revenir à l'état précédent.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.98\textwidth]{images/captures/protection_actions.png}
+\caption{File d'approbation des actions de protection en attente de validation}
+\label{fig:protection-actions}
+\end{figure}
+
+\newpage
+
+\subsection{Timeline et journal d'audit}
+
+La \gls{timeline} d'un incident retrace chronologiquement l'événement initial, l'alerte créée, l'ouverture de l'incident, les actions proposées, les décisions prises et les commentaires. Cette vue permet de reconstituer la séquence complète sans consulter plusieurs pages.
+
+Toutes les actions importantes réalisées dans la plateforme sont par ailleurs enregistrées dans un journal d'audit persistant (connexions, modifications de configuration, décisions, suppressions), consultable avec des filtres par type, utilisateur et période. Une page de santé surveille en temps réel neuf composants critiques de la plateforme.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.98\textwidth]{images/captures/incident_timeline.png}
+\caption{Timeline d'audit d'un incident de sécurité}
+\label{fig:timeline-incident}
+\end{figure}
+
+\newpage
+
+\subsection{Simulation d'attaques}
+
+La console intègre un module de simulation permettant de rejouer six scénarios d'attaque sur un agent cible. Chaque scénario injecte des événements réels dans le pipeline, marqués \texttt{is\_simulation=true} pour un nettoyage facile. Les scénarios couvrent~: chiffrement basique (7 événements), kill chain complète (22 événements), chiffrement massif (18 événements), exfiltration de données (8 événements), activité suspecte de processus (5 événements) et sabotage des sauvegardes avec LOLBins (8 événements).
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.98\textwidth]{images/captures/simulation.png}
+\caption{Module de simulation d'attaques ransomware dans la console SOC}
+\label{fig:simulation}
+\end{figure}
+
+\newpage
+
+\subsection{Authentification forte et contrôle d'accès}
+
+L'accès à la console est protégé par une authentification à deux facteurs TOTP \cite{rfc6238}. En cas de perte de l'application d'authentification, dix codes de secours à usage unique sont disponibles. Deux rôles sont définis~: les analystes accèdent à la supervision et aux opérations courantes, les administrateurs disposent en plus des droits de configuration, de gestion des utilisateurs et de lancement des simulations. Ce cloisonnement est appliqué au niveau des routes Laravel et des politiques Eloquent.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.98\textwidth]{images/captures/2fa_setup.png}
+\caption{Configuration de l'authentification à deux facteurs depuis le profil utilisateur}
+\label{fig:2fa-setup}
+\end{figure}
+
+\newpage
+
+\subsection{Notifications et rapports}
+
+La plateforme notifie les opérateurs via quatre canaux configurables indépendamment~: notification visuelle, alarme sonore, email SMTP et webhook (Slack, Teams ou \gls{json} générique). Chaque envoi est tracé dans la base. Un module de rapports PDF synthétise les incidents, actions et statistiques sur une période sélectionnée~; les rapports peuvent être téléchargés ou envoyés automatiquement par email.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.98\textwidth]{images/captures/notifications_settings.png}
+\caption{Paramètres des canaux de notification et configuration du webhook}
+\label{fig:notifications}
+\end{figure}
+
+\newpage
+
+% ============================================================
+\section{Scénarios de validation}
+% ============================================================
+
+Les scénarios de validation vérifient le bon fonctionnement de chaque maillon de la chaîne de traitement, de la collecte sur le terminal jusqu'à l'affichage dans la console. Les tests ont été réalisés dans un répertoire dédié, avec l'agent actif et la plateforme en cours d'exécution.
+
+\begin{table}[htbp]
+\centering
+\caption{Synthèse des scénarios de validation}
+\label{tab:scenarios-validation}
+\small
+\renewcommand{\arraystretch}{1.35}
+\begin{tabularx}{\textwidth}{|p{0.4cm}|p{3.5cm}|p{4.2cm}|X|}
+\hline
+\textbf{\#} & \textbf{Scénario} & \textbf{Action réalisée} & \textbf{Résultat observé} \\
+\hline
+1 & Fichier normal & Création d'un fichier texte simple & Niveau normal, aucune alerte. \\
+\hline
+2 & Renommage simple & Renommage d'un fichier dans le dossier surveillé & Score augmenté, signal renommage présent. \\
+\hline
+3 & Extension suspecte & Renommage vers \texttt{.locked} & Score 135, niveau critique, alerte et incident créés. \\
+\hline
+4 & Génération d'alerte & Score dépasse le seuil configuré & Alerte visible avec score, niveau et signaux. \\
+\hline
+5 & Incident et action & Alerte de niveau critique & Incident ouvert, cinq actions proposées. \\
+\hline
+6 & Kill chain complète & Simulation \texttt{ransomware\_full} (22 événements) & Alertes critiques, incident actif, actions en cascade. \\
+\hline
+7 & Isolation + rollback & Approbation isolation, puis rollback & Règles pare-feu appliquées puis supprimées, statuts mis à jour. \\
+\hline
+8 & Mode automatique & Action de scan configurée en exécution automatique & Action déclenchée et exécutée sans intervention de l'opérateur, résultat consigné dans le journal d'audit. \\
+\hline
+9 & Mode manuel & Action de scan déclenchée manuellement depuis la console & Action exécutée à la demande de l'opérateur, statut mis à jour en temps réel dans la file d'approbation. \\
+\hline
+\end{tabularx}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.98\textwidth]{images/captures/events.png}
+\caption{Événements enregistrés dans la console lors du test avec un fichier \texttt{.locked}}
+\label{fig:test-locked}
+\end{figure}
+
+\newpage
+% ============================================================
+\section{Résultats obtenus}
+% ============================================================
+
+Les fichiers ordinaires sont systématiquement classés avec un niveau normal et ne génèrent pas d'alerte. Les renommages vers des extensions suspectes déclenchent immédiatement une classification critique et l'ouverture d'un incident. La simulation de la kill chain complète a permis de vérifier que le pipeline résiste à un volume important d'événements successifs sans perte de données. L'isolation réseau et le rollback ont fonctionné correctement~: les règles de pare-feu ont été appliquées puis supprimées sans intervention manuelle supplémentaire. Les trois modes d'exécution des actions de protection ont été validés~: le mode automatique a déclenché et exécuté l'action sans intervention, le mode soumis à approbation a attendu la validation de l'opérateur avant exécution, et le mode manuel a permis le déclenchement à la demande depuis la console. L'ensemble des canaux de notification, du module de rapports PDF, de l'authentification 2FA et du contrôle d'accès par rôles ont été validés avec succès.
+
+Les tests conduits sur les trois machines virtuelles ont confirmé le bon fonctionnement de la plateforme en environnement multi-agents. Les heartbeats, événements et alertes de chaque terminal sont correctement isolés et rattachés à leur agent respectif dans la console SOC.
+
+\begin{table}[htbp]
+\centering
+\caption{Synthèse des résultats obtenus}
+\label{tab:synthese-resultats}
+\small
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\textwidth}{|p{5.5cm}|X|}
+\hline
+\textbf{Fonction testée} & \textbf{Résultat observé} \\
+\hline
+Détection d'un fichier normal & Événement enregistré, niveau normal, aucune alerte. \\
+\hline
+Détection d'une extension suspecte & Niveau critique, alerte et incident créés automatiquement. \\
+\hline
+Simulation kill chain complète & 22 événements traités, alertes critiques, 5 actions proposées. \\
+\hline
+Isolation réseau et rollback & Isolation appliquée et levée, statuts mis à jour. \\
+\hline
+Trois modes d'exécution des actions & Mode automatique, approbation et manuel validés~; actions consignées dans le journal d'audit. \\
+\hline
+Notification email et webhook & Messages reçus avec les détails de l'alerte. \\
+\hline
+Rapport PDF & Document généré et téléchargeable depuis la console. \\
+\hline
+Authentification 2FA & Accès refusé sans code TOTP valide, codes de secours fonctionnels. \\
+\hline
+Contrôle d'accès par rôles & Analyste limité à la supervision, configuration réservée à l'administrateur. \\
+\hline
+\end{tabularx}
+\end{table}
+
+% ============================================================
+\section{Ajustements réalisés pendant le développement}
+% ============================================================
+
+\subsection{Cohérence et calibrage}
+
+Maintenir la cohérence entre des modules aussi nombreux a représenté un défi constant. L'utilisation systématique d'\gls{uuid} plutôt que d'identifiants séquentiels a facilité le suivi des objets entre l'agent et l'\gls{api}. La définition des scores et des seuils a demandé plusieurs cycles d'ajustement~: lors des premiers tests, certaines règles produisaient trop d'alertes pour des comportements normaux (sauvegardes, mises à jour), tandis que d'autres restaient aveugles face à des séquences suspectes. Les exclusions de chemins ont été étendues progressivement pour réduire le bruit sans compromettre la sensibilité.
+
+\subsection{Conception de l'interface}
+
+La console accumule un grand nombre d'informations. L'enjeu était de rendre chaque page lisible sans la surcharger~: les colonnes peu utiles sont masquées par défaut, des filtres rapides ont été ajoutés sur les pages les plus denses, et les actions disponibles sont regroupées dans des menus contextuels.
+
+% ============================================================
+\section{Périmètre actuel et limites}
+% ============================================================
+
+RansomShield couvre dans sa version actuelle un périmètre fonctionnel substantiel~: surveillance des événements fichiers et processus, analyse comportementale par règles et seuils configurables, génération d'alertes et d'incidents, actions de protection avec validation humaine et rollback, traçabilité via le journal d'audit et la timeline, notifications multicanaux, rapports PDF, simulation d'attaques et contrôle d'accès par rôles. L'architecture à composants séparés facilite l'évolution~: l'agent peut être modifié indépendamment du backend et les règles de détection sont ajustables depuis la console sans redéploiement. Les tests ont été conduits sur trois machines virtuelles Linux, ce qui a permis de valider la gestion simultanée de plusieurs agents en parallèle. Le comportement de la plateforme face à un volume d'événements très élevé provenant d'un grand nombre d'agents n'a cependant pas encore été mesuré de manière formelle. Un attaquant limitant volontairement son rythme d'opérations pour rester sous les seuils pourrait réduire la visibilité de la plateforme. La détection des ransomwares opérant entièrement en mémoire reste également hors du périmètre actuel.
+
+% ============================================================
+\section{Perspectives d'amélioration}
+% ============================================================
+
+La première piste concerne la détection par ligne de base comportementale. Plutôt que de s'appuyer uniquement sur des règles fixes, le système pourrait apprendre le rythme d'activité habituel de chaque terminal et signaler tout écart significatif par des méthodes de clustering ou de détection d'anomalies statistiques. L'alignement des règles sur le référentiel MITRE ATT\&CK \cite{mitreAttack} permettrait d'identifier à quelle étape de la kill chain correspond un comportement détecté et d'enrichir les rapports avec des identifiants de techniques reconnus (T1486, T1490, T1562). Sur le plan de la télémétrie, l'intégration de sources noyau --- ETW sous Windows ou eBPF sous Linux --- permettrait d'observer des comportements que Watchdog et psutil ne peuvent pas voir. D'autres perspectives concernent le déploiement~: architecture multi-organisation, intégration SIEM via Syslog, et alimentation du moteur par des flux de renseignement sur les menaces (MISP, listes d'\gls{ioc}) pour enrichir la détection avec des indicateurs de compromission connus.
+
+% ============================================================
+\phantomsection
+\addcontentsline{toc}{section}{Conclusion}
+\section*{Conclusion}
+% ============================================================
+
+Ce chapitre a présenté l'implémentation de RansomShield et les résultats des tests de validation. Les scénarios conduits ont confirmé le bon fonctionnement du pipeline de détection, de la chaîne de réponse et des mécanismes de rollback. Les axes d'amélioration futurs portent sur la détection par anomalie, la couverture noyau et l'intégration aux écosystèmes de sécurité existants.

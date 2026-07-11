@@ -1,0 +1,199 @@
+\phantomsection
+\addcontentsline{toc}{section}{Introduction}
+\section*{Introduction}
+
+Les \gls{ransomware} constituent aujourd'hui l'une des menaces les plus préoccupantes pour les systèmes d'information. Ils visent à rendre les données inaccessibles, généralement par chiffrement ou modification massive des fichiers, avant d'exiger une rançon \cite{cisaStopRansomware2023,nistRansomwareProfile2025}. Ce chapitre présente les notions fondamentales liées à la sécurité informatique, aux logiciels malveillants, aux ransomwares, aux antivirus, aux systèmes de détection d'intrusion et aux solutions de type \gls{edr}, avant de positionner RansomShield par rapport aux approches existantes.
+
+\section{Sécurité informatique et protection des terminaux}
+
+\subsection{Définition de la sécurité informatique}
+
+La sécurité informatique regroupe l'ensemble des moyens techniques, organisationnels et humains permettant de protéger les systèmes, les réseaux, les applications et les données contre les accès non autorisés, les altérations, les pertes ou les interruptions de service \cite{andersonSecurityEng2020,stallingsCryptography2017}. Elle vise principalement à garantir la confidentialité, l'intégrité et la disponibilité des informations. Ces trois principes sont souvent représentés par le triptyque CIA, de l'anglais \textit{Confidentiality, Integrity, Availability}. Dans le cadre des ransomwares, l'objectif le plus directement touché est généralement la disponibilité, puisque les données deviennent inaccessibles. L'intégrité peut également être compromise lorsque les fichiers sont modifiés, renommés ou chiffrés.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.5\textwidth]{images/figures/cid.png}
+\caption{Principes fondamentaux de la sécurité informatique}
+\label{fig:principes-securite}
+\end{figure}
+
+\subsection{Importance de la protection des terminaux}
+
+Les terminaux, tels que les ordinateurs, les serveurs ou les machines virtuelles, constituent des points d'entrée sensibles dans un système d'information. Ils sont utilisés pour manipuler les fichiers, exécuter les applications et accéder aux ressources réseau. Une compromission d'un terminal peut donc entraîner une fuite de données, une interruption d'activité ou une propagation de l'attaque vers d'autres machines. La protection des terminaux ne doit pas se limiter à la présence d'un antivirus. Elle doit aussi intégrer la surveillance des événements, l'analyse des comportements, la remontée d'alertes et la capacité à suivre les incidents. Cette logique est particulièrement importante face aux ransomwares, qui peuvent modifier rapidement un grand nombre de fichiers.
+
+\section{Menaces informatiques et logiciels malveillants}
+
+\subsection{Généralités sur les menaces informatiques}
+
+Une menace informatique désigne tout événement, action ou programme susceptible de nuire à un système d'information. Elle peut provenir d'un acteur externe, d'un utilisateur interne, d'une erreur humaine, d'une vulnérabilité logicielle ou d'une mauvaise configuration. Les menaces les plus courantes incluent les virus, les vers, les chevaux de Troie, les logiciels espions, l'hameçonnage, les attaques par déni de service et les ransomwares. Selon l'ENISA, le paysage des menaces cyber reste marqué par plusieurs familles d'attaques majeures, dont les menaces contre la disponibilité et les ransomwares \cite{enisaThreatLandscape2024}.
+
+\subsection{Logiciels malveillants}
+
+Un logiciel malveillant, ou malware, est un programme conçu pour perturber un système, voler des informations, obtenir un accès non autorisé ou dégrader la disponibilité des données. Les malwares peuvent être classés en plusieurs catégories. \\
+
+
+\begin{table}[htbp]
+\centering
+\caption{Quelques types de logiciels malveillants}
+\label{tab:types-malwares}
+\small
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\textwidth}{|p{3.5cm}|X|}
+\hline
+\textbf{Type} & \textbf{Description} \\
+\hline
+Virus & Programme capable de s'attacher à d'autres fichiers et de se propager lors de leur exécution. \\
+\hline
+Ver & Programme capable de se propager automatiquement, notamment à travers un réseau. \\
+\hline
+Cheval de Troie & Programme apparemment légitime contenant une fonction malveillante cachée. \\
+\hline
+Logiciel espion & Programme destiné à collecter des informations à l'insu de l'utilisateur. \\
+\hline
+Ransomware & Programme visant à rendre les données ou le système indisponibles afin d'exiger une rançon. \\
+\hline
+\end{tabularx}
+\end{table}
+
+\noindent Les ransomwares se distinguent par leur impact direct sur la disponibilité des données et la continuité des activités. Contrairement à certains logiciels malveillants qui cherchent à rester discrets, ils rendent souvent leur présence visible lorsque les données sont déjà bloquées ou modifiées.
+
+\section{Généralités sur les ransomwares}
+
+\subsection{Définition d'un ransomware}
+
+Un \gls{ransomware} est un logiciel malveillant qui vise à bloquer l'accès à un système ou à des données, souvent par chiffrement, puis à réclamer une rançon à la victime. Il peut également modifier les noms des fichiers, ajouter des extensions suspectes ou déposer une note de rançon. Les documents de référence en cybersécurité considèrent le ransomware comme une menace capable de toucher les organisations de toutes tailles et de tous secteurs \cite{nistRansomwareProfile2025,oz2022survey}. Cette menace est d'autant plus préoccupante qu'elle peut perturber fortement les services essentiels.
+
+\subsection{Cycle général d'une attaque ransomware}
+
+Une attaque ransomware suit généralement un cycle composé de plusieurs étapes : compromission initiale, exécution du programme malveillant, recherche de fichiers, chiffrement ou modification, demande de rançon et pression sur la victime.\newpage
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.95\textwidth]{images/figures/cycle.png}
+\caption{Cycle simplifié d'une attaque ransomware}
+\label{fig:cycle-ransomware}
+\end{figure}
+\noindent Ce cycle montre que certains signes peuvent être observés avant ou pendant l'attaque. La modification rapide de fichiers, le renommage massif ou l'apparition d'extensions suspectes peuvent constituer des indicateurs exploitables pour la détection.
+
+\subsection{Comportements caractéristiques des ransomwares}
+
+Les comportements fréquemment observés dans une attaque ransomware sont notamment :
+
+\begin{itemize}
+    \item la modification rapide d'un grand nombre de fichiers ;
+    \item le renommage massif de fichiers ;
+    \item l'apparition d'extensions inhabituelles telles que \texttt{.locked} ou \texttt{.encrypted} ;
+    \item la création de fichiers de demande de rançon ;
+    \item l'accès répété à plusieurs dossiers utilisateurs ;
+    \item la suppression ou la modification de sauvegardes.
+\end{itemize}
+
+\noindent Ces signes ne prouvent pas toujours qu'une attaque est en cours, mais leur corrélation peut indiquer un comportement suspect. Une solution de détection doit donc être capable d'attribuer un score de risque aux événements et de déclencher une alerte lorsque le risque dépasse un seuil.
+
+\subsection{Impacts des ransomwares}
+
+Les ransomwares peuvent provoquer des conséquences importantes : interruption d'activité, pertes financières, atteinte à la réputation, indisponibilité des données et coûts de restauration. Les rapports sur les violations de données montrent que les incidents de sécurité peuvent avoir des impacts financiers élevés pour les organisations \cite{ibmCostDataBreach2025}.
+
+\section{Limites des antivirus classiques}
+
+\subsection{Principe de fonctionnement}
+
+Les antivirus classiques utilisent principalement des signatures, des heuristiques et parfois des mécanismes comportementaux. La détection par \gls{signature} consiste à comparer un fichier avec une base d'empreintes connues. Cette méthode est efficace contre les menaces déjà identifiées.
+
+\subsection{Insuffisances face aux ransomwares modernes}
+
+Les ransomwares modernes peuvent évoluer rapidement, modifier leur code, utiliser des techniques d'obfuscation ou produire des variantes inconnues. Une solution reposant uniquement sur les signatures peut donc être limitée face à une menace nouvelle. De plus, l'action d'un ransomware peut être rapide. Même si la menace est détectée après quelques minutes, un volume important de fichiers peut déjà être altéré. D'où l'intérêt d'une surveillance comportementale capable d'observer directement les actions sur les fichiers.
+
+\subsection{Intérêt de l'analyse comportementale}
+
+L'\gls{analysecomportementale} consiste à observer les actions effectuées par un programme ou un utilisateur afin d'identifier un comportement inhabituel. Dans le contexte des ransomwares, cette approche consiste notamment à surveiller les \gls{evenement} de création, modification, renommage et suppression de fichiers. Cette approche ne remplace pas l'antivirus, mais elle le complète. Des travaux de recherche ont démontré son efficacité pour contrer les ransomwares avant qu'ils ne chiffrent un volume critique de fichiers \cite{scaife2016cryptolock,continella2016shieldfs}. Elle est particulièrement adaptée à un système comme RansomShield, qui cherche à détecter les comportements suspects sur les terminaux.
+
+\section{Systèmes de détection d'intrusion}
+
+\subsection{Définitions}
+
+Un \gls{ids} est un système chargé de surveiller des événements produits dans un système ou un réseau afin d'identifier des activités suspectes \cite{nistIDS2007}. Lorsqu'un comportement anormal est détecté, une \gls{alerte} peut être générée.
+
+
+\noindent Un \gls{hids} est installé sur un hôte et observe son activité interne. Il peut surveiller les fichiers, les journaux, les processus et certains changements système. Cette approche est intéressante pour la détection ransomware, car elle offre une visibilité locale sur les fichiers.
+
+\noindent Un \gls{nids}, quant à lui, analyse le trafic réseau. Il peut détecter des communications suspectes, mais ne voit pas toujours les modifications effectuées localement sur les fichiers. Pour cette raison, la surveillance de l'hôte reste importante.
+
+\subsection{Méthodes de détection}
+
+Les systèmes de détection d'intrusion utilisent généralement trois approches :
+
+\begin{itemize}
+    \item \textbf{la détection par signature} : elle repose sur des modèles connus d'attaques ;
+    \item \textbf{la détection par anomalie} : elle consiste à identifier un comportement différent du comportement habituel ;
+    \item \textbf{la détection hybride} : elle combine les signatures, les règles et l'analyse comportementale.
+\end{itemize}
+
+\noindent Dans le cadre des ransomwares, une approche hybride est pertinente. Les extensions suspectes peuvent être traitées comme des indicateurs connus, tandis que les modifications rapides de fichiers peuvent être traitées comme des anomalies.
+
+\section{EDR et supervision des terminaux}
+
+\subsection{Définition d'un EDR}
+
+Une solution \gls{edr} est une solution de détection et de réponse sur les terminaux. Elle permet de collecter des événements, d'analyser les comportements suspects, de générer des alertes et de faciliter la réponse aux \gls{incident}. Contrairement à un antivirus classique, l'EDR vise à offrir une visibilité plus détaillée sur ce qui se passe au niveau des terminaux. Cette visibilité est utile pour comprendre l'origine d'un incident, suivre son évolution et décider des actions de réponse.
+
+\subsection{Fonctionnalités principales}
+
+Les fonctionnalités généralement associées à une solution EDR sont :
+
+\begin{itemize}
+    \item la collecte d'événements sur les terminaux ;
+    \item l'analyse comportementale ;
+    \item la génération d'alertes ;
+    \item la gestion des incidents ;
+    \item la proposition ou l'exécution d'actions de réponse ;
+    \item la conservation d'un historique pour l'investigation.
+\end{itemize}
+
+\noindent Ces fonctionnalités correspondent exactement aux composants implémentés dans RansomShield, qui couvre l'ensemble de ce cycle : collecte, analyse, alerte, incident, action de protection et audit.
+
+\subsection{Lien avec le SOC}
+
+Un \gls{soc} centralise la surveillance, l'analyse et la réponse aux événements de sécurité. La \gls{consoleSOC} de RansomShield s'inspire de cette logique en affichant les agents, événements, alertes, incidents, actions de protection et timelines d'audit.
+
+\section{Étude comparative de quelques approches de détection}
+
+Le tableau suivant compare quelques approches utilisées dans la détection des comportements malveillants.
+
+
+
+\begin{table}[htbp]
+\centering
+\caption{Comparaison de quelques solutions de détection et de réponse}
+\label{tab:comparaison-solutions}
+\small
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\textwidth}{|p{3cm}|X|X|}
+\hline
+\textbf{Solution} & \textbf{Avantages} & \textbf{Limites} \\
+\hline
+OSSEC & Permet de surveiller les hôtes, les journaux système et certains changements de fichiers. C'est une solution libre et légère. & L'interface est limitée et la réponse aux incidents reste peu développée. \\
+\hline
+Wazuh & Améliore les fonctions d'OSSEC avec une console plus complète, la gestion des agents, l'analyse des journaux et le contrôle d'intégrité. & Sa configuration peut être complexe et demande des connaissances techniques. \\
+\hline
+OpenEDR & Surveille les terminaux et aide à détecter certains comportements suspects sur les postes. & Son déploiement peut être difficile dans un cadre simple ou académique. \\
+\hline
+TheHive/Cortex & Facilite la gestion des alertes, l'analyse des incidents et certaines actions de réponse dans un SOC. & Ne détecte pas directement les attaques sur les terminaux ; il dépend d'autres outils de détection. \\
+\hline
+Microsoft Defender for Endpoint & Offre une protection avancée des terminaux avec détection, alertes et réponse intégrées. & C'est une solution propriétaire, souvent coûteuse et liée à l'environnement Microsoft. \\
+\hline
+RansomShield & Surveillance des fichiers et processus sur plusieurs terminaux ; analyse comportementale avec règles et seuils configurables ; trois modes de décision ; console SOC avec authentification forte, contrôle d'accès par rôles, simulation d'attaques, notifications multicanaux, rapports PDF et journal d'audit. & Détection reposant sur des règles uniquement ; ransomwares opérant en mémoire hors périmètre actuel ; tests conduits dans un environnement local. \\
+\hline
+\end{tabularx}
+\end{table}
+
+
+
+\noindent Cette comparaison montre que la détection ransomware gagne à combiner plusieurs approches. RansomShield se positionne comme une plateforme de détection comportementale ciblée sur les ransomwares, couvrant l'ensemble du cycle de traitement d'un incident depuis la collecte jusqu'à la décision de réponse.
+
+
+\phantomsection
+\addcontentsline{toc}{section}{Conclusion}
+\section*{Conclusion}
+
+Ce chapitre a posé les bases théoriques nécessaires à la compréhension des ransomwares et des mécanismes de détection existants. Il ressort que les approches comportementales, fondées sur la surveillance des événements fichiers et processus, constituent un complément indispensable aux solutions classiques. Le chapitre suivant présente l'analyse et la conception de RansomShield.

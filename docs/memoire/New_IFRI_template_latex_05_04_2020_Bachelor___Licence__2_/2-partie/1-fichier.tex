@@ -1,0 +1,612 @@
+% ============================================================
+%  Chapitre 2 — Version corrigée
+% ============================================================
+
+\phantomsection
+\addcontentsline{toc}{section}{Introduction}
+\section*{Introduction}
+
+Ce chapitre présente l'analyse et la conception de \textbf{RansomShield}, une solution de détection comportementale des attaques ransomware reposant sur la collecte des \gls{evenement}, leur analyse, la génération d'\gls{alerte}, l'ouverture d'\gls{incident} et la supervision depuis une \gls{consoleSOC}. Il précise les besoins, l'architecture, le modèle de données, le processus de détection et les mesures de sécurité retenues, en s'appuyant sur les recommandations CISA, NIST et OWASP \cite{cisaStopRansomware2023,nistRansomwareProfile2025,owaspRestSecurity,owaspApiSecurity}.
+
+% ============================================================
+\section{Analyse des besoins}
+% ============================================================
+
+\subsection{Besoins fonctionnels}
+
+Les besoins fonctionnels correspondent aux services que le système doit rendre. Dans le cas de RansomShield, ils concernent la surveillance des terminaux, la réception des événements, leur analyse, la gestion des alertes, le suivi des incidents, la réponse et la sécurité d'accès.
+
+\begin{table}[htbp]
+\centering
+\caption{Besoins fonctionnels de RansomShield}
+\label{tab:besoins-fonctionnels}
+\small
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\textwidth}{|p{4cm}|X|}
+\hline
+\textbf{Besoin} & \textbf{Description} \\
+\hline
+Gestion des agents & Enrôler les terminaux, identifier leur état et déclencher des commandes à distance. \\
+\hline
+Réception des événements & Recevoir les événements fichiers et processus transmis par les agents. \\
+\hline
+Analyse des événements & Examiner les événements reçus afin de leur attribuer un score et un niveau de risque. \\
+\hline
+Génération d'alertes & Créer une alerte lorsqu'un comportement suspect est détecté. \\
+\hline
+Gestion des incidents & Ouvrir et suivre un incident lorsque le risque devient élevé ou critique. \\
+\hline
+Actions de protection & Proposer et exécuter des mesures de réponse adaptées au niveau de risque. \\
+\hline
+Validation humaine & Permettre à l'administrateur d'approuver, de rejeter ou d'exécuter manuellement les actions. \\
+\hline
+Rollback & Annuler une action déjà exécutée, comme une isolation réseau. \\
+\hline
+Notifications & Alerter l'équipe par interface web, son, email et webhook lors d'une alerte. \\
+\hline
+Rapports & Générer et exporter des bilans de sécurité au format PDF. \\
+\hline
+Simulation & Rejouer des scénarios d'attaque sur un agent cible pour tester la détection. \\
+\hline
+Authentification forte & Protéger la console par un code temporel en complément du mot de passe. \\
+\hline
+Contrôle d'accès & Différencier les droits entre administrateurs et analystes. \\
+\hline
+Supervision web & Afficher les agents, événements, alertes, incidents et actions dans une console. \\
+\hline
+Audit et traçabilité & Conserver l'historique des événements, alertes, incidents et décisions dans un journal. \\
+\hline
+Configuration & Permettre la gestion des règles, seuils, extensions suspectes et paramètres du système. \\
+\hline
+\end{tabularx}
+\end{table}
+\newpage
+
+\subsection{Besoins non fonctionnels}
+
+Les besoins non fonctionnels décrivent les qualités attendues du système. Ils concernent surtout la sécurité, la fiabilité, la simplicité d'utilisation, la maintenance et la possibilité de faire évoluer la solution.
+
+\begin{table}[htbp]
+\centering
+\caption{Besoins non fonctionnels de RansomShield}
+\label{tab:besoins-non-fonctionnels}
+\small
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\textwidth}{|p{4cm}|X|}
+\hline
+\textbf{Besoin} & \textbf{Description} \\
+\hline
+Fiabilité & Les événements doivent être traités et enregistrés correctement, même en cas de coupure réseau. \\
+\hline
+Sécurité & L'API valide les données reçues, l'accès à la console est protégé par authentification forte et contrôle d'accès par rôles. \\
+\hline
+Traçabilité & Toutes les décisions et actions importantes doivent être conservées dans un journal d'audit. \\
+\hline
+Ergonomie & L'interface doit être claire et utilisable par un analyste sans formation approfondie. \\
+\hline
+Maintenabilité & Le code doit être organisé de manière à faciliter les corrections et les améliorations. \\
+\hline
+Évolutivité & Les règles et seuils sont configurables depuis la console sans redéploiement du serveur. \\
+\hline
+Réactivité & Les comportements suspects doivent apparaître dans la console en quelques secondes. \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsection{Acteurs du système}
+
+RansomShield fait intervenir des acteurs humains et des composants logiciels. L'administrateur est l'acteur principal. Il gère la configuration, valide les actions et administre les utilisateurs. L'analyste peut consulter les informations de sécurité et résoudre des alertes. L'\gls{agent}, l'\gls{api} et le \gls{moteuranalyse} sont les composants techniques qui assurent la collecte, la réception et le traitement des événements.
+
+\begin{table}[htbp]
+\centering
+\caption{Acteurs et rôles dans RansomShield}
+\label{tab:acteurs-ransomshield}
+\small
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\textwidth}{|p{4cm}|X|}
+\hline
+\textbf{Acteur ou composant} & \textbf{Rôle} \\
+\hline
+Administrateur & Gère la configuration, valide les actions, administre les utilisateurs et consulte tous les modules. \\
+\hline
+Analyste & Consulte les événements, alertes et incidents~; peut résoudre des alertes et laisser des commentaires. \\
+\hline
+Agent de surveillance & Observe les fichiers et processus sur le terminal et transmet les événements à l'API. \\
+\hline
+API centrale & Reçoit les événements, vérifie les données et les transmet au moteur d'analyse. \\
+\hline
+Moteur d'analyse & Analyse les événements, calcule le score de risque et détermine le niveau de criticité. \\
+\hline
+Console SOC & Regroupe les informations de supervision et facilite la prise de décision. \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsection{Diagramme de cas d'utilisation}
+
+La Figure~\ref{fig:use-case-ransomshield} représente les cas d'utilisation de RansomShield. L'administrateur accède à l'ensemble des fonctionnalités de la plateforme~: gestion de l'infrastructure, configuration du système, lancement des simulations et consultation du journal d'audit global. L'analyste SOC dispose des fonctions opérationnelles~: supervision des agents, traitement des alertes et incidents, et validation des actions de protection. Ces droits sont appliqués au niveau des routes et des politiques d'autorisation de l'application.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+  uc/.style={
+    ellipse, draw=black!70, fill=blue!8,
+    font=\small, align=center,
+    text width=4.2cm, minimum height=0.85cm, inner sep=3pt
+  },
+  ucshared/.style={
+    ellipse, draw=black!80, fill=blue!22,
+    font=\small\bfseries, align=center,
+    text width=4.2cm, minimum height=0.85cm, inner sep=3pt
+  },
+  actor/.style={font=\small\bfseries},
+  ln/.style={gray!60, thin}
+]
+
+% Boîte système
+\draw[draw=black!70, line width=1.4pt, rounded corners=6pt, fill=blue!3]
+  (1.4, 2.6) rectangle (9.6, -7.8);
+\node[font=\small\bfseries, fill=white, inner sep=4pt,
+      draw=black!70, rounded corners=3pt]
+  at (5.5, 2.6) {$\ll$\,system\,$\gg$ \quad RansomShield};
+
+% ── Acteurs ────────────────────────────────────────────────────────────────
+% Administrateur
+\draw[fill=black!80, draw=black!80] (-1.0, 1.7) circle (0.28);
+\draw[black!80, line width=1.1pt]
+  (-1.0,1.42)--(-1.0,0.80) (-1.45,1.10)--(-0.55,1.10)
+  (-1.0,0.80)--(-1.35,0.30) (-1.0,0.80)--(-0.65,0.30);
+\node[actor, below] at (-1.0,0.20) {Administrateur};
+\coordinate (adm) at (-0.1, 1.10);
+
+% Analyste
+\draw[fill=blue!60!black, draw=blue!60!black] (-1.0,-4.2) circle (0.28);
+\draw[blue!60!black, line width=1.1pt]
+  (-1.0,-4.48)--(-1.0,-5.10) (-1.45,-4.80)--(-0.55,-4.80)
+  (-1.0,-5.10)--(-1.35,-5.60) (-1.0,-5.10)--(-0.65,-5.60);
+\node[actor, below, text=blue!60!black] at (-1.0,-5.70) {Analyste SOC};
+\coordinate (soc) at (-0.1, -4.80);
+
+% ── Cas d'utilisation Admin seulement ──────────────────────────────────────
+\node[uc] (u1) at (5.5,  2.00) {Gérer l'infrastructure};
+\node[uc] (u2) at (5.5,  0.90) {Configurer le système};
+\node[uc] (u3) at (5.5, -0.20) {Gérer les utilisateurs};
+\node[uc] (u4) at (5.5, -1.30) {Lancer une simulation};
+\node[uc] (u5) at (5.5, -2.40) {Consulter le journal d'audit};
+
+% ── Cas d'utilisation partagés ─────────────────────────────────────────────
+\node[ucshared] (u6) at (5.5, -3.60) {Superviser les agents};
+\node[ucshared] (u7) at (5.5, -4.70) {Traiter alertes \& incidents};
+\node[ucshared] (u8) at (5.5, -5.80) {Approuver / rejeter une action};
+\node[ucshared] (u9) at (5.5, -6.90) {Consulter les rapports PDF};
+
+% ── Flèches admin ──────────────────────────────────────────────────────────
+\foreach \u in {u1,u2,u3,u4,u5,u6,u7,u8,u9}
+  \draw[ln] (adm) -- (\u.west);
+
+% ── Flèches analyste ───────────────────────────────────────────────────────
+\foreach \u in {u6,u7,u8,u9}
+  \draw[blue!40, thin, dashed] (soc) -- (\u.west);
+
+% Légende
+\draw[draw=black!40, rounded corners=3pt, fill=white]
+  (1.8,-7.55) rectangle (9.2,-7.90);
+\node[font=\scriptsize] at (5.5,-7.72) {
+  \tikz{\draw[black!70,fill=blue!8](0,0)ellipse(0.22 and 0.12);}\ Administrateur seul
+  \quad
+  \tikz{\draw[black!80,fill=blue!22](0,0)ellipse(0.22 and 0.12);}\ Partagé Analyste
+};
+
+\end{tikzpicture}
+\caption{Diagramme de cas d'utilisation de RansomShield}
+\label{fig:use-case-ransomshield}
+\end{figure}
+
+\subsection{Périmètre de la solution}
+
+RansomShield est conçu pour surveiller les activités liées aux fichiers et aux processus sur des terminaux. Ce périmètre comprend~:
+
+\begin{itemize}
+    \item la surveillance de plusieurs dossiers configurables sur chaque terminal~;
+    \item la détection des créations, modifications, déplacements, suppressions et renommages de fichiers~;
+    \item la détection de processus suspects et d'outils système détournés~;
+    \item l'identification d'extensions suspectes telles que \texttt{.locked} ou \texttt{.encrypted}~;
+    \item la détection de notes de rançon et de suppressions de sauvegardes système~;
+    \item l'enrôlement sécurisé des agents via un code court à usage unique~;
+    \item l'envoi des événements vers l'API centrale via une clé propre à chaque agent~;
+    \item l'analyse des événements reçus et la génération d'alertes et d'incidents~;
+    \item trois modes de décision sur les actions~: automatique, soumis à approbation et manuel~;
+    \item l'isolation réseau d'un terminal avec possibilité de rollback~;
+    \item la simulation de scénarios d'attaque~;
+    \item la notification multicanaux et la génération de rapports PDF~;
+    \item l'authentification forte et le contrôle d'accès par rôles.
+\end{itemize}
+
+% ============================================================
+\section{Présentation générale de la solution RansomShield}
+% ============================================================
+
+\subsection{Principe général}
+
+RansomShield est une solution de détection et de réponse orientée vers les attaques ransomware. Elle observe les comportements liés aux fichiers et aux processus sur les terminaux, collecte les événements importants, les analyse et présente les résultats dans une console de supervision. L'approche retenue ne se limite pas aux signatures connues. Elle s'intéresse surtout aux comportements pouvant révéler une activité suspecte~: modification rapide de plusieurs fichiers, renommage massif, apparition d'extensions inhabituelles, suppression des sauvegardes système, utilisation d'outils système détournés ou dépôt d'une note de rançon. Cette approche comportementale permet de détecter des variantes inconnues dont la signature n'est pas encore répertoriée. RansomShield aide l'équipe de sécurité à comprendre ce qui se passe, à suivre les incidents et à prendre des décisions adaptées, avec une traçabilité complète de chaque action.
+
+\subsection{Objectifs de la solution}
+
+L'objectif général de RansomShield est de mettre en place un système capable de détecter des comportements proches d'une attaque ransomware et de faciliter la réponse de l'équipe de sécurité. De manière plus précise, la solution doit permettre de~:
+
+\begin{itemize}
+    \item surveiller les événements liés aux fichiers et aux processus sur plusieurs terminaux~;
+    \item enrôler les agents de manière sécurisée en une seule commande~;
+    \item transmettre les événements vers la plateforme avec résilience aux coupures réseau~;
+    \item analyser les événements à partir de règles, de seuils et d'extensions suspectes~;
+    \item attribuer un score et un niveau de risque~;
+    \item générer des alertes et ouvrir des incidents~;
+    \item proposer et exécuter des actions de protection selon des politiques configurées~;
+    \item notifier l'équipe et produire des rapports exportables~;
+    \item protéger l'accès par authentification forte et contrôle d'accès par rôles~;
+    \item simuler des scénarios d'attaque pour tester et former~;
+    \item conserver l'historique des événements et des décisions dans un journal d'audit.
+\end{itemize}
+
+\subsection{Positionnement de RansomShield}
+
+RansomShield se positionne comme une solution de détection comportementale appliquée aux ransomwares. Elle se concentre sur les événements fichiers et processus, car les ransomwares agissent souvent en modifiant, renommant ou chiffrant un grand nombre de fichiers tout en supprimant les mécanismes de récupération. La solution ne se limite pas à afficher des alertes~: elle permet de suivre les incidents, d'exécuter des actions de réponse ciblées et de conserver la trace des décisions prises, ce qui en fait une base solide pour une surveillance opérationnelle des terminaux.
+
+% ============================================================
+\section{Architecture générale de RansomShield}
+% ============================================================
+
+\subsection{Vue d'ensemble}
+
+L'architecture de RansomShield repose sur huit composants principaux, regroupés en cinq blocs de haut niveau tels que représentés en Figure~\ref{fig:architecture-generale-ransomshield} (Agents, API Laravel, Services Cœur, Stockage, Console SOC). Les huit composants sont~:
+
+\begin{itemize}
+    \item un \textbf{agent Python} multi-plateforme installé sur le terminal, qui collecte les événements et exécute les commandes distantes~;
+    \item une \textbf{API Laravel} chargée de recevoir, valider et router les données des agents~;
+    \item un \textbf{moteur d'analyse} évaluant le score et le niveau de risque de chaque événement~;
+    \item un \textbf{moteur de décision} proposant des actions de protection selon les politiques configurées~;
+    \item un \textbf{module alertes/incidents} générant les alertes, ouvrant les incidents et coordonnant le suivi~;
+    \item un \textbf{service de notification} déclenchant les alertes par interface, email, son et webhook~;
+    \item un \textbf{module de simulation} rejouant des scénarios d'attaque dans le pipeline réel~;
+    \item une \textbf{console SOC} pour la supervision, la configuration et la réponse.
+\end{itemize}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.98\textwidth]{images/figures/architecture.png}
+\caption{Architecture générale de RansomShield}
+\label{fig:architecture-generale-ransomshield}
+\end{figure}
+
+\subsection{Description du flux de traitement}
+
+Le traitement commence sur le terminal surveillé. Lorsqu'une action est réalisée sur un fichier ou qu'un processus suspect est détecté, l'agent récupère les informations utiles et les place dans une file locale persistante. Cette file est transmise périodiquement à l'API centrale, ce qui garantit qu'aucun événement n'est perdu en cas de coupure réseau. L'API vérifie la clé de l'agent, enregistre l'événement et le transmet au moteur d'analyse. Ce dernier calcule un score et détermine un niveau de risque. Lorsque le score dépasse un seuil, une alerte est générée et les notifications sont déclenchées. Si le risque est élevé ou critique, un incident est ouvert et des actions de protection peuvent être proposées selon les politiques configurées.
+
+\subsection{Justification des choix d'architecture}
+
+Le choix d'une architecture séparée en plusieurs composants facilite la compréhension et la maintenance du système. L'agent se concentre sur la collecte, l'API reçoit et vérifie les données, le moteur d'analyse traite les événements, et la console SOC présente les résultats. Cette organisation permet de modifier ou d'améliorer un composant sans devoir reprendre toute la solution.
+
+% ============================================================
+\section{Description des composants}
+% ============================================================
+
+\subsection{Agent de surveillance}
+
+L'\gls{agent} est un programme Python multi-plateforme (Linux, Windows, macOS) installé sur le terminal à surveiller. Il fonctionne en plusieurs fils d'exécution parallèles~: un fil observe le système de fichiers via la bibliothèque Watchdog \cite{watchdogDocs}, un second analyse les processus actifs via psutil \cite{psutilDocs}, un troisième gère les signaux de présence et un quatrième interroge l'API pour les commandes en attente. L'enrôlement s'effectue en une seule commande à partir d'un code court à usage unique généré dans la console. Ce code permet de télécharger et de configurer l'agent automatiquement, puis de l'installer en service système pour un démarrage automatique. En cas de coupure réseau, les événements sont conservés dans une file SQLite locale jusqu'à leur transmission. L'agent peut aussi exécuter des commandes reçues à distance~: scan actif, isolation réseau du terminal et arrêt d'un processus ciblé.
+
+\subsection{API de réception des événements}
+
+L'\gls{api} est le point d'entrée de la plateforme. Elle est organisée en deux périmètres~: un périmètre ouvert limité à l'enrôlement et au téléchargement des fichiers de l'agent, et un périmètre protégé par une clé propre à chaque agent, transmise dans l'en-tête HTTP \texttt{X-Agent-Secret}. Cette approche garantit que seuls les agents enrôlés peuvent envoyer des données, et qu'une compromission de la clé d'un agent n'affecte pas les autres terminaux. Les données reçues sont validées et le débit des requêtes est limité conformément aux recommandations OWASP \cite{owaspRestSecurity,owaspApiSecurity}.
+
+\subsection{Moteur d'analyse}
+
+Le \gls{moteuranalyse} est chargé d'évaluer les événements reçus. Il vérifie le type d'événement, l'extension du fichier, la fréquence des actions et les règles de détection configurées. Il identifie également les comportements spécifiques aux ransomwares~: suppression de clichés instantanés, utilisation d'outils système détournés (LOLBins) et dépôt de notes de rançon. À partir de ces éléments, il calcule un score et attribue un niveau de risque. Toute la configuration est stockée en base de données et modifiable depuis la console sans redémarrer le serveur.
+
+Les niveaux de risque retenus sont~:
+
+\begin{itemize}
+    \item \textbf{normal}~: aucun signe important de comportement suspect~;
+    \item \textbf{suspect}~: comportement à surveiller~;
+    \item \textbf{élevé}~: comportement pouvant représenter un danger important~;
+    \item \textbf{critique}~: comportement fortement lié à une attaque ransomware active.
+\end{itemize}
+
+\subsection{Module de gestion des alertes et incidents}
+
+Le module de gestion des alertes crée une alerte lorsqu'un événement dépasse le seuil configuré. Elle contient une référence, un score, un niveau de risque et les signaux qui ont contribué à la classification. Pour les niveaux élevé et critique, un \gls{incident} est ouvert dans la même opération. Il regroupe les alertes liées, les actions proposées et les commentaires des opérateurs, et dispose d'une timeline pour retracer la chronologie complète de la situation.
+
+\subsection{Module des actions de protection}
+
+Le module des actions de protection propose des mesures de réponse adaptées au niveau de risque et aux politiques configurées. Trois modes de décision sont supportés~:
+
+\begin{itemize}
+    \item \textbf{automatique}~: l'action est exécutée immédiatement sans intervention humaine~;
+    \item \textbf{soumis à approbation}~: l'action attend une validation dans la file d'approbation~;
+    \item \textbf{manuel}~: l'action est proposée mais laissée à l'entière discrétion de l'opérateur.
+\end{itemize}
+
+Pour les actions réversibles déjà exécutées, comme une isolation réseau, un mécanisme de rollback permet de revenir à l'état précédent. Chaque décision est horodatée et conservée dans l'historique de l'action.
+
+\subsection{Console SOC}
+
+La \gls{consoleSOC} est l'interface web utilisée par l'équipe de sécurité. Elle centralise les informations sur les agents, événements, alertes, incidents, actions de protection et paramètres. Elle intègre également un module de simulation d'attaques, un système de notifications multicanaux, un générateur de rapports PDF, un journal d'audit et une page de santé du SOC. L'objectif est de rendre les informations facilement exploitables et de permettre à l'équipe d'agir sans quitter la console.
+
+% ============================================================
+\section{Modèle de données}
+% ============================================================
+
+\subsection{Principales entités}
+
+Le modèle de données de RansomShield regroupe les informations nécessaires pour suivre les événements depuis leur collecte jusqu'à la décision finale.
+
+\begin{table}[htbp]
+\centering
+\caption{Principales entités du modèle de données}
+\label{tab:entites-modele-donnees}
+\small
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\textwidth}{|p{4.5cm}|X|}
+\hline
+\textbf{Entité} & \textbf{Rôle} \\
+\hline
+Agent & Représente un terminal surveillé avec ses métadonnées et son état. \\
+\hline
+Événement & Représente une action observée sur un fichier ou un processus. \\
+\hline
+Alerte & Signale un comportement suspect détecté par le moteur d'analyse. \\
+\hline
+Incident & Regroupe alertes, actions et commentaires liés à une situation de sécurité. \\
+\hline
+Commentaire d'incident & Note laissée par un opérateur lors du suivi d'un incident. \\
+\hline
+Action de protection & Représente une mesure proposée ou exécutée pour traiter un incident. \\
+\hline
+Décision & Enregistre l'approbation, le rejet ou l'exécution d'une action. \\
+\hline
+Règle de détection & Définit une condition utilisée par le moteur d'analyse. \\
+\hline
+Seuil de détection & Définit les scores limites pour chaque niveau de risque. \\
+\hline
+Politique de protection & Associe un niveau de risque à un ensemble d'actions à proposer. \\
+\hline
+Extension suspecte & Représente une extension de fichier associée à un risque ransomware. \\
+\hline
+Paramètre système & Contient une configuration globale de la plateforme. \\
+\hline
+Réseau supervisé & Représente un réseau dont les hôtes sont découverts et suivis. \\
+\hline
+Notification d'alerte & Enregistre chaque notification envoyée par canal. \\
+\hline
+Journal d'audit & Trace toutes les actions importantes réalisées dans la plateforme. \\
+\hline
+Simulation & Conserve les traces des scénarios d'attaque lancés. \\
+\hline
+\end{tabularx}
+\end{table}
+\newpage
+
+\subsection{Relations entre les entités}
+
+Les relations entre les entités permettent de suivre le parcours complet d'un événement. Un agent produit plusieurs événements. Un événement peut conduire à une alerte. Une alerte peut être liée à un incident. Un incident regroupe plusieurs alertes, plusieurs actions de protection et des commentaires. Chaque action peut ensuite faire l'objet d'une ou plusieurs décisions. Cette organisation assure un lien clair entre ce qui a été détecté, ce qui a été signalé et ce qui a été décidé.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+  class/.style={
+    rectangle, draw=black!70, fill=blue!6, rounded corners=2pt,
+    text width=3.2cm, align=center, font=\small
+  },
+  title/.style={
+    rectangle, draw=black!70, fill=blue!20,
+    text width=3.2cm, align=center, font=\small\bfseries,
+    rounded corners=2pt
+  },
+  attr/.style={font=\footnotesize, text width=3.0cm, align=left},
+  rel/.style={-{Stealth[length=2.5mm]}, thick, black!70},
+  comp/.style={-{Diamond[length=3mm,open]}, thick, black!70},
+  lbl/.style={font=\scriptsize, fill=white, inner sep=1pt}
+]
+
+% ── Nœuds ──────────────────────────────────────────────────────────────────
+\node[title] (agent_t) at (0,0)    {Agent};
+\node[class, below=0pt of agent_t] (agent) {
+  \begin{tabular}{@{}l@{}}
+    id, agent\_uuid\\hostname, status\\risk\_level, risk\_score
+  \end{tabular}
+};
+
+\node[title] (event_t) at (5,0)    {Événement};
+\node[class, below=0pt of event_t] (event) {
+  \begin{tabular}{@{}l@{}}
+    id, event\_type\\path, risk\_level\\risk\_score
+  \end{tabular}
+};
+
+\node[title] (alert_t) at (5,-3.2) {Alerte};
+\node[class, below=0pt of alert_t] (alert) {
+  \begin{tabular}{@{}l@{}}
+    id, title, status\\risk\_level, score
+  \end{tabular}
+};
+
+\node[title] (incident_t) at (0,-3.2)  {Incident};
+\node[class, below=0pt of incident_t] (incident) {
+  \begin{tabular}{@{}l@{}}
+    id, title, status\\risk\_level, risk\_score
+  \end{tabular}
+};
+
+\node[title] (action_t) at (0,-6.4)   {ActionProtection};
+\node[class, below=0pt of action_t] (action) {
+  \begin{tabular}{@{}l@{}}
+    id, action\_type\\execution\_mode\\status
+  \end{tabular}
+};
+
+\node[title] (decision_t) at (5,-6.4) {Décision};
+\node[class, below=0pt of decision_t] (decision) {
+  \begin{tabular}{@{}l@{}}
+    id, approved\_by\\approved\_at, note
+  \end{tabular}
+};
+
+\node[title] (comment_t) at (-5,-3.2) {Commentaire};
+\node[class, below=0pt of comment_t] (comment) {
+  \begin{tabular}{@{}l@{}}
+    id, content\\user\_id, created\_at
+  \end{tabular}
+};
+
+% ── Relations ──────────────────────────────────────────────────────────────
+\draw[comp] (agent.east)    -- node[lbl, above]{1}
+             node[lbl, pos=0.85, above]{*} (event_t.west);
+\draw[comp] (agent.south)   -- node[lbl, right]{1}
+             node[lbl, pos=0.85, right]{*} (incident_t.north);
+\draw[rel]  (event.south)   -- node[lbl, right]{0..1} (alert_t.north);
+\draw[rel]  (alert.west)    -- node[lbl, above]{*}
+             node[lbl, pos=0.85, above]{1} (incident.east);
+\draw[comp] (incident.south)-- node[lbl, right]{1}
+             node[lbl, pos=0.85, right]{*} (action_t.north);
+\draw[comp] (incident.west) -- node[lbl, above]{1}
+             node[lbl, pos=0.85, above]{*} (comment_t.east);
+\draw[comp] (action.east)   -- node[lbl, above]{1}
+             node[lbl, pos=0.85, above]{*} (decision_t.west);
+
+\end{tikzpicture}
+\caption{Diagramme de classes simplifié de RansomShield}
+\label{fig:diagramme-classes}
+\end{figure}
+\newpage
+
+\subsection{Traçabilité des événements}
+
+La traçabilité occupe une place importante dans RansomShield. Elle permet de comprendre l'origine d'une alerte, son évolution en incident et les décisions prises par l'équipe. Le journal d'audit conserve l'ensemble des actions importantes réalisées dans la plateforme, tandis que la timeline d'un incident retrace chronologiquement les faits liés à cette situation précise.
+
+% ============================================================
+\section{Processus de détection et de réponse}
+% ============================================================
+
+La première étape consiste à collecter les événements produits sur le terminal. L'agent surveille les dossiers configurés et les processus actifs. Les événements sont placés dans une file locale, puis transmis à l'API centrale dès que la connexion est disponible. L'API vérifie la clé de l'agent, enregistre les données et déclenche le moteur d'analyse. Ce dernier examine chaque événement à partir de plusieurs critères~: type d'action, extension du fichier, fréquence des opérations, règles de détection et seuils configurés. Il attribue un score et un niveau de risque. Lorsque le score dépasse le seuil d'alerte, une alerte est créée et les notifications sont déclenchées. Si le niveau est élevé ou critique, un incident est ouvert et des actions de protection sont proposées. Chaque étape est enregistrée dans le journal d'audit et la timeline de l'incident.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.98\textwidth]{images/figures/processus.png}
+\caption{Processus de détection et de réponse de RansomShield}
+\label{fig:processus-detection-reponse}
+\end{figure}
+
+% ============================================================
+\section{Conception de l'interface de supervision}
+% ============================================================
+
+\subsection{Objectifs de l'interface}
+
+L'interface de supervision doit permettre à l'équipe de comprendre rapidement l'état du système, d'investiguer les incidents et d'agir sans quitter la console. Les principaux objectifs sont~: vue globale de la plateforme, gestion des agents et des alertes, suivi des incidents, validation des actions, simulation d'attaques, gestion des notifications et rapports, et accès au journal d'audit.
+
+\newpage
+\subsection{Organisation des pages}
+
+\begin{table}[htbp]
+\centering
+\caption{Organisation des pages de la console SOC}
+\label{tab:pages-console}
+\small
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\textwidth}{|p{4.5cm}|X|}
+\hline
+\textbf{Page} & \textbf{Rôle} \\
+\hline
+Dashboard & Indicateurs globaux, graphique d'événements et statut des composants. \\
+\hline
+Agents & Terminaux surveillés, état, niveau de risque et déclenchement de commandes. \\
+\hline
+Événements & Liste des événements bruts reçus avec leur niveau de risque. \\
+\hline
+Alertes & Alertes générées avec score, niveau, signaux et actions de résolution. \\
+\hline
+Incidents & Incidents ouverts avec alertes, actions, commentaires et export CSV/PDF. \\
+\hline
+Timeline & Chronologie d'audit d'un incident. \\
+\hline
+Actions de protection & Mesures proposées, file d'approbation et historique des décisions. \\
+\hline
+Simulation & Lancement de scénarios d'attaque ransomware sur un agent cible. \\
+\hline
+Notifications & Paramétrage des canaux et historique des envois. \\
+\hline
+Rapports & Génération et téléchargement de bilans PDF. \\
+\hline
+Règles de détection & Gestion des règles comportementales depuis la console. \\
+\hline
+Configuration & Seuils, politiques, extensions et paramètres globaux. \\
+\hline
+Journal d'audit & Historique de toutes les actions importantes dans la plateforme. \\
+\hline
+Santé du SOC & État en temps réel des composants critiques. \\
+\hline
+Profil / 2FA & Configuration de l'authentification à deux facteurs. \\
+\hline
+\end{tabularx}
+\end{table}
+
+
+% ============================================================
+\section{Mesures de sécurité retenues}
+% ============================================================
+
+\subsection{Authentification forte de la console}
+
+L'accès à la console SOC est protégé par une authentification en deux étapes. Après saisie du mot de passe, l'utilisateur doit fournir un code à usage unique généré par une application d'authentification selon l'algorithme TOTP \cite{rfc6238}. En cas de perte de l'application, dix codes de secours à usage unique sont disponibles. Le nombre de tentatives sur le formulaire de vérification est limité pour prévenir les attaques par force brute.
+
+\subsection{Contrôle d'accès par rôles}
+
+Deux rôles sont définis dans la plateforme~: administrateur et analyste. Les analystes peuvent consulter les agents, alertes et incidents, résoudre des alertes et laisser des commentaires. Les actions de configuration, la gestion des utilisateurs, les suppressions et le lancement de simulations sont réservés aux administrateurs. Ce cloisonnement est appliqué au niveau des routes et des politiques d'autorisation de l'application.
+
+\subsection{Authentification de l'API agent}
+
+Chaque agent dispose de sa propre clé API, générée lors de l'enrôlement et stockée localement dans son fichier de configuration. Cette clé est transmise dans l'en-tête HTTP \texttt{X-Agent-Secret} à chaque requête. Une compromission de la clé d'un agent n'affecte donc pas les autres terminaux. Le débit des requêtes est également limité pour le heartbeat et les événements. Les bonnes pratiques OWASP pour les services REST sont respectées \cite{owaspRestSecurity}.
+
+\subsection{Validation des données et traçabilité}
+
+Toutes les données reçues par l'API sont validées avant traitement. Toutes les actions importantes réalisées dans la plateforme --- connexions, modifications de configuration, décisions sur les actions --- sont enregistrées dans un journal d'audit persistant, consultable avec des filtres par type, utilisateur et période.
+
+% ============================================================
+\section{Synthèse de la conception}
+% ============================================================
+
+La conception de RansomShield repose sur une architecture modulaire et sécurisée. L'agent collecte les événements fichiers et processus sur le terminal. L'API les reçoit et les vérifie. Le moteur d'analyse évalue le risque. Le moteur de décision propose des actions adaptées. La console SOC permet à l'équipe de superviser la situation et de prendre les décisions nécessaires, avec une traçabilité complète.
+
+\begin{table}[htbp]
+\centering
+\caption{Synthèse des composants de RansomShield}
+\label{tab:synthese-composants}
+\small
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\textwidth}{|p{4.5cm}|X|}
+\hline
+\textbf{Composant} & \textbf{Responsabilité principale} \\
+\hline
+Agent Python & Collecte les événements fichiers et processus, gère la file locale et exécute les commandes distantes. \\
+\hline
+API Laravel & Reçoit, valide et route les données des agents vers les services métier. \\
+\hline
+Moteur d'analyse & Calcule le score et le niveau de risque de chaque événement. \\
+\hline
+Moteur de décision & Propose des actions de protection selon les politiques et niveaux de risque. \\
+\hline
+Module alertes / incidents & Génère les alertes, ouvre les incidents et coordonne le suivi. \\
+\hline
+Service de notification & Déclenche les alertes par interface, email, son et webhook. \\
+\hline
+Module simulation & Rejoue des scénarios d'attaque dans le pipeline réel. \\
+\hline
+Console SOC & Présente les informations et offre les outils de réponse à l'équipe. \\
+\hline
+\end{tabularx}
+\end{table}
+
+\phantomsection
+\addcontentsline{toc}{section}{Conclusion}
+\section*{Conclusion}
+
+Ce chapitre a défini les besoins, l'architecture à huit composants et les mesures de sécurité de RansomShield. Le modèle de données en seize entités assure la traçabilité de chaque événement jusqu'à la décision finale. Le chapitre suivant est consacré aux résultats, aux tests de validation et à la discussion.
