@@ -293,22 +293,22 @@
                 <div class="smart-stat-hint">Événements reçus.</div>
             </div>
             <div class="smart-stat">
-                <div class="smart-stat-icon"><i class="fa-solid fa-skull-crossbones"></i></div>
-                <div class="smart-stat-label">Critical</div>
-                <div class="smart-stat-value" style="{{ $stats['critical'] > 0 ? 'color:#ef4444' : '' }}">{{ $stats['critical'] }}</div>
-                <div class="smart-stat-hint">Événements critiques.</div>
-            </div>
-            <div class="smart-stat">
-                <div class="smart-stat-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
-                <div class="smart-stat-label">High</div>
-                <div class="smart-stat-value" style="{{ $stats['high'] > 0 ? 'color:#f97316' : '' }}">{{ $stats['high'] }}</div>
-                <div class="smart-stat-hint">Événements élevés.</div>
+                <div class="smart-stat-icon"><i class="fa-solid fa-shield-halved"></i></div>
+                <div class="smart-stat-label">Réels</div>
+                <div class="smart-stat-value">{{ $stats['real'] }}</div>
+                <div class="smart-stat-hint">Événements hors simulation.</div>
             </div>
             <div class="smart-stat">
                 <div class="smart-stat-icon"><i class="fa-solid fa-flask"></i></div>
                 <div class="smart-stat-label">Simulation</div>
                 <div class="smart-stat-value" style="color:#6366f1">{{ $stats['simulation'] }}</div>
                 <div class="smart-stat-hint">Tests contrôlés.</div>
+            </div>
+            <div class="smart-stat">
+                <div class="smart-stat-icon"><i class="fa-solid fa-skull-crossbones"></i></div>
+                <div class="smart-stat-label">dont Critiques</div>
+                <div class="smart-stat-value" style="{{ $stats['critical'] > 0 ? 'color:#ef4444' : '' }}">{{ $stats['critical'] }}</div>
+                <div class="smart-stat-hint">Inclus dans le total.</div>
             </div>
         </section>
 

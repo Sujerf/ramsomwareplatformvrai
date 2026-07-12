@@ -119,7 +119,9 @@ _DEFAULT_EXCLUDED_PATHS = (
     # Fichiers temporaires et caches système
     "/tmp,/var/tmp,.cache,.npm,.cargo,.rustup,"
     # Fichiers de session / outils IA
-    ".claude,.cursor,.vscode,claude-1000,claude-code"
+    ".claude,.cursor,.vscode,claude-1000,claude-code,"
+    # Fichiers propres de l'agent (évite la boucle d'auto-monitoring)
+    ".ransomshield_host_agent_state,.ransomshield_queue.db,ransomshield_agent.log"
 )
 
 EXCLUDED_PARTS = [

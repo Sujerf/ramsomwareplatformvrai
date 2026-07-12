@@ -106,6 +106,7 @@ class AgentRiskService
             'calculated_at' => now(),
         ]);
 
+        $isNewIncident   = false;
         $incident        = null;
         $alert           = null;
         $alertWasCreated = false;
@@ -113,7 +114,6 @@ class AgentRiskService
 
         // ── Incident : créé seulement si le risque atteint le seuil configuré ──
         if ($analysis['should_create_incident']) {
-            $isNewIncident = false;
             $incident = $this->createOrUpdateIncident($event, $analysis, $isNewIncident);
 
             $event->update(['incident_id' => $incident->id]);
@@ -138,12 +138,12 @@ class AgentRiskService
                 $this->notificationService->notifyAlert($alert);
             }
 
-            if ($incident) {
+            // Ne notifier l'incident qu'à sa création — évite le spam de notifications
+            // à chaque event entrant sur un incident déjà ouvert.
+            if ($incident && $isNewIncident) {
                 $this->notificationService->notifyIncident(
                     $incident,
-                    $alertWasCreated
-                        ? "Incident mis à jour après réception d'un nouvel événement suspect."
-                        : 'Incident mis à jour — alerte existante réutilisée (doublon < 120 s).'
+                    "Incident créé automatiquement après analyse du risque."
                 );
             }
         }
@@ -305,7 +305,7 @@ class AgentRiskService
             ->when(! $incident, fn ($q) => $q->whereNull('incident_id'))
             ->where('status', 'open')
             ->where('title', 'Alerte comportement ransomware')
-            ->where('created_at', '>=', now()->subSeconds(120))
+            ->where('created_at', '>=', now()->subSeconds(300))
             ->latest()
             ->first();
 

@@ -40,16 +40,28 @@ class ProtectionActionController extends Controller
             $query->where('execution_status', 'rolled_back');
         }
 
-        // Counts per tab for badge display
+        // Catégories mutuellement exclusives — la somme doit égaler le total
+        // Priorité : états terminaux d'exécution (executed, rolled_back) d'abord,
+        // puis états d'approbation (rejected/cancelled), puis en attente.
+        $terminalExec    = ['executed', 'rolled_back'];
+        $cntExecuted     = ProtectionAction::where('execution_status', 'executed')->count();
+        $cntRollback     = ProtectionAction::where('execution_status', 'rolled_back')->count();
+        $cntRejected     = ProtectionAction::whereIn('approval_status', ['rejected', 'cancelled'])
+                               ->whereNotIn('execution_status', $terminalExec)->count();
+        $cntApproved     = ProtectionAction::where('approval_status', 'approved')
+                               ->whereNotIn('execution_status', $terminalExec)
+                               ->whereNotIn('approval_status', ['rejected', 'cancelled'])->count();
+        $cntPending      = ProtectionAction::where('approval_status', 'pending')
+                               ->whereNotIn('execution_status', $terminalExec)->count();
+        $cntTotal        = $cntPending + $cntApproved + $cntExecuted + $cntRejected + $cntRollback;
+
         $filterCounts = [
-            'active'   => ProtectionAction::where('approval_status', 'pending')
-                            ->whereIn('execution_status', ['waiting_approval', 'pending', 'executing'])->count(),
-            'approved' => ProtectionAction::where('approval_status', 'approved')
-                            ->whereIn('execution_status', ['waiting_approval', 'pending', 'executing'])->count(),
-            'executed' => ProtectionAction::where('execution_status', 'executed')->count(),
-            'rejected' => ProtectionAction::whereIn('approval_status', ['rejected', 'cancelled'])->count(),
-            'rollback' => ProtectionAction::where('execution_status', 'rolled_back')->count(),
-            'all'      => ProtectionAction::count(),
+            'active'   => $cntPending,
+            'approved' => $cntApproved,
+            'executed' => $cntExecuted,
+            'rejected' => $cntRejected,
+            'rollback' => $cntRollback,
+            'all'      => $cntTotal,
         ];
 
         return view('platform.protection-actions.index', [
@@ -57,13 +69,12 @@ class ProtectionActionController extends Controller
             'activeStatus' => $status,
             'filterCounts' => $filterCounts,
             'stats'        => [
-                'total'    => ProtectionAction::count(),
-                'pending'  => ProtectionAction::where('approval_status', 'pending')->count(),
-                'approved' => ProtectionAction::where('approval_status', 'approved')
-                                ->whereIn('execution_status', ['waiting_approval', 'pending', 'executing'])->count(),
-                'executed' => ProtectionAction::where('execution_status', 'executed')->count(),
-                'rejected' => ProtectionAction::whereIn('approval_status', ['rejected', 'cancelled'])->count(),
-                'rollback' => ProtectionAction::where('execution_status', 'rolled_back')->count(),
+                'total'    => $cntTotal,
+                'pending'  => $cntPending,
+                'approved' => $cntApproved,
+                'executed' => $cntExecuted,
+                'rejected' => $cntRejected,
+                'rollback' => $cntRollback,
             ],
         ]);
     }

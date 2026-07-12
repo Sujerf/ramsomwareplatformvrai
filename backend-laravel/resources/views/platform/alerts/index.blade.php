@@ -451,16 +451,16 @@
                 <div class="smart-stat-hint">À traiter maintenant.</div>
             </div>
             <div class="smart-stat">
-                <div class="smart-stat-icon"><i class="fa-solid fa-skull-crossbones"></i></div>
-                <div class="smart-stat-label">Critical</div>
-                <div class="smart-stat-value" style="{{ $stats['critical'] > 0 ? 'color:#ef4444' : '' }}">{{ $stats['critical'] }}</div>
-                <div class="smart-stat-hint">Signaux de niveau critique.</div>
-            </div>
-            <div class="smart-stat">
                 <div class="smart-stat-icon"><i class="fa-solid fa-circle-check"></i></div>
                 <div class="smart-stat-label">Résolues</div>
-                <div class="smart-stat-value">{{ $stats['resolved'] }}</div>
+                <div class="smart-stat-value" style="{{ $stats['resolved'] > 0 ? 'color:#22c55e' : '' }}">{{ $stats['resolved'] }}</div>
                 <div class="smart-stat-hint">Traitées avec succès.</div>
+            </div>
+            <div class="smart-stat">
+                <div class="smart-stat-icon"><i class="fa-solid fa-ban"></i></div>
+                <div class="smart-stat-label">Faux positifs</div>
+                <div class="smart-stat-value">{{ $stats['false_positive'] }}</div>
+                <div class="smart-stat-hint">Écartées — non retenues.</div>
             </div>
             <div class="smart-stat">
                 <div class="smart-stat-icon"><i class="fa-solid fa-database"></i></div>

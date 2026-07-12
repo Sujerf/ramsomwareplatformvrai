@@ -487,6 +487,17 @@
                 </div>
                 <div class="smart-stat-hint">Isolations révoquées.</div>
             </div>
+
+            <div class="smart-stat">
+                <div class="smart-stat-label">
+                    <i class="fa-solid fa-ban" style="color:#ef4444; margin-right:6px;"></i>
+                    Rejetées
+                </div>
+                <div class="smart-stat-value" style="{{ ($stats['rejected'] ?? 0) > 0 ? 'color:#ef4444;' : '' }}">
+                    {{ $stats['rejected'] ?? 0 }}
+                </div>
+                <div class="smart-stat-hint">Refusées ou annulées.</div>
+            </div>
         </section>
 
         {{-- ── FILTER TABS ──────────────────────────────────────────────── --}}

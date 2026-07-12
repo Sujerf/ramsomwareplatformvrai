@@ -112,6 +112,21 @@ class SystemSettingController extends Controller
         ]);
     }
 
+    public function testMail(Request $request): JsonResponse
+    {
+        abort_unless(auth()->user()?->isAdmin(), 403);
+
+        $recipient = trim((string) SystemSetting::getCached('notification_mail_recipient'));
+
+        if ($recipient === '' || ! filter_var($recipient, FILTER_VALIDATE_EMAIL)) {
+            return response()->json(['success' => false, 'error' => 'Adresse email destinataire invalide ou non configurée.'], 422);
+        }
+
+        $result = app(NotificationService::class)->sendTestMail($recipient);
+
+        return response()->json($result, $result['success'] ? 200 : 502);
+    }
+
     public function testWebhook(Request $request): JsonResponse
     {
         abort_unless(auth()->user()?->isAdmin(), 403);

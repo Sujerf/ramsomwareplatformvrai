@@ -442,17 +442,6 @@
 
             <div class="smart-stat">
                 <div class="smart-stat-label">
-                    <i class="fa-solid fa-circle-exclamation" style="color:#ef4444; margin-right:6px;"></i>
-                    Critical
-                </div>
-                <div class="smart-stat-value" style="{{ $stats['critical'] > 0 ? 'color:#ef4444;' : '' }}">
-                    {{ $stats['critical'] }}
-                </div>
-                <div class="smart-stat-hint">Menaces de niveau critique.</div>
-            </div>
-
-            <div class="smart-stat">
-                <div class="smart-stat-label">
                     <i class="fa-solid fa-circle-check" style="color:#22c55e; margin-right:6px;"></i>
                     Résolus
                 </div>
@@ -460,6 +449,17 @@
                     {{ $stats['resolved'] }}
                 </div>
                 <div class="smart-stat-hint">Incidents traités avec succès.</div>
+            </div>
+
+            <div class="smart-stat">
+                <div class="smart-stat-label">
+                    <i class="fa-solid fa-ban" style="color:#94a3b8; margin-right:6px;"></i>
+                    Faux positifs
+                </div>
+                <div class="smart-stat-value">
+                    {{ $stats['false_positive'] }}
+                </div>
+                <div class="smart-stat-hint">Écartés — non retenus.</div>
             </div>
 
             <div class="smart-stat">

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Mail\AlertMail;
+use App\Mail\IncidentMail;
 use App\Models\Alert;
 use App\Models\AlertNotification;
 use App\Models\Incident;
@@ -163,23 +164,186 @@ class NotificationService
 
     public function notifyIncident(Incident $incident, string $message): void
     {
-        if (! $this->settingBool('notification_ui_enabled', true)) {
-            return;
+        // ── Notification UI ───────────────────────────────────────────────────
+        if ($this->settingBool('notification_ui_enabled', true)) {
+            $this->createNotification(
+                alert: null,
+                incident: $incident,
+                channel: 'ui',
+                subject: 'Incident RansomShield',
+                message: $message,
+                metadata: [
+                    'risk_level'       => $incident->risk_level,
+                    'risk_score'       => $incident->risk_score,
+                    'incident_status'  => $incident->status,
+                    'timeline_message' => 'Notification UI générée pour mise à jour incident.',
+                ]
+            );
         }
 
-        $this->createNotification(
-            alert: null,
-            incident: $incident,
-            channel: 'ui',
-            subject: 'Incident RansomShield',
-            message: $message,
-            metadata: [
-                'risk_level'       => $incident->risk_level,
-                'risk_score'       => $incident->risk_score,
-                'incident_status'  => $incident->status,
-                'timeline_message' => 'Notification UI générée pour mise à jour incident.',
-            ]
-        );
+        // ── Notification mail ─────────────────────────────────────────────────
+        if (
+            $this->settingBool('notification_mail_enabled', false)
+            && $this->riskIsAtLeast($incident->risk_level, $this->settingValue('notification_min_risk_level', 'high'))
+        ) {
+            $recipient = trim((string) $this->settingValue('notification_mail_recipient', ''));
+
+            if ($recipient !== '' && filter_var($recipient, FILTER_VALIDATE_EMAIL)) {
+                $notification = $this->createNotification(
+                    alert: null,
+                    incident: $incident,
+                    channel: 'mail',
+                    subject: '[RansomShield] Incident '.$incident->risk_level.' — '.($incident->agent?->agent_name ?? 'Agent inconnu'),
+                    message: $message,
+                    recipient: $recipient,
+                    metadata: [
+                        'risk_level'       => $incident->risk_level,
+                        'risk_score'       => $incident->risk_score,
+                        'incident_status'  => $incident->status,
+                        'timeline_message' => 'Envoi email en cours.',
+                    ]
+                );
+
+                try {
+                    Mail::to($recipient)->send(new IncidentMail($incident, $message));
+
+                    $notification->update([
+                        'status'   => 'sent',
+                        'sent_at'  => now(),
+                        'metadata' => array_merge($notification->metadata ?? [], [
+                            'timeline_message' => 'Email envoyé avec succès.',
+                        ]),
+                    ]);
+                } catch (\Throwable $e) {
+                    $notification->update([
+                        'status'   => 'failed',
+                        'metadata' => array_merge($notification->metadata ?? [], [
+                            'timeline_message' => 'Échec envoi email : '.$e->getMessage(),
+                            'error'            => $e->getMessage(),
+                        ]),
+                    ]);
+                }
+            }
+        }
+
+        // ── Notification webhook ──────────────────────────────────────────────
+        if (
+            $this->settingBool('notification_webhook_enabled', false)
+            && $this->riskIsAtLeast($incident->risk_level, $this->settingValue('notification_min_risk_level', 'high'))
+        ) {
+            $webhookUrl = trim((string) $this->settingValue('notification_webhook_url', ''));
+
+            if ($webhookUrl !== '' && filter_var($webhookUrl, FILTER_VALIDATE_URL)) {
+                $type = $this->settingValue('notification_webhook_type', 'slack');
+
+                $notification = $this->createNotification(
+                    alert: null,
+                    incident: $incident,
+                    channel: 'webhook',
+                    subject: 'Incident RansomShield',
+                    message: $message,
+                    recipient: $webhookUrl,
+                    metadata: [
+                        'risk_level'       => $incident->risk_level,
+                        'risk_score'       => $incident->risk_score,
+                        'incident_status'  => $incident->status,
+                        'webhook_type'     => $type,
+                        'timeline_message' => 'Envoi webhook en cours.',
+                    ]
+                );
+
+                try {
+                    $payload = match ($type) {
+                        'teams'   => $this->buildIncidentTeamsPayload($incident, $message),
+                        'generic' => $this->buildIncidentGenericPayload($incident, $message),
+                        default   => $this->buildIncidentSlackPayload($incident, $message),
+                    };
+
+                    $response = Http::timeout(10)
+                        ->withHeaders(['Content-Type' => 'application/json'])
+                        ->post($webhookUrl, $payload);
+
+                    if ($response->successful()) {
+                        $notification->update([
+                            'status'   => 'sent',
+                            'sent_at'  => now(),
+                            'metadata' => array_merge($notification->metadata ?? [], [
+                                'timeline_message' => 'Webhook envoyé avec succès.',
+                                'http_status'      => $response->status(),
+                            ]),
+                        ]);
+                    } else {
+                        $notification->update([
+                            'status'   => 'failed',
+                            'metadata' => array_merge($notification->metadata ?? [], [
+                                'timeline_message' => 'Webhook rejeté — HTTP '.$response->status().'.',
+                                'http_status'      => $response->status(),
+                                'response_body'    => substr($response->body(), 0, 500),
+                            ]),
+                        ]);
+                    }
+                } catch (\Throwable $e) {
+                    $notification->update([
+                        'status'   => 'failed',
+                        'metadata' => array_merge($notification->metadata ?? [], [
+                            'timeline_message' => 'Échec webhook : '.$e->getMessage(),
+                            'error'            => $e->getMessage(),
+                        ]),
+                    ]);
+                }
+            }
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    //  TEST MAIL (depuis l'UI)
+    // ──────────────────────────────────────────────────────────────────────────
+
+    public function sendTestMail(string $recipient): array
+    {
+        $fakeIncident = new Incident([
+            'id'          => 0,
+            'title'       => 'Test RansomShield SOC — notification email',
+            'description' => 'Ceci est un email de test envoyé depuis la console SOC pour vérifier la configuration.',
+            'risk_level'  => 'critical',
+            'risk_score'  => 95,
+            'status'      => 'open',
+            'detected_at' => now(),
+        ]);
+
+        try {
+            Mail::to($recipient)->send(new IncidentMail($fakeIncident, 'Email de test envoyé depuis la console SOC. Si vous recevez ce message, la configuration email est opérationnelle.'));
+
+            AlertNotification::create([
+                'channel'   => 'mail',
+                'status'    => 'sent',
+                'recipient' => $recipient,
+                'subject'   => '[TEST] RansomShield — email test',
+                'message'   => 'Envoi de test depuis la console SOC.',
+                'sent_at'   => now(),
+                'metadata'  => [
+                    'is_test'          => true,
+                    'timeline_message' => 'Test email envoyé avec succès.',
+                ],
+            ]);
+
+            return ['success' => true, 'error' => null];
+        } catch (\Throwable $e) {
+            AlertNotification::create([
+                'channel'   => 'mail',
+                'status'    => 'failed',
+                'recipient' => $recipient,
+                'subject'   => '[TEST] RansomShield — email test',
+                'message'   => 'Envoi de test depuis la console SOC.',
+                'metadata'  => [
+                    'is_test'          => true,
+                    'timeline_message' => 'Test email — exception : '.$e->getMessage(),
+                    'error'            => $e->getMessage(),
+                ],
+            ]);
+
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
     }
 
     // ──────────────────────────────────────────────────────────────────────────
@@ -367,6 +531,82 @@ class NotificationService
             'alert_id'    => $alert->id,
             'detected_at' => now()->toIso8601String(),
             'console_url' => url('/console/alerts/'.$alert->id),
+        ];
+    }
+
+    private function buildIncidentSlackPayload(Incident $incident, string $message): array
+    {
+        $agentName  = $incident->agent?->agent_name ?? 'Agent inconnu';
+        $consoleUrl = url('/console/incidents/'.$incident->id);
+        $color      = $this->riskColor($incident->risk_level);
+
+        return [
+            'attachments' => [[
+                'color'   => $color,
+                'title'   => '🚨 Incident RansomShield — '.strtoupper($incident->risk_level),
+                'text'    => $message,
+                'fields'  => [
+                    ['title' => 'Agent',  'value' => $agentName,                           'short' => true],
+                    ['title' => 'Niveau', 'value' => strtoupper($incident->risk_level),    'short' => true],
+                    ['title' => 'Score',  'value' => ($incident->risk_score ?? 0).'/100',  'short' => true],
+                    ['title' => 'Statut', 'value' => strtoupper($incident->status),        'short' => true],
+                ],
+                'actions' => [[
+                    'type' => 'button',
+                    'text' => "Voir l'incident →",
+                    'url'  => $consoleUrl,
+                ]],
+                'footer' => 'RansomShield SOC',
+                'ts'     => now()->timestamp,
+            ]],
+        ];
+    }
+
+    private function buildIncidentTeamsPayload(Incident $incident, string $message): array
+    {
+        $agentName  = $incident->agent?->agent_name ?? 'Agent inconnu';
+        $consoleUrl = url('/console/incidents/'.$incident->id);
+        $color      = ltrim($this->riskColor($incident->risk_level), '#');
+
+        return [
+            '@type'           => 'MessageCard',
+            '@context'        => 'http://schema.org/extensions',
+            'themeColor'      => $color,
+            'summary'         => 'Incident RansomShield',
+            'sections'        => [[
+                'activityTitle'    => '🚨 RansomShield SOC — Incident '.strtoupper($incident->risk_level),
+                'activitySubtitle' => $incident->title,
+                'activityText'     => $message,
+                'facts'            => [
+                    ['name' => 'Agent',  'value' => $agentName],
+                    ['name' => 'Niveau', 'value' => strtoupper($incident->risk_level)],
+                    ['name' => 'Score',  'value' => ($incident->risk_score ?? 0).'/100'],
+                    ['name' => 'Statut', 'value' => strtoupper($incident->status)],
+                ],
+                'markdown' => true,
+            ]],
+            'potentialAction' => [[
+                '@type'   => 'OpenUri',
+                'name'    => "Voir l'incident",
+                'targets' => [['os' => 'default', 'uri' => $consoleUrl]],
+            ]],
+        ];
+    }
+
+    private function buildIncidentGenericPayload(Incident $incident, string $message): array
+    {
+        return [
+            'event'       => 'ransomshield.incident',
+            'title'       => $incident->title,
+            'message'     => $message,
+            'risk_level'  => $incident->risk_level,
+            'risk_score'  => $incident->risk_score ?? 0,
+            'status'      => $incident->status,
+            'agent_name'  => $incident->agent?->agent_name,
+            'agent_ip'    => $incident->agent?->ip_address,
+            'incident_id' => $incident->id,
+            'detected_at' => $incident->detected_at?->toIso8601String() ?? now()->toIso8601String(),
+            'console_url' => url('/console/incidents/'.$incident->id),
         ];
     }
 

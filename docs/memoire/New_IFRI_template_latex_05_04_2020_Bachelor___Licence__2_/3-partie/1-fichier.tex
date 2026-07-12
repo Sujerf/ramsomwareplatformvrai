@@ -15,7 +15,7 @@
 \addcontentsline{toc}{section}{Introduction}
 \section*{Introduction}
 
-Ce chapitre décrit la mise en œuvre de RansomShield, les scénarios de validation conduits et les résultats obtenus. La démarche de validation s'inspire des recommandations du NIST pour la gestion des incidents de sécurité \cite{nistIncidentResponse2024}. Il présente également les limites identifiées et les pistes d'amélioration envisagées.
+Ce chapitre décrit la mise en \oe{}uvre de RansomShield, les scénarios de validation conduits et les résultats obtenus. La démarche de validation s'inspire des recommandations du NIST pour la gestion des incidents de sécurité \cite{nistIncidentResponse2024}. Il présente également les limites identifiées et les pistes d'amélioration envisagées.
 
 % ============================================================
 \section{Environnement technique de réalisation}
@@ -68,7 +68,7 @@ Le backend reçoit les données des agents, les enregistre, les analyse et expos
 Les migrations Laravel ont permis de créer et de faire évoluer les tables de manière contrôlée tout au long du développement. Les principales tables mises en place sont les suivantes~:
 
 \begin{itemize}
-    \item \textbf{agents}, \textbf{events}, \textbf{alerts}, \textbf{incidents} : cœur du pipeline de détection ;
+    \item \textbf{agents}, \textbf{events}, \textbf{alerts}, \textbf{incidents} : c\oe{}ur du pipeline de détection ;
     \item \textbf{protection\_actions}, \textbf{protection\_action\_decisions} : suivi des mesures de réponse ;
     \item \textbf{detection\_rules}, \textbf{detection\_thresholds}, \textbf{protection\_policies} : configuration du moteur ;
     \item \textbf{sensitive\_extensions}, \textbf{system\_settings} : paramètres globaux ;
@@ -226,6 +226,8 @@ La page des agents liste les terminaux enrôlés avec leur état (actif, hors li
 \label{fig:liste-agents}
 \end{figure}
 
+\noindent La Figure~\ref{fig:liste-agents} montre les trois agents enrôlés lors des tests. L'agent \textbf{rs-fileserver} (\texttt{10.20.0.11}) est celui qui a généré les événements du scénario~3 (extension \texttt{.locked}, score~135)~; c'est donc à cet agent qu'est rattaché l'incident présenté dans les figures suivantes.
+
 \newpage
 
 \subsection{Alertes et incidents}
@@ -284,7 +286,7 @@ La console intègre un module de simulation permettant de rejouer six scénarios
 
 \subsection{Authentification forte et contrôle d'accès}
 
-L'accès à la console est protégé par une authentification à deux facteurs TOTP \cite{rfc6238}. En cas de perte de l'application d'authentification, dix codes de secours à usage unique sont disponibles. Deux rôles sont définis~: les analystes accèdent à la supervision et aux opérations courantes, les administrateurs disposent en plus des droits de configuration, de gestion des utilisateurs et de lancement des simulations. Ce cloisonnement est appliqué au niveau des routes Laravel et des politiques Eloquent.
+L'accès à la console est protégé par une authentification à deux facteurs TOTP \cite{anssiMFA2021}. En cas de perte de l'application d'authentification, dix codes de secours à usage unique sont disponibles. Deux rôles sont définis~: les analystes accèdent à la supervision et aux opérations courantes, les administrateurs disposent en plus des droits de configuration, de gestion des utilisateurs et de lancement des simulations. Ce cloisonnement est appliqué au niveau des routes Laravel et des politiques Eloquent.
 
 \begin{figure}[htbp]
 \centering
@@ -312,11 +314,11 @@ La plateforme notifie les opérateurs via quatre canaux configurables indépenda
 \section{Scénarios de validation}
 % ============================================================
 
-Les scénarios de validation vérifient le bon fonctionnement de chaque maillon de la chaîne de traitement, de la collecte sur le terminal jusqu'à l'affichage dans la console. Les tests ont été réalisés dans un répertoire dédié, avec l'agent actif et la plateforme en cours d'exécution.
+Les scénarios de validation vérifient le bon fonctionnement de chaque maillon de la chaîne de traitement, de la collecte sur le terminal jusqu'à l'affichage dans la console. Les tests ont été réalisés dans un répertoire dédié sur l'agent \textbf{rs-fileserver} (adresse~: \texttt{10.20.0.11}), avec l'agent actif et la plateforme en cours d'exécution. Cet agent est utilisé de manière cohérente dans toutes les figures du présent chapitre.
 
 \begin{table}[htbp]
 \centering
-\caption{Synthèse des scénarios de validation}
+\caption{Synthèse des scénarios de validation (agent~: \textbf{rs-fileserver}, \texttt{10.20.0.11})}
 \label{tab:scenarios-validation}
 \small
 \renewcommand{\arraystretch}{1.35}
@@ -324,23 +326,23 @@ Les scénarios de validation vérifient le bon fonctionnement de chaque maillon 
 \hline
 \textbf{\#} & \textbf{Scénario} & \textbf{Action réalisée} & \textbf{Résultat observé} \\
 \hline
-1 & Fichier normal & Création d'un fichier texte simple & Niveau normal, aucune alerte. \\
+1 & Fichier normal & Création d'un fichier \texttt{.txt} dans le dossier surveillé de rs-fileserver & Niveau normal, aucune alerte générée. \\
 \hline
-2 & Renommage simple & Renommage d'un fichier dans le dossier surveillé & Score augmenté, signal renommage présent. \\
+2 & Renommage simple & Renommage d'un fichier \texttt{.doc} en \texttt{.bak} sur rs-fileserver & Score de risque augmenté, signal renommage enregistré. \\
 \hline
-3 & Extension suspecte & Renommage vers \texttt{.locked} & Score 135, niveau critique, alerte et incident créés. \\
+3 & Extension suspecte & Renommage vers l'extension \texttt{.locked} sur rs-fileserver & Score~135, niveau critique~; alerte et incident créés et rattachés à rs-fileserver. \\
 \hline
-4 & Génération d'alerte & Score dépasse le seuil configuré & Alerte visible avec score, niveau et signaux. \\
+4 & Génération d'alerte & Le score de rs-fileserver dépasse le seuil critique configuré (80) & Alerte visible avec score~135, niveau critique et signaux détectés. \\
 \hline
-5 & Incident et action & Alerte de niveau critique & Incident ouvert, cinq actions proposées. \\
+5 & Incident et action & Alerte critique déclenchée depuis rs-fileserver & Incident ouvert, cinq actions de protection proposées pour rs-fileserver. \\
 \hline
-6 & Kill chain complète & Simulation \texttt{ransomware\_full} (22 événements) & Alertes critiques, incident actif, actions en cascade. \\
+6 & Kill chain complète & Simulation \texttt{ransomware\_full} (22 événements) sur rs-fileserver & Alertes critiques, incident actif, actions en cascade~; toutes rattachées à rs-fileserver. \\
 \hline
-7 & Isolation + rollback & Approbation isolation, puis rollback & Règles pare-feu appliquées puis supprimées, statuts mis à jour. \\
+7 & Isolation + rollback & Approbation de l'isolation réseau de rs-fileserver, puis rollback & Règles iptables appliquées sur rs-fileserver puis supprimées~; statuts mis à jour. \\
 \hline
-8 & Mode automatique & Action de scan configurée en exécution automatique & Action déclenchée et exécutée sans intervention de l'opérateur, résultat consigné dans le journal d'audit. \\
+8 & Mode automatique & Action de scan configurée en exécution automatique pour rs-fileserver & Action déclenchée et exécutée sans intervention~; résultat consigné dans le journal d'audit. \\
 \hline
-9 & Mode manuel & Action de scan déclenchée manuellement depuis la console & Action exécutée à la demande de l'opérateur, statut mis à jour en temps réel dans la file d'approbation. \\
+9 & Mode manuel & Action de scan déclenchée manuellement depuis la console sur rs-fileserver & Action exécutée à la demande~; statut mis à jour en temps réel dans la file d'approbation. \\
 \hline
 \end{tabularx}
 \end{table}

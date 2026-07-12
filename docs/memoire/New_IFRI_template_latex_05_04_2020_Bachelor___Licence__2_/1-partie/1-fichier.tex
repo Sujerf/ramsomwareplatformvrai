@@ -8,7 +8,7 @@ Les \gls{ransomware} constituent aujourd'hui l'une des menaces les plus préoccu
 
 \subsection{Définition de la sécurité informatique}
 
-La sécurité informatique regroupe l'ensemble des moyens techniques, organisationnels et humains permettant de protéger les systèmes, les réseaux, les applications et les données contre les accès non autorisés, les altérations, les pertes ou les interruptions de service \cite{andersonSecurityEng2020,stallingsCryptography2017}. Elle vise principalement à garantir la confidentialité, l'intégrité et la disponibilité des informations. Ces trois principes sont souvent représentés par le triptyque CIA, de l'anglais \textit{Confidentiality, Integrity, Availability}. Dans le cadre des ransomwares, l'objectif le plus directement touché est généralement la disponibilité, puisque les données deviennent inaccessibles. L'intégrité peut également être compromise lorsque les fichiers sont modifiés, renommés ou chiffrés.
+La sécurité informatique regroupe l'ensemble des moyens techniques, organisationnels et humains permettant de protéger les systèmes, les réseaux, les applications et les données contre les accès non autorisés, les altérations, les pertes ou les interruptions de service \cite{nistCSF2024,enisaThreatLandscape2024}. Elle vise principalement à garantir la confidentialité, l'intégrité et la disponibilité des informations. Ces trois principes sont souvent représentés par le triptyque CIA, de l'anglais \textit{Confidentiality, Integrity, Availability}. Dans le cadre des ransomwares, l'objectif le plus directement touché est généralement la disponibilité, puisque les données deviennent inaccessibles. L'intégrité peut également être compromise lorsque les fichiers sont modifiés, renommés ou chiffrés.
 
 \begin{figure}[htbp]
 \centering
@@ -106,13 +106,13 @@ Les ransomwares modernes peuvent évoluer rapidement, modifier leur code, utilis
 
 \subsection{Intérêt de l'analyse comportementale}
 
-L'\gls{analysecomportementale} consiste à observer les actions effectuées par un programme ou un utilisateur afin d'identifier un comportement inhabituel. Dans le contexte des ransomwares, cette approche consiste notamment à surveiller les \gls{evenement} de création, modification, renommage et suppression de fichiers. Cette approche ne remplace pas l'antivirus, mais elle le complète. Des travaux de recherche ont démontré son efficacité pour contrer les ransomwares avant qu'ils ne chiffrent un volume critique de fichiers \cite{scaife2016cryptolock,continella2016shieldfs}. Elle est particulièrement adaptée à un système comme RansomShield, qui cherche à détecter les comportements suspects sur les terminaux.
+L'\gls{analysecomportementale} consiste à observer les actions effectuées par un programme ou un utilisateur afin d'identifier un comportement inhabituel. Dans le contexte des ransomwares, cette approche consiste notamment à surveiller les \gls{evenement} de création, modification, renommage et suppression de fichiers. Cette approche ne remplace pas l'antivirus, mais elle le complète. Des travaux de recherche ont démontré son efficacité pour contrer les ransomwares avant qu'ils ne chiffrent un volume critique de fichiers \cite{moussaileb2021survey,oz2022survey}. Elle est particulièrement adaptée à un système comme RansomShield, qui cherche à détecter les comportements suspects sur les terminaux.
 
 \section{Systèmes de détection d'intrusion}
 
 \subsection{Définitions}
 
-Un \gls{ids} est un système chargé de surveiller des événements produits dans un système ou un réseau afin d'identifier des activités suspectes \cite{nistIDS2007}. Lorsqu'un comportement anormal est détecté, une \gls{alerte} peut être générée.
+Un \gls{ids} est un système chargé de surveiller des événements produits dans un système ou un réseau afin d'identifier des activités suspectes \cite{nistIncidentResponse2024}. Lorsqu'un comportement anormal est détecté, une \gls{alerte} peut être générée.
 
 
 \noindent Un \gls{hids} est installé sur un hôte et observe son activité interne. Il peut surveiller les fichiers, les journaux, les processus et certains changements système. Cette approche est intéressante pour la détection ransomware, car elle offre une visibilité locale sur les fichiers.

@@ -298,9 +298,9 @@
   \vspace{5pt}
 
   \begin{block}{Objectif général}
-    Concevoir et mettre en œuvre un \textbf{système de détection et de réponse
-    aux attaques ransomware} basé sur la surveillance comportementale des fichiers
-    et des processus, avec une console de supervision traçable.
+    \textbf{Développer} un système de détection et de réponse aux attaques
+    ransomware fondé sur la surveillance comportementale des fichiers et des processus
+    des terminaux, avec une console de supervision traçable et sécurisée.
   \end{block}
 
 \end{frame}
@@ -361,33 +361,30 @@
   de leurs comportements, avec un contrôle humain intégré à chaque étape.\\[4pt]
   Trois défis ont structuré ce travail : les variantes inconnues, la diversité des systèmes
   à surveiller, et le risque qu'une réponse automatique non validée cause elle-même des dommages.\\[6pt]
-  \textcolor{transition}{$\hookrightarrow$ Ces défis ont défini les six objectifs que voici.}
+  \textcolor{transition}{$\hookrightarrow$ Ces défis ont défini les quatre objectifs que voici.}
 }
 
 % ─── Objectifs ────────────────────────────────────────────────────────────
 \begin{frame}{Introduction Générale : Objectifs spécifiques}
 
-  \begin{block}{Objectifs spécifiques}
-    \begin{itemize}\setlength\itemsep{4pt}
-      \item Surveiller les événements fichiers en temps réel sur les terminaux
-      \item Analyser les comportements et calculer un score de risque configurable
-      \item Générer automatiquement des alertes et des incidents de sécurité
-      \item Proposer et exécuter des actions de protection avec \textbf{contrôle humain}
-      \item Protéger l'accès à la console par une double authentification (mot de passe + code temporaire)
-      \item Valider l'ensemble du système sur des scénarios d'attaque représentatifs
+  \begin{block}{Quatre objectifs spécifiques}
+    \begin{itemize}\setlength\itemsep{6pt}
+      \item \textbf{OS1~:} Étudier les ransomwares, leurs mécanismes et les limites des outils classiques
+      \item \textbf{OS2~:} Concevoir le pipeline de détection~: agent, API sécurisée, moteur d'analyse, console SOC
+      \item \textbf{OS3~:} Assurer la réponse aux incidents avec 3 modes d'exécution, notifications multicanaux, 2FA et RBAC
+      \item \textbf{OS4~:} Valider sur des scénarios d'attaque représentatifs et identifier les limites et perspectives
     \end{itemize}
   \end{block}
-
 
 \end{frame}
 \note{
 \textbf{[OBJECTIFS]}\\[4pt]
-  Six objectifs précis ont guidé ce travail : surveiller en temps réel les fichiers sur chaque
-  terminal ; calculer un niveau de risque ; déclencher des alertes automatiquement.
-  Le principe fondateur : chaque action passe par la décision d'un opérateur humain.
-  L'accès est sécurisé par double authentification — mot de passe et code temporaire valide
-  30 secondes. Et pour valider l'ensemble, des scénarios d'attaque représentatifs ont été
-  définis et exécutés.\\[6pt]
+  Quatre objectifs structurent ce travail.\\[4pt]
+  Le premier est théorique : comprendre les ransomwares et les limites des outils existants.
+  Le deuxième est technique : construire toute la chaîne — agent, API, moteur, console.
+  Le troisième porte sur la réponse : trois modes d'exécution, quatre canaux de notification,
+  authentification forte, contrôle d'accès par rôles.
+  Le quatrième clôture : neuf scénarios validés, limites identifiées, perspectives tracées.\\[6pt]
   \textcolor{transition}{$\hookrightarrow$ Voyons maintenant les fondements théoriques de ce travail.}
 }
 
@@ -793,10 +790,10 @@
         \vspace{5pt}
 
         \begin{tabular}{@{}l c@{}}
-          Score $<$ 30  & \textcolor{norm}{\textbf{Normal}}   \\
-          30 à 59       & \textcolor{high}{\textbf{Suspect}}  \\
-          60 à 99       & \textcolor{high}{\textbf{Élevé}}   \\
-          $\geq$ 100    & \textcolor{crit}{\textbf{Critique}} \\
+          Score 0–24    & \textcolor{norm}{\textbf{Normal}}   \\
+          25–49         & \textcolor{high}{\textbf{Suspect}}  \\
+          50–79         & \textcolor{high}{\textbf{Élevé}}   \\
+          $\geq$ 80     & \textcolor{crit}{\textbf{Critique}} \\
         \end{tabular}
         \vspace{3pt}
         {\tiny\color{muted} Alerte + incident créés automatiquement en $<$\,5\,s}
@@ -810,7 +807,7 @@
   les dossiers et envoie un signal de vie toutes les 30 secondes.\\[4pt]
   Pour le moteur de scoring : un fichier renommé \texttt{.locked} ajoute 80 points
   au score de risque. Une note de rançon dans le même dossier en ajoute 55. Le score
-  atteint 135 — au-dessus du seuil critique de 100. En moins de cinq secondes,
+  atteint 135 — au-dessus du seuil critique de 80. En moins de cinq secondes,
   une alerte est générée et un incident est ouvert dans la console,
   en attente de la décision de l'opérateur.\\[6pt]
   \textcolor{transition}{$\hookrightarrow$ Côté analyste, voici ce que la console SOC offre.}
@@ -871,18 +868,22 @@
 
   \begin{columns}[T]
     \column{0.50\textwidth}
-      \begin{block}{5 scénarios d'attaque testés}
+      \begin{block}{9 scénarios de validation testés}
         \small
-        \renewcommand{\arraystretch}{1.2}
+        \renewcommand{\arraystretch}{1.15}
         \begin{tabular}{@{}l c c@{}}
           \toprule
           \textbf{Scénario} & \textbf{Évts} & \textbf{Résultat} \\
           \midrule
-          Chiffrement basique  &  7 & \ok \\
+          Extension suspecte \texttt{.locked}  & 1  & \ok \\
           Kill chain complète  & 22 & \ok \\
           Chiffrement massif   & 18 & \ok \\
           Exfiltration données &  8 & \ok \\
-          LOLBins suspects     &  5 & \ok \\
+          Sabotage sauvegardes &  8 & \ok \\
+          Isolation + rollback &  — & \ok \\
+          Mode automatique     &  — & \ok \\
+          Mode manuel          &  — & \ok \\
+          2FA + RBAC           &  — & \ok \\
           \bottomrule
         \end{tabular}
         \vspace{3pt}
@@ -919,7 +920,7 @@
   déployer de malware réel. Pour chaque scénario, trois indicateurs ont été mesurés :
   délai de détection, intégrité des données, et complétude de la chaîne jusqu'à la
   décision de l'opérateur.\\[4pt]
-  Les résultats sont constants : cinq scénarios exécutés, cinq détectés en moins de
+  Les résultats sont constants : neuf scénarios exécutés, tous validés, détection en moins de
   cinq secondes, zéro événement perdu.\\[6pt]
   \textcolor{transition}{$\hookrightarrow$ Place maintenant à la démonstration live.}
 }
