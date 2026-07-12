@@ -1,0 +1,25 @@
+\chapter*{Résumé}
+\addcontentsline{toc}{chapter}{Résumé}
+
+Les attaques ransomware représentent une menace croissante pour les systèmes d'information : elles rendent les données indisponibles par chiffrement massif, puis exigent une rançon. Face à l'évolution rapide de ces menaces, les mécanismes classiques fondés sur les signatures montrent leurs limites.
+
+Ce travail présente \textbf{RansomShield}, un système de détection et de réponse aux attaques ransomware sur les terminaux, fondé sur la surveillance comportementale. La solution repose sur huit composants~: un agent multi-plateforme (Linux, Windows, macOS) qui surveille les événements fichiers et processus~; une API REST sécurisée par clé par agent~; un moteur d'analyse dynamique qui calcule un score de risque à partir de règles et d'extensions suspectes configurables~; un moteur de décision qui propose des actions selon trois modes d'exécution (automatique, approbation, manuel)~; un module d'alertes et d'incidents~; un service de notification multicanaux (interface, alarme sonore, email SMTP, webhook)~; un module de simulation d'attaques~; et une console SOC web avec authentification forte à deux facteurs et contrôle d'accès par rôles.
+
+La validation a été conduite dans un environnement contrôlé composé d'un serveur SOC et de trois machines virtuelles Linux. Neuf scénarios ont été testés, couvrant la détection d'extensions suspectes (score 135, niveau critique pour un fichier \texttt{.locked}), la kill chain complète (22 événements traités), la suppression de sauvegardes système, l'utilisation de LOLBins et l'isolation réseau avec rollback. L'ensemble des composants a été validé~: détection comportementale, génération d'alertes et d'incidents, trois modes d'exécution des actions de protection, notifications multicanaux, rapport PDF exportable, authentification 2FA et gestion des accès par rôles.
+
+\textbf{Mots clés :} Ransomware, Détection comportementale, Réponse aux incidents, Terminal, Console SOC.
+
+
+\newpage
+\thispagestyle{empty}
+\selectlanguage{english}
+\addcontentsline{toc}{chapter}{Abstract}
+\chapter*{Abstract}
+
+Ransomware attacks represent a growing threat to information systems: they render data unavailable through mass file encryption and then demand a ransom. As these threats evolve rapidly, traditional signature-based protection mechanisms are increasingly insufficient.
+
+This work presents \textbf{RansomShield}, a behavioral ransomware detection and response system for endpoints. The solution is built on eight components: a multi-platform agent (Linux, Windows, macOS) monitoring file and process events; a REST API secured by per-agent keys; a dynamic analysis engine computing a risk score from configurable rules and suspicious file extensions; a decision engine proposing actions in three execution modes (automatic, approval-required, manual); an alert and incident management module; a multi-channel notification service (UI, sound alarm, SMTP email, webhook); an attack simulation module; and a SOC web console with two-factor authentication and role-based access control.
+
+Validation was conducted in a controlled environment comprising a SOC server and three Linux virtual machines. Nine scenarios were tested, covering suspicious extension detection (score 135, critical level for a \texttt{.locked} file), full kill chain processing (22 events), shadow copy deletion, LOLBins abuse, and network isolation with rollback. All components were validated: behavioral detection, automated alert and incident generation, three protection action execution modes, multi-channel notifications, exportable PDF reports, 2FA authentication and role-based access management.
+
+\textbf{Keywords:} Ransomware, Behavioral Detection, Incident Response, Endpoint, SOC Console.
